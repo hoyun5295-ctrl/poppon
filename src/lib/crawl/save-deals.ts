@@ -3,9 +3,14 @@
  * 
  * 파일 위치: src/lib/crawl/save-deals.ts
  * 
+ * v2 수정사항:
+ * - merchant_id + title 기반 중복 체크 추가 (URL만으로는 부족)
+ * - 배치 내 중복 방지 (같은 크롤에서 동일 제목 2번 INSERT 방지)
+ * - existingByTitle Map 추가
+ * 
  * 흐름:
  *   1. AI 크롤러가 뽑은 AIDealCandidate[] 받기
- *   2. landing_url + merchant_id 기준 중복 체크
+ *   2. landing_url OR title + merchant_id 기준 중복 체크
  *   3. 신규 → INSERT (status: pending)
  *   4. 기존 → UPDATE (ends_at, description 등 변경분만)
  *   5. DB에 없는 기존 딜 → expired 처리 (선택)
@@ -149,6 +154,19 @@ function normalizeUrl(url: string): string {
 }
 
 // ============================================================
+// 제목 정규화 (중복 체크용)
+// ============================================================
+
+function normalizeTitle(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')           // 다중 공백 → 단일
+    .replace(/[^\w\sㄱ-ㅎ가-힣]/g, '') // 특수문자 제거
+    .trim();
+}
+
+// ============================================================
 // 메인: AI 크롤 결과 → deals 테이블 저장
 // ============================================================
 
@@ -157,9 +175,9 @@ export async function saveAICrawlResults(
   connector: ConnectorInfo,
   supabase: SupabaseClient,
   options?: {
-    autoApprove?: boolean;       // true면 바로 active (기본: false → pending)
-    expireOldDeals?: boolean;    // true면 이번 크롤에 없는 기존 딜 expired 처리
-    minConfidence?: number;      // 최소 확신도 (기본: 30)
+    autoApprove?: boolean;
+    expireOldDeals?: boolean;
+    minConfidence?: number;
   }
 ): Promise<SaveResult> {
   const {
@@ -179,7 +197,7 @@ export async function saveAICrawlResults(
     errors: [],
   };
 
-  // 1. 카테고리 ID 조회 (커넥터 config에서 카테고리 가져오기)
+  // 1. 카테고리 ID 조회
   const config = (connector.config || {}) as Record<string, string>;
   const topCategory = config.top_category || config.category || '생활';
   const categorySlug = CATEGORY_SLUG_MAP[topCategory] || 'living';
@@ -195,7 +213,7 @@ export async function saveAICrawlResults(
     return result;
   }
 
-  // 2. 이 merchant의 기존 active 딜 목록 가져오기 (중복 체크 + 만료 처리용)
+  // 2. 이 merchant의 기존 딜 목록 (중복 체크용)
   const { data: existingDeals } = await supabase
     .from('deals')
     .select('id, title, landing_url, source_url, ends_at, status')
@@ -203,28 +221,33 @@ export async function saveAICrawlResults(
     .eq('source_type', 'crawl')
     .in('status', ['active', 'pending', 'hidden']);
 
+  // ✅ URL 기반 Map (기존)
   const existingByUrl = new Map<string, { id: string; title: string; ends_at: string | null }>();
+  // ✅ 제목 기반 Map (신규 — 핵심 수정)
+  const existingByTitle = new Map<string, { id: string; title: string; ends_at: string | null }>();
+
   if (existingDeals) {
     for (const deal of existingDeals) {
+      const entry = { id: deal.id, title: deal.title, ends_at: deal.ends_at };
+
+      // URL 기반
       if (deal.landing_url) {
-        existingByUrl.set(normalizeUrl(deal.landing_url), {
-          id: deal.id,
-          title: deal.title,
-          ends_at: deal.ends_at,
-        });
+        existingByUrl.set(normalizeUrl(deal.landing_url), entry);
       }
       if (deal.source_url) {
-        existingByUrl.set(normalizeUrl(deal.source_url), {
-          id: deal.id,
-          title: deal.title,
-          ends_at: deal.ends_at,
-        });
+        // source_url은 여러 딜이 공유하므로 Map에 넣지 않음 (덮어쓰기 문제)
+        // 대신 title 기반으로 체크
       }
+
+      // ✅ 제목 기반 (merchant_id는 이미 쿼리에서 필터됨)
+      existingByTitle.set(normalizeTitle(deal.title), entry);
     }
   }
 
-  // 3. 이번 크롤에서 발견된 URL 추적 (만료 처리용)
+  // 3. 이번 크롤에서 발견된 URL/제목 추적
   const foundUrls = new Set<string>();
+  // ✅ 배치 내 중복 방지 (같은 크롤에서 동일 제목 2번 처리 방지)
+  const processedTitles = new Set<string>();
 
   // 4. 각 딜 후보 처리
   for (const candidate of candidates) {
@@ -241,13 +264,25 @@ export async function saveAICrawlResults(
         continue;
       }
 
+      const normalizedTitle = normalizeTitle(candidate.title);
+
+      // ✅ 배치 내 중복 체크 (같은 크롤에서 같은 제목 2번째부터 스킵)
+      if (processedTitles.has(normalizedTitle)) {
+        result.skippedCount++;
+        continue;
+      }
+      processedTitles.add(normalizedTitle);
+
       // landing URL 없으면 source_url 사용
       const landingUrl = candidate.landingUrl || connector.source_url;
       const normalizedUrl = normalizeUrl(landingUrl);
       foundUrls.add(normalizedUrl);
 
-      // 중복 체크
-      const existing = existingByUrl.get(normalizedUrl);
+      // ✅ 중복 체크: URL 먼저, 없으면 제목으로
+      let existing = existingByUrl.get(normalizedUrl);
+      if (!existing) {
+        existing = existingByTitle.get(normalizedTitle);
+      }
 
       if (existing) {
         // === 기존 딜 업데이트 ===
@@ -271,9 +306,13 @@ export async function saveAICrawlResults(
         if (candidate.thumbnailUrl) {
           updateData.thumbnail_url = candidate.thumbnailUrl;
         }
+        // landing_url 업데이트 (더 구체적인 URL로 교체)
+        if (candidate.landingUrl && candidate.landingUrl !== connector.source_url) {
+          updateData.landing_url = candidate.landingUrl;
+        }
 
         // 변경사항이 있을 때만 UPDATE
-        if (Object.keys(updateData).length > 1) { // updated_at 외에 다른 것도 있으면
+        if (Object.keys(updateData).length > 1) {
           const { error } = await supabase
             .from('deals')
             .update(updateData)
@@ -285,7 +324,7 @@ export async function saveAICrawlResults(
             result.updatedCount++;
           }
         } else {
-          result.skippedCount++; // 변경 없음
+          result.skippedCount++;
         }
       } else {
         // === 신규 딜 INSERT ===
@@ -295,9 +334,9 @@ export async function saveAICrawlResults(
         );
 
         // deal_type 결정
-        let dealType = 'B'; // 기본: 링크형
-        if (candidate.couponCode) dealType = 'A1'; // 쿠폰코드
-        if (candidate.discountValue && !candidate.couponCode) dealType = 'A2'; // 가격딜
+        let dealType = 'B';
+        if (candidate.couponCode) dealType = 'A1';
+        if (candidate.discountValue && !candidate.couponCode) dealType = 'A2';
 
         const newDeal = {
           merchant_id: connector.merchant_id,
@@ -344,7 +383,6 @@ export async function saveAICrawlResults(
           .insert(newDeal);
 
         if (error) {
-          // slug 충돌이면 재시도
           if (error.message.includes('idx_deals_slug') || error.message.includes('duplicate')) {
             newDeal.slug = generateSlug(candidate.title + '-' + Date.now());
             const { error: retryError } = await supabase

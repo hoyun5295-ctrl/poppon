@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Calendar, Info } from 'lucide-react';
 import type { Deal, Merchant, Category } from '@/types';
 import { formatTimeRemaining, formatDateRange } from '@/lib/utils/format';
 import { CopyCodeButton } from './CopyCodeButton';
+import { trackDealView } from '@/lib/tracking';
 
 // 카테고리별 액센트 색상
 const CATEGORY_ACCENT: Record<string, string> = {
@@ -30,6 +32,11 @@ export function DealDetail({ deal, isModal = false }: DealDetailProps) {
   const outboundUrl = `/out/${deal.id}`;
   const hasOutbound = !!(deal.affiliate_url || deal.landing_url || deal.source_url);
   const merchantHref = `/m/${deal.merchants?.slug}`;
+
+  // ✅ 딜 조회 로깅
+  useEffect(() => {
+    trackDealView(deal.id);
+  }, [deal.id]);
 
   return (
     <div>
@@ -108,7 +115,7 @@ export function DealDetail({ deal, isModal = false }: DealDetailProps) {
       {/* 쿠폰코드 (A1 타입) */}
       {deal.coupon_code && (
         <div className="mb-3">
-          <CopyCodeButton code={deal.coupon_code} />
+          <CopyCodeButton code={deal.coupon_code} dealId={deal.id} />
         </div>
       )}
 

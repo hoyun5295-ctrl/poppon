@@ -1,9 +1,16 @@
 /**
- * POPPON AI 크롤러 엔진
+ * POPPON AI 크롤러 엔진 (v3 — DB 해시 변경감지)
  * 파일 위치: src/lib/crawl/ai-engine.ts
+ * 
+ * v3 변경:
+ * - 메모리 해시 캐시 제거 → DB(crawl_connectors.content_hash) 기반
+ * - ConnectorForAI에 content_hash 추가
+ * - AICrawlResult에 newContentHash 반환 → route.ts에서 DB 업데이트
+ * - 서버 재시작해도 해시 유지됨
  */
 
 import puppeteer, { Browser, Page } from 'puppeteer';
+import crypto from 'crypto';
 
 // ============================================================
 // Types
@@ -34,6 +41,7 @@ export interface AICrawlResult {
   errorMessage?: string;
   durationMs: number;
   tokensUsed?: number;
+  newContentHash?: string;  // ✅ route.ts에서 DB에 저장
 }
 
 export interface PageContent {
@@ -43,6 +51,7 @@ export interface PageContent {
   links: { href: string; text: string }[];
   images: { src: string; alt: string }[];
   rawHtmlLength: number;
+  contentHash: string;
 }
 
 interface ConnectorForAI {
@@ -53,10 +62,19 @@ interface ConnectorForAI {
   config: Record<string, unknown>;
   status: string;
   fail_count: number;
+  content_hash?: string | null;  // ✅ DB에서 읽어온 기존 해시
 }
 
 // ============================================================
-// 1. Puppeteer 페이지 렌더링
+// 콘텐츠 해시 (MD5)
+// ============================================================
+
+function getContentHash(text: string): string {
+  return crypto.createHash('md5').update(text).digest('hex');
+}
+
+// ============================================================
+// 1. Puppeteer 페이지 렌더링 (최적화)
 // ============================================================
 
 let browserInstance: Browser | null = null;
@@ -70,6 +88,8 @@ async function getBrowser(): Promise<Browser> {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--disable-extensions',
+        '--disable-background-networking',
         '--window-size=1280,720',
         '--lang=ko-KR',
       ],
@@ -99,19 +119,30 @@ export async function renderPage(url: string): Promise<PageContent> {
     await page.setRequestInterception(true);
     page.on('request', (req) => {
       const type = req.resourceType();
-      if (['font', 'media', 'stylesheet'].includes(type)) {
+      if (['font', 'media', 'stylesheet', 'image'].includes(type)) {
         req.abort();
       } else {
         req.continue();
       }
     });
 
-    await page.goto(url, {
-      waitUntil: 'networkidle2',
-      timeout: 30000,
-    });
+    try {
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 15000,
+      });
+    } catch {
+      try {
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 10000,
+        });
+      } catch (e) {
+        throw new Error(`페이지 로딩 실패: ${(e as Error).message}`);
+      }
+    }
 
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1000));
 
     const content = await page.evaluate(() => {
       const removeSelectors = [
@@ -157,7 +188,9 @@ export async function renderPage(url: string): Promise<PageContent> {
       };
     });
 
-    return { url, ...content };
+    const contentHash = getContentHash(content.textContent);
+
+    return { url, ...content, contentHash };
   } finally {
     await page.close();
   }
@@ -277,7 +310,6 @@ ${content.images.slice(0, 20).map(i => `![${i.alt}](${i.src})`).join('\n')}
     const parsed = JSON.parse(jsonStr);
     rawDeals = Array.isArray(parsed) ? parsed : [];
   } catch {
-    // 잘린 JSON 복구 시도
     try {
       const lastBracket = text.lastIndexOf('}');
       if (lastBracket > 0) {
@@ -293,25 +325,20 @@ ${content.images.slice(0, 20).map(i => `![${i.alt}](${i.src})`).join('\n')}
     }
   }
 
-  // === 후처리 필터링 (AI가 놓친 잡다한 딜 한번 더 걸러냄) ===
+  // === 후처리 필터링 ===
   const beforeCount = rawDeals.length;
   const deals = rawDeals.filter(deal => {
-    // 1) confidence 70 미만 제거
     if (deal.confidence !== undefined && deal.confidence < 70) {
-      console.log(`[AI Filter] 낮은 confidence 제거: "${deal.title}" (${deal.confidence})`);
       return false;
     }
 
-    // 2) benefitSummary 없고 + couponCode 없고 + discountValue 없으면 제거
     const hasBenefit = !!(deal.benefitSummary && deal.benefitSummary.trim());
     const hasCoupon = !!(deal.couponCode && deal.couponCode.trim());
     const hasDiscount = deal.discountValue !== null && deal.discountValue > 0;
     if (!hasBenefit && !hasCoupon && !hasDiscount) {
-      console.log(`[AI Filter] 혜택 불분명 제거: "${deal.title}"`);
       return false;
     }
 
-    // 3) 키워드 기반 제거 (멤버십, 구독 서비스 등)
     const titleLower = (deal.title || '').toLowerCase();
     const descLower = (deal.description || '').toLowerCase();
     const combined = titleLower + ' ' + descLower;
@@ -329,7 +356,6 @@ ${content.images.slice(0, 20).map(i => `![${i.alt}](${i.src})`).join('\n')}
 
     for (const pattern of excludePatterns) {
       if (pattern.test(combined)) {
-        console.log(`[AI Filter] 패턴 제거: "${deal.title}" (${pattern.source})`);
         return false;
       }
     }
@@ -338,15 +364,11 @@ ${content.images.slice(0, 20).map(i => `![${i.alt}](${i.src})`).join('\n')}
   });
 
   const filteredOutCount = beforeCount - deals.length;
-  if (filteredOutCount > 0) {
-    console.log(`[AI Filter] ${beforeCount}개 중 ${filteredOutCount}개 필터링 → ${deals.length}개 최종`);
-  }
-
   return { deals, tokensUsed, filteredOutCount };
 }
 
 // ============================================================
-// 3. 통합 크롤 함수
+// 3. 통합 크롤 함수 (DB 해시 변경감지)
 // ============================================================
 
 export async function crawlWithAI(connector: ConnectorForAI): Promise<AICrawlResult> {
@@ -356,7 +378,7 @@ export async function crawlWithAI(connector: ConnectorForAI): Promise<AICrawlRes
   try {
     console.log(`[AI Crawl] 🌐 ${connector.name} — ${connector.source_url}`);
     const content = await renderPage(connector.source_url);
-    console.log(`[AI Crawl] 📄 ${(content.rawHtmlLength / 1024).toFixed(0)}KB | ${content.links.length} links | ${content.images.length} images`);
+    console.log(`[AI Crawl] 📄 ${(content.rawHtmlLength / 1024).toFixed(0)}KB | ${content.links.length} links`);
 
     if (content.textContent.length < 50) {
       return {
@@ -367,6 +389,21 @@ export async function crawlWithAI(connector: ConnectorForAI): Promise<AICrawlRes
         deals: [],
         errorMessage: '페이지 콘텐츠가 너무 적음',
         durationMs: Date.now() - start,
+      };
+    }
+
+    // ✅ DB 해시 비교: 기존 해시와 같으면 AI 스킵
+    if (connector.content_hash && connector.content_hash === content.contentHash) {
+      console.log(`[AI Crawl] ⏭️ ${connector.name} — 변경 없음, 스킵`);
+      return {
+        connectorId: connector.id,
+        connectorName: connector.name,
+        merchantId: connector.merchant_id,
+        status: 'skipped',
+        deals: [],
+        durationMs: Date.now() - start,
+        tokensUsed: 0,
+        newContentHash: content.contentHash,
       };
     }
 
@@ -383,6 +420,7 @@ export async function crawlWithAI(connector: ConnectorForAI): Promise<AICrawlRes
       filteredOutCount,
       durationMs: Date.now() - start,
       tokensUsed,
+      newContentHash: content.contentHash,  // ✅ route.ts에서 DB 저장
     };
   } catch (err) {
     const errorMessage = (err as Error).message;
@@ -399,18 +437,32 @@ export async function crawlWithAI(connector: ConnectorForAI): Promise<AICrawlRes
   }
 }
 
+// ============================================================
+// 4. 병렬 배치 크롤 (동시 N개)
+// ============================================================
+
 export async function crawlBatchWithAI(
   connectors: ConnectorForAI[],
-  delayBetween = 3000
+  concurrency = 3
 ): Promise<AICrawlResult[]> {
   const results: AICrawlResult[] = [];
+  
+  for (let i = 0; i < connectors.length; i += concurrency) {
+    const batch = connectors.slice(i, i + concurrency);
+    const batchResults = await Promise.allSettled(
+      batch.map(connector => crawlWithAI(connector))
+    );
 
-  for (const connector of connectors) {
-    const result = await crawlWithAI(connector);
-    results.push(result);
+    for (const result of batchResults) {
+      if (result.status === 'fulfilled') {
+        results.push(result.value);
+      } else {
+        console.error(`[Batch] 병렬 크롤 에러:`, result.reason);
+      }
+    }
 
-    if (connectors.indexOf(connector) < connectors.length - 1) {
-      await new Promise(r => setTimeout(r, delayBetween));
+    if (i + concurrency < connectors.length) {
+      await new Promise(r => setTimeout(r, 500));
     }
   }
 

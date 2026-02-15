@@ -4,28 +4,12 @@ import type { Metadata } from 'next';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { toDealCard, DEAL_CARD_SELECT } from '@/lib/deals';
 import { DealGrid } from '@/components/deal/DealGrid';
+import { CategoryTabBar } from '@/components/category/CategoryTabBar';
+import { CategoryIcon } from '@/components/category/CategoryIcon';
 import { SubCategoryChips } from '@/components/category/SubCategoryChips';
 import { SortDropdown } from '@/components/common/SortDropdown';
 import { Pagination } from '@/components/common/Pagination';
-import { APP_NAME } from '@/lib/constants';
-
-// 카테고리별 아이콘 + 색상
-const CATEGORY_THEME: Record<string, { icon: string; gradient: string; textColor: string }> = {
-  '패션':       { icon: '👗', gradient: 'from-violet-500 to-purple-600',  textColor: 'text-violet-600' },
-  '뷰티':       { icon: '💄', gradient: 'from-rose-500 to-pink-600',     textColor: 'text-rose-600' },
-  '식품/배달':   { icon: '🍔', gradient: 'from-amber-500 to-orange-600',  textColor: 'text-amber-600' },
-  '생활/리빙':   { icon: '🏠', gradient: 'from-emerald-500 to-green-600', textColor: 'text-emerald-600' },
-  '디지털/가전': { icon: '📱', gradient: 'from-blue-500 to-indigo-600',   textColor: 'text-blue-600' },
-  '여행/레저':   { icon: '✈️', gradient: 'from-sky-500 to-cyan-600',     textColor: 'text-sky-600' },
-  '문화/콘텐츠': { icon: '🎬', gradient: 'from-purple-500 to-violet-600', textColor: 'text-purple-600' },
-  '키즈/교육':   { icon: '🧒', gradient: 'from-pink-500 to-rose-600',    textColor: 'text-pink-600' },
-  '건강/헬스':   { icon: '💪', gradient: 'from-green-500 to-emerald-600', textColor: 'text-green-600' },
-  '반려동물':    { icon: '🐾', gradient: 'from-orange-500 to-amber-600',  textColor: 'text-orange-600' },
-  '자동차/주유': { icon: '🚗', gradient: 'from-slate-500 to-gray-600',    textColor: 'text-slate-600' },
-  '금융/통신':   { icon: '💳', gradient: 'from-indigo-500 to-blue-600',   textColor: 'text-indigo-600' },
-};
-
-const DEFAULT_THEME = { icon: '🏷️', gradient: 'from-gray-500 to-gray-600', textColor: 'text-gray-600' };
+import { APP_NAME, MAIN_CATEGORIES } from '@/lib/constants';
 
 const DEALS_PER_PAGE = 24;
 
@@ -129,7 +113,9 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const deals = (dealsRaw || []).map(toDealCard);
   const totalPages = Math.ceil((totalCount || 0) / DEALS_PER_PAGE);
 
-  const theme = CATEGORY_THEME[category.name] || DEFAULT_THEME;
+  // 카테고리 색상 가져오기
+  const catMeta = MAIN_CATEGORIES.find((c) => c.slug === decodedSlug);
+  const catColor = catMeta?.color || '#6B7280';
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -140,44 +126,42 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <span className="text-surface-600">{category.name}</span>
       </nav>
 
-      {/* 카테고리 헤더 — 모바일 컴팩트 */}
-      <section className={`relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-r ${theme.gradient} px-5 py-6 sm:px-8 sm:py-10 mb-4 sm:mb-6`}>
-        <div className="relative z-10">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <span className="text-3xl sm:text-4xl">{theme.icon}</span>
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white truncate">{category.name}</h1>
-              {category.description && (
-                <p className="mt-0.5 sm:mt-1 text-white/80 text-xs sm:text-sm line-clamp-1">{category.description}</p>
-              )}
-            </div>
+      {/* 카테고리 탭바 — 12개 가로스크롤 */}
+      <CategoryTabBar currentSlug={decodedSlug} />
+
+      {/* 컴팩트 헤더 */}
+      <div className="flex items-center justify-between py-3 sm:py-4 border-b border-surface-100">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${catColor}15` }}
+          >
+            <CategoryIcon slug={decodedSlug} size={18} color={catColor} />
           </div>
-          <p className="mt-2 sm:mt-3 text-white/60 text-xs sm:text-sm">
-            진행중인 딜 {totalCount || 0}개
-          </p>
+          <h1 className="text-base sm:text-lg font-bold text-surface-900">
+            {category.name}
+          </h1>
+          <span className="text-xs text-surface-400">
+            {totalCount || 0}개 딜
+          </span>
         </div>
-        {/* 배경 장식 */}
-        <div className="absolute -right-8 -top-8 w-32 sm:w-40 h-32 sm:h-40 bg-white/10 rounded-full blur-2xl" />
-        <div className="absolute -right-4 -bottom-12 w-24 sm:w-32 h-24 sm:h-32 bg-white/5 rounded-full blur-xl" />
-      </section>
+        <SortDropdown currentSort={sort} />
+      </div>
 
       {/* 서브 카테고리 칩 — 가로 스크롤 */}
       {subcategories.length > 0 && (
-        <div className="mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="py-3 sm:py-4">
           <SubCategoryChips subcategories={subcategories} currentSub={sub} />
         </div>
       )}
 
-      {/* 정렬 */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <p className="text-xs sm:text-sm text-surface-500">
-          {sub
-            ? `${subcategories.find((s) => s.slug === sub)?.name || sub}`
-            : '전체'}
-          <span className="ml-1.5 text-surface-400">{totalCount || 0}건</span>
+      {/* 필터 요약 (서브카테고리 선택 시) */}
+      {sub && (
+        <p className="text-xs text-surface-500 mb-2">
+          {subcategories.find((s) => s.slug === sub)?.name || sub}
+          <span className="ml-1 text-surface-400">{totalCount || 0}건</span>
         </p>
-        <SortDropdown currentSort={sort} />
-      </div>
+      )}
 
       {/* 딜 목록 */}
       <div className="pb-8 sm:pb-12">

@@ -2,18 +2,26 @@
 
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { trackCopyCode } from '@/lib/tracking';
 
 interface CopyCodeButtonProps {
   code: string;
+  dealId?: string;  // ✅ 추가: 로깅용
 }
 
-export function CopyCodeButton({ code }: CopyCodeButtonProps) {
+export function CopyCodeButton({ code, dealId }: CopyCodeButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopied(true);
+
+      // ✅ 쿠폰 복사 로깅
+      if (dealId) {
+        trackCopyCode(dealId, code);
+      }
+
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // fallback
@@ -24,6 +32,12 @@ export function CopyCodeButton({ code }: CopyCodeButtonProps) {
       document.execCommand('copy');
       document.body.removeChild(input);
       setCopied(true);
+
+      // ✅ 쿠폰 복사 로깅 (fallback에서도)
+      if (dealId) {
+        trackCopyCode(dealId, code);
+      }
+
       setTimeout(() => setCopied(false), 2000);
     }
   };

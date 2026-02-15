@@ -113,6 +113,8 @@ SELECT COUNT(*) FROM deal_actions;
 | SearchInput.tsx | `src/components/search/SearchInput.tsx` |
 | CategoryGrid.tsx | `src/components/category/CategoryGrid.tsx` |
 | SubCategoryChips.tsx | `src/components/category/SubCategoryChips.tsx` |
+| CategoryTabBar.tsx | `src/components/category/CategoryTabBar.tsx` |
+| CategoryIcon.tsx | `src/components/category/CategoryIcon.tsx` |
 | MerchantDealTabs.tsx | `src/components/merchant/MerchantDealTabs.tsx` |
 | Pagination.tsx | `src/components/common/Pagination.tsx` |
 | SortDropdown.tsx | `src/components/common/SortDropdown.tsx` |
@@ -521,8 +523,22 @@ CRON_SECRET=... (Vercel Cron 인증용, 선택)
 |------|------|------|
 | excellent (SVG) | ~15개 | 벡터, 무한 확대 가능 |
 | good (apple-touch/manifest/구글) | ~150개 | 128px+ 래스터 |
+| **수동 교체 (public/logos/)** | **9개** | 삼성, 올리브영, 교보문고, 롯데시네마, 배스킨라빈스, 이니스프리, 닌텐도, 더블하트, 유팡 |
 | acceptable (header-logo) | ~20개 | 사이트에서 추출한 로고 img |
-| 미수집/저품질 | ~100개 | 구글 검색으로 보완 |
+| 미수집/저품질 | ~90개 | 구글 검색으로 보완 |
+
+### 수동 교체 로고 (public/logos/)
+| 파일명 | 머천트 |
+|--------|--------|
+| samsung.svg | 삼성닷컴 |
+| oliveyoung.png | 올리브영 |
+| kyobobook.png | 교보문고 |
+| lottecinema.jpg | 롯데시네마 |
+| baskinrobbins.png | 배스킨라빈스 |
+| innisfree.png | 이니스프리 |
+| nintendo.jpg | 닌텐도 |
+| doubleheart.png | 더블하트 |
+| upang.jpg | 유팡 |
 
 ---
 
@@ -631,7 +647,8 @@ deal_view, deal_click_out, deal_copy_code, deal_save, merchant_follow, category_
 | **어드민** | 대시보드 + 딜 CRUD + 머천트 CRUD + 크롤 관리 |
 | **AI 크롤러** | Puppeteer + Claude Haiku, 변경 감지, 이벤트 페이지 자동 탐지 |
 | **전체 크롤링** | 272/349 성공, 신규 773 + 업데이트 807, $4.32 |
-| **머천트 로고** | v2 + v3.1 + 구글 이미지 검색, brand_color 264개 |
+| **머천트 로고** | v2 + v3.1 + 구글 이미지 검색 + 수동교체 9종, brand_color 264개 |
+| **카테고리 페이지 리디자인** | 그라디언트 헤더 제거 → 탭바(12개 가로스크롤) + Lucide 아이콘 + 컴팩트 헤더 |
 | **만료 자동화** | filterActiveDeals + Cron 일괄 전환 |
 | **모바일 반응형** | 12파일 수정, 모바일 퍼스트 |
 | **행동추적** | deal_actions + tracking.ts + API |
@@ -656,14 +673,14 @@ deal_view, deal_click_out, deal_copy_code, deal_save, merchant_follow, category_
 ## 🔥 다음 작업 (우선순위)
 
 ### 즉시
-1. **"다음 채팅 시작 시 즉시 확인사항" SQL 전부 실행**
+1. **"다음 채팅 시작 시 즉시 확인사항" 1~5 SQL 전부 실행**
 2. **deal_actions SQL 실행**
 3. **가비아 DNS** — A: `@`→`216.198.79.1`, CNAME: `www`→`12a1927535fa4753.vercel-dns-017.com.`
 4. **v3로 첫 풀크롤 실행** → 해시 DB에 쌓임 → 2회차부터 5분
 
 ### 보강
 5. filterActiveDeals 카테고리/브랜드관 적용
-6. 중복 merchant 정리 (올리브영 등)
+6. 로고 추가 교체 (나머지 저품질 ~100개)
 
 ### 회원
 7. PASS 본인인증
@@ -686,8 +703,9 @@ deal_view, deal_click_out, deal_copy_code, deal_save, merchant_follow, category_
 ---
 
 ## 🖥️ 인프라 설계 (합의, 미착수)
-NCP s2-g3 (4vCPU/16GB) ~8만 + Supabase Pro ~3.4만 + Haiku ~1.4만 = **월 ~13만원**
-Docker 구성 → 상용서버 이관 대비
+- **현재**: Vercel Pro ($20/월) — 개발 중 사용, NCP 이관 전까지
+- **이관 계획**: NCP s2-g3 (4vCPU/16GB) ~8만 + Supabase Pro ~3.4만 + Haiku ~1.4만 = **월 ~13만원**
+- Docker 구성 → 상용서버 이관 대비
 
 ---
 
@@ -704,13 +722,16 @@ Docker 구성 → 상용서버 이관 대비
 ## 알려진 이슈
 - 한글 slug → decodeURIComponent 필수
 - Supabase 조인 FK 명시 필수
-- 중복 merchant 정리 필요 (올리브영 등)
+- 중복 merchant: 삼성닷컴+삼성전자가전 병합 완료 / 올리브영은 1개만 남음 / 나머지 빈 껍데기(LG생활건강, 롯데카드 등) 추후 크롤러 추가용으로 유지
 - 모달 내부 링크 → `<a>` hard navigation
 - categories.deal_count DB 값 0 → active 딜 실제 집계로 대체
 - 병렬 크롤 concurrency 기본 3 (API body에서 조절, 최대 5)
 - brand_color: 264/283개 적용, 밝기 자동 판단 (W3C 휘도) → 흰/검 텍스트 자동 결정
 - 딜 이미지: thumbnail_url은 DealCard에서 사용 안 함 (로고 중심 디자인)
 - Puppeteer waitForTimeout: 신버전에서 제거됨 → `new Promise(r => setTimeout(r, ms))` 사용
+- Vercel 빌드: Supabase `.rpc()` 반환 PromiseLike에 `.catch()` 불가 → `.then(() => {}, () => {})` 사용
+- Vercel 빌드: 타입 체크 로컬보다 엄격 — SaveResult 등 인터페이스 필수 필드 누락 주의
+- 로고 수동교체: `public/logos/` + DB logo_url 동시 업데이트 필요
 
 ---
 
@@ -730,7 +751,8 @@ Docker 구성 → 상용서버 이관 대비
 | 팝폰-클릭트래킹+어드민+배포 | 2/16 | 클릭트래킹, 어드민 보호 |
 | 팝폰-모바일반응형+크롤러+배포 | 2/16 | 모바일 12파일, Vercel 배포 |
 | **팝폰-크롤링최적화+회원설계+행동추적** | **2/16** | **크롤러 v3 (DB해시), save-deals v2, 커넥터 349→228 정리, 중복딜 정리, deal_actions, 회원설계, NCP 인프라, 외주리뷰** |
+| **팝폰-STATUS복원+로고+카테고리리디자인** | **2/16** | **STATUS.md 복원(355→750줄), 삼성 머천트 병합, 로고 9종 수동교체, 카테고리 페이지 리디자인(탭바+Lucide), Vercel 빌드 에러 3건 수정, Vercel Pro 전환** |
 
 ---
 
-*마지막 업데이트: 2026-02-16 (크롤러 v3 DB해시 + 커넥터 228개 정리 + deal_actions + 회원설계)*
+*마지막 업데이트: 2026-02-16 (STATUS 복원 + 로고 9종 + 삼성 병합 + 카테고리 리디자인 + Vercel Pro)*

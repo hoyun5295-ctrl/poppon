@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ExternalLink, Shield } from 'lucide-react';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { toDealCard, DEAL_CARD_SELECT } from '@/lib/deals';
+import { toDealCard, DEAL_CARD_SELECT, filterActiveDeals } from '@/lib/deals';
 import { DealGrid } from '@/components/deal/DealGrid';
 import { MerchantDealTabs } from '@/components/merchant/MerchantDealTabs';
 import { SortDropdown } from '@/components/common/SortDropdown';
@@ -46,6 +46,8 @@ export default async function MerchantPage({ params, searchParams }: MerchantPag
   const supabase = await createServerSupabaseClient();
   const decodedSlug = decodeURIComponent(merchantSlug);
 
+  const now = new Date().toISOString();
+
   // 1. 머천트 정보 가져오기
   const { data: merchant, error: merchantError } = await supabase
     .from('merchants')
@@ -55,13 +57,15 @@ export default async function MerchantPage({ params, searchParams }: MerchantPag
 
   if (merchantError || !merchant) notFound();
 
-  // 2. 딜 카운트 (active / expired)
+  // 2. 딜 카운트 (active: 만료 필터 적용 / expired)
   const [activeCountRes, expiredCountRes] = await Promise.all([
-    supabase
-      .from('deals')
-      .select('id', { count: 'exact', head: true })
-      .eq('merchant_id', merchant.id)
-      .eq('status', 'active'),
+    filterActiveDeals(
+      supabase
+        .from('deals')
+        .select('id', { count: 'exact', head: true })
+        .eq('merchant_id', merchant.id),
+      now
+    ),
     supabase
       .from('deals')
       .select('id', { count: 'exact', head: true })
@@ -77,11 +81,19 @@ export default async function MerchantPage({ params, searchParams }: MerchantPag
   const currentPage = Math.max(1, parseInt(page) || 1);
   const offset = (currentPage - 1) * DEALS_PER_PAGE;
 
-  let query = supabase
-    .from('deals')
-    .select(DEAL_CARD_SELECT)
-    .eq('merchant_id', merchant.id)
-    .eq('status', currentTab === 'active' ? 'active' : 'expired');
+  let query = currentTab === 'active'
+    ? filterActiveDeals(
+        supabase
+          .from('deals')
+          .select(DEAL_CARD_SELECT)
+          .eq('merchant_id', merchant.id),
+        now
+      )
+    : supabase
+        .from('deals')
+        .select(DEAL_CARD_SELECT)
+        .eq('merchant_id', merchant.id)
+        .eq('status', 'expired');
 
   // 정렬
   switch (sort) {
@@ -141,7 +153,7 @@ export default async function MerchantPage({ params, searchParams }: MerchantPag
                   className="flex items-center gap-1 text-xs text-surface-500 active:text-primary-500 transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  공식 사이트
+                  공식사이트
                 </a>
               )}
               <span className="text-xs text-surface-400">
@@ -180,7 +192,7 @@ export default async function MerchantPage({ params, searchParams }: MerchantPag
                   className="flex items-center gap-1 text-sm text-surface-500 hover:text-primary-500 transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  공식 사이트
+                  공식사이트
                 </a>
               )}
               <span className="text-sm text-surface-400">

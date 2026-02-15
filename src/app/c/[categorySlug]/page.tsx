@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { toDealCard, DEAL_CARD_SELECT } from '@/lib/deals';
+import { toDealCard, DEAL_CARD_SELECT, filterActiveDeals } from '@/lib/deals';
 import { DealGrid } from '@/components/deal/DealGrid';
 import { CategoryTabBar } from '@/components/category/CategoryTabBar';
 import { CategoryIcon } from '@/components/category/CategoryIcon';
@@ -45,6 +45,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const supabase = await createServerSupabaseClient();
   const decodedSlug = decodeURIComponent(categorySlug);
 
+  const now = new Date().toISOString();
+
   // 1. 대카테고리 가져오기
   const { data: category, error: catError } = await supabase
     .from('categories')
@@ -77,15 +79,17 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     filterCategoryIds = [category.id, ...subcategories.map((s) => s.id)];
   }
 
-  // 4. 딜 가져오기
+  // 4. 딜 가져오기 (filterActiveDeals로 만료 필터링)
   const currentPage = Math.max(1, parseInt(page) || 1);
   const offset = (currentPage - 1) * DEALS_PER_PAGE;
 
-  let query = supabase
-    .from('deals')
-    .select(DEAL_CARD_SELECT, { count: 'exact' })
-    .eq('status', 'active')
-    .in('category_id', filterCategoryIds);
+  let query = filterActiveDeals(
+    supabase
+      .from('deals')
+      .select(DEAL_CARD_SELECT, { count: 'exact' })
+      .in('category_id', filterCategoryIds),
+    now
+  );
 
   // 정렬
   switch (sort) {

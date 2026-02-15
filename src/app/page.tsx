@@ -1,4 +1,3 @@
-import { SearchBar } from '@/components/search/SearchBar';
 import { CategoryGrid } from '@/components/category/CategoryGrid';
 import { DealShelf } from '@/components/deal/DealShelf';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -60,8 +59,8 @@ export default async function HomePage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
-      {/* 히어로 섹션 — 모바일 컴팩트 */}
-      <section className="py-8 sm:py-12 lg:py-16 text-center">
+      {/* 히어로 섹션 — 컴팩트 */}
+      <section className="pt-6 pb-4 sm:pt-8 sm:pb-6 lg:pt-10 lg:pb-8 text-center">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-surface-900 tracking-tight leading-tight">
           한국의 <span className="text-primary-500">모든 할인</span>을{' '}
           <br className="sm:hidden" />
@@ -70,9 +69,6 @@ export default async function HomePage() {
         <p className="mt-2 sm:mt-3 text-surface-500 text-xs sm:text-sm lg:text-base">
           쿠폰, 프로모션 코드, 할인 이벤트를 검색하세요
         </p>
-        <div className="mt-4 sm:mt-6 max-w-lg mx-auto">
-          <SearchBar />
-        </div>
       </section>
 
       {/* 카테고리 그리드 */}
@@ -80,7 +76,7 @@ export default async function HomePage() {
 
       {/* 🔥 트렌딩 딜 */}
       <DealShelf
-        title="🔥 지금 뜨는 딜"
+        title="지금 뜨는 딜"
         subtitle="인기 딜 모아보기"
         deals={dedupeByMerchant(trendingDeals)}
         viewAllHref="/search?sort=popular"
@@ -88,7 +84,7 @@ export default async function HomePage() {
 
       {/* ✨ 신규 딜 */}
       <DealShelf
-        title="✨ 새로 올라온 딜"
+        title="새로 올라온 딜"
         subtitle="최근 등록된 딜"
         deals={dedupeByMerchant(newDeals)}
         viewAllHref="/search?sort=new"
@@ -97,7 +93,7 @@ export default async function HomePage() {
       {/* ⏰ 마감 임박 */}
       {endingSoonDeals.length > 0 && (
         <DealShelf
-          title="⏰ 마감 임박"
+          title="마감 임박"
           subtitle="놓치면 아쉬운 딜"
           deals={dedupeByMerchant(endingSoonDeals)}
           viewAllHref="/search?sort=ending"

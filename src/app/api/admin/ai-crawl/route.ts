@@ -125,13 +125,22 @@ async function processConnector(
 
     // ✅ skipped (변경감지 → 콘텐츠 동일)
     if (crawlResult.status === 'skipped') {
-      if (runId) await completeCrawlRunLog(runId, { newCount: 0, updatedCount: 0, skippedCount: 0, errors: [] }, 0, supabase);
+      const skippedResult: SaveResult = {
+        connectorId: connector.id,
+        merchantId: connector.merchant_id,
+        merchantName: connector.name,
+        newCount: 0,
+        updatedCount: 0,
+        skippedCount: 0,
+        expiredCount: 0,
+        errors: [],
+      };
+      if (runId) await completeCrawlRunLog(runId, skippedResult, 0, supabase);
 
       await supabase
         .from('crawl_connectors')
         .update({
           last_run_at: new Date().toISOString(),
-          // 해시 유지 (이미 동일하니까 업데이트 불필요하지만 timestamp 갱신)
           hash_updated_at: new Date().toISOString(),
         })
         .eq('id', connector.id);
@@ -178,8 +187,8 @@ async function processConnector(
         fail_count: 0,
         status: 'active',
         last_run_at: new Date().toISOString(),
-        content_hash: crawlResult.newContentHash || null,      // ✅ 해시 저장
-        hash_updated_at: new Date().toISOString(),             // ✅ 해시 시점
+        content_hash: crawlResult.newContentHash || null,
+        hash_updated_at: new Date().toISOString(),
       })
       .eq('id', connector.id);
 

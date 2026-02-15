@@ -1,0 +1,2811 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- 네이버 웹마스터 도구 메타 태그 -->
+<meta name="naver-site-verification" content="be4e333a3e5d56bd7ad9c2632cc6f6b20527d0e9" />
+<!-- 아래 타이틀 존재 SEO관련 1개만 처리 -->
+<!-- <title>클럽클리오 공식 온라인몰 | CLUBCLIO</title> -->
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+<!-- last git utg: 7582-01-22 12:00:11Z -->
+<!-- 몰 관련 태그 -->
+    <title>클럽클리오 공식 온라인몰 | CLUBCLIO</title>
+    <meta name="title" content="클럽클리오 공식 온라인몰 | CLUBCLIO" />
+    <meta name="author" content="CLIO">
+    <meta name="keywords" content="클리오,CLIO,페리페라,peripera,구달,goodal,더마토리,Dermatory,힐링버드,Healingbird,트윙클팝,TWINKLE POP,타입넘버,TYPE No.,알파비,ALPHA.B,트루알엑스,TRUE RX,심플레인,Sim;plain">
+    <meta name="description" content="클리오,CLIO,페리페라,peripera,구달,goodal,더마토리,Dermatory,힐링버드,Healingbird,트윙클팝,TWINKLE POP,타입넘버,TYPE No.,알파비,ALPHA.B,트루알엑스,TRUE RX,심플레인,Sim;plain">
+
+    <!--오픈 그래프 태그 공통정보 설정-->
+    <meta property="og:title" content="클럽클리오 공식 온라인몰 | CLUBCLIO" />
+    <meta property="og:site_name" content="클럽클리오" />
+<meta property="og:description" content="클리오,페리페라,구달,더마토리,힐링버드,트윙클팝,타입넘버,알파비,에이블랙,트루알엑스 브랜드. 제품소개." /><meta property="og:image" content="https://clubclio.co.kr/data/mall_data/images/og_img.png" /><meta property="og:url" content="https://clubclio.co.kr" />    <meta property="og:type" content="website" />
+<!--[S] FAVICON-->
+<link rel="shortcut icon" href="/data/mall_data/images/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/data/mall_data/images/favicon_16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/data/mall_data/images/favicon_32.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/data/mall_data/images/favicon_152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/data/mall_data/images/favicon_180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/data/mall_data/images/favicon_192.png">
+<link rel="icon" type="image/png" sizes="256x256" href="/data/mall_data/images/favicon_256.png">
+<!--[E] FAVICON-->
+<!--crema-->
+<!-- js library -->
+<script>var forbizCsrf = { name:"ForbizCsrfTestName", hash:"8af20ca019bdc72d0a825e285e7f4725", isLogin:""};</script>
+<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="/assets/templet/enterprise/assets/css/main.css?version=177099480011">
+<!--23052301 js 압축-->
+<script src="/assets/templet/enterprise/assets/js/vendor.js.map?version=177099480011"></script>
+
+<script src="/assets/templet/enterprise/assets/js/main.js.map?version=177099480011"></script>
+
+<!-- 언어 -->
+<script src="/data/mall_data/_language/korean.js?version=177099480011"></script>
+<script src="/assets/templet/enterprise/js/common/ui_common.js?version=177099480011"></script><!-- 퍼블공통 -->
+<script src="/assets/templet/enterprise/js/common/dev_common.js?version=177099480011"></script><!-- 개발공통 -->
+<script src="/assets/templet/enterprise/js/common/dev_ext.js?version=177099480011"></script><!-- 개발확장 -->
+<script src="/assets/templet/enterprise/js/common/layout.js?version=177099480011"></script><!-- 레이아웃 스크립트 -->
+<script src="/assets/templet/enterprise/js/common/wish.js?version=177099480011"></script><!-- 관심상품 -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.2.0/decimal.min.js"></script><!--decimal 이후 라이브러리로 통합 필요!-->
+
+<!--구글 script-->
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+<script>
+    //set environment
+    common.templetSrc = '/assets/templet/enterprise';
+    common.environment = "production";
+    common.langType = "korean";
+    common.bcscale = 0;
+    common.fat = {useFat: ''}; // FAT obj
+
+    dev_ext.npay.useNpay = 'Y';
+
+    // 현재 접속이 앱인지 체크
+    var isOnApp = false;
+    if((navigator.userAgent.indexOf('Android_Mobile') > -1) || (navigator.userAgent.indexOf('clio_ios') > -1)){
+		isOnApp = true; 
+	}
+</script>
+
+<!--구글 로그인-->
+<meta name="google-signin-client_id" content="860085788103-dflgjhf9rml758qtrv6tjklptert259s.apps.googleusercontent.com">
+<script>
+    function onSignIn(googleUser) {
+        var auth2 = gapi.auth2.getAuthInstance();
+
+        if(auth2.isSignedIn.get()) {
+            var profile = auth2.currentUser.get().getBasicProfile();
+
+            $.ajax({
+                url : '/controller/member/google'
+                , type : 'get'
+                , data : {
+                    id : profile.getId()
+                    , id_token : googleUser.getAuthResponse().id_token
+                }
+                ,async : true
+                , dataType: 'json'
+            }).done(function(response){
+                    if(response.result == 'success') {
+                        location.href = response.data.gotoUrl;
+                    }else {
+                        alert(response.data.msg);
+                    }
+            });
+        }
+    }
+
+    function onSignLink(googleUser) {
+        var auth2 = gapi.auth2.getAuthInstance();
+
+        if(auth2.isSignedIn.get()) {
+            var profile = auth2.currentUser.get().getBasicProfile();
+
+            $.ajax({
+                url : '/controller/member/google/link'
+                , type : 'get'
+                , data : {
+                    id : profile.getId()
+                    , id_token : googleUser.getAuthResponse().id_token
+                }
+                ,async : true
+                , dataType: 'json'
+            }).done(function(response){
+                if(response.result == 'success') {
+                    alert(response.data.msg);
+                    $('#devGoogleBtn').attr('disabled', false);
+                }
+            });
+        }
+    }
+
+    function signOut() {
+        try{
+            var auth2 = gapi.auth2.getAuthInstance();
+            auth2.signOut().then(function () {
+                // console.log('User signed out.');
+            });
+            auth2.disconnect();
+        }catch(e){
+            // console.log(e);
+        }
+    }
+
+    function onLoad() {
+        gapi.load('auth2', function() {
+            gapi.auth2.init();
+        });
+    }
+</script>
+
+<!--[if lt IE 9]>
+<script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/mallstory_SalesAnalysisTag.js"></script>
+<!--  block js url (goodsView)-->
+<!-- Facebook Pixel Code -->
+    <script>
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+        n.push=n;n.loaded=!0;n.version='2.0';n.agent='plmakeshopkr';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+        document,'script','//connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1821284251315061');
+    </script>
+    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1821284251315061&ev=PageView&noscript=1"/></noscript>
+    <!-- Facebook Pixel Code SearchKeyword -->
+    <script>
+        function fbqSearchKeyword() {
+            var locationSearch = window.location.search;
+            var utmSource = locationSearch.match(/[?&]utm_source=([^&#]*)/);
+            var utmMedium = locationSearch.match(/[?&]utm_medium=([^&#]*)/);
+            var utmCampaign = locationSearch.match(/[?&]utm_campaign=([^&#]*)/);
+            var trackingFields = {
+            utm_source: utmSource && utmSource[1],
+            utm_medium: utmMedium && utmMedium[1],
+            utm_campaign: utmCampaign && utmCampaign[1],
+            };
+            if (!utmSource || !utmSource[1]) {
+            trackingFields.utm_source = 'organic';
+            }
+            var referrer = document.referrer;
+            if (referrer) {
+            var link = document.createElement('a');
+            link.setAttribute('href', referrer);
+            const url_Params = new URLSearchParams(window.location.search);
+            let value = url_Params.get('n_query');
+            var keyword = value ? decodeURIComponent(value.replace(/\+/g, ' ')) : null; 
+            if (keyword) {
+            trackingFields.hostname = link.hostname;
+            trackingFields.keyword = decodeURIComponent(keyword);
+            } else {
+            trackingFields.hostname = link.hostname;
+            trackingFields.keyword = null;
+            }
+            } else {
+            trackingFields.hostname = null;
+            trackingFields.keyword = null;
+            }
+            if (document.referrer.indexOf(location.protocol + "//" + location.host) !== 0)
+            fbq('trackCustom', 'SearchKeyword', trackingFields);
+        }
+        fbqSearchKeyword();
+    </script>
+    <!-- End Facebook Pixel Code SearchKeyword -->
+<!-- End Facebook Pixel Code -->
+
+<!-- Global Site Tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-24668169-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'UA-24668169-1', { 'send_page_view': false });
+</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WDW32C22XC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-WDW32C22XC', { 'send_page_view': false });
+</script>
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5Z8RXWX');</script>
+<!-- End Google Tag Manager -->
+
+
+<!-- MC1팀 -->
+<!-- Google Tag Manager -->
+<!-- 2024-03-26 MC1팀 이은비 삭제 요청 -->
+<!-- <script>
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-TF84GSF');
+</script> -->
+<!-- End Google Tag Manager -->
+
+
+<script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+<script src="/assets/templet/enterprise/layout/clio_Logo_motion.js"></script>
+<script>
+
+var canvas, stage, exportRoot, anim_container, dom_overlay_container, fnStartAnimation;
+function aniMt() {
+	canvas = document.getElementById("canvas");
+	anim_container = document.getElementById("animation_container");
+	dom_overlay_container = document.getElementById("dom_overlay_container");
+	var comp=AdobeAn.getComposition("05FB759C4A265D46A7485445EA7D42B0");
+	var lib=comp.getLibrary();
+	handleComplete({},comp);
+
+	$("#animation_container").removeClass("mtEd");
+	setTimeout(function(){
+		$("#animation_container").addClass("mtEd");
+	},3000);
+}
+function handleComplete(evt,comp) {
+	//This function is always called, irrespective of the content. You can use the variable "stage" after it is created in token create_stage.
+	var lib=comp.getLibrary();
+	var ss=comp.getSpriteSheet();
+	exportRoot = new lib.clio_Logo_motion();
+	stage = new lib.Stage(canvas);
+	//Registers the "tick" event listener.
+	fnStartAnimation = function() {
+		stage.addChild(exportRoot);
+		createjs.Ticker.framerate = lib.properties.fps;
+		createjs.Ticker.addEventListener("tick", stage);
+	}
+	//Code to support hidpi screens and responsive scaling.
+	AdobeAn.makeResponsive(false,'both',false,1,[canvas,anim_container,dom_overlay_container]);
+	AdobeAn.compositionLoaded(lib.properties.id);
+	fnStartAnimation();
+}
+</script>
+<script>
+  window.cremaAsyncInit = function () {
+    var isLogin = '';
+    if(isLogin) crema.init('', '');
+    else crema.init(null, null);
+
+    document.cremaInit = true;
+  }
+</script>
+<link rel="stylesheet" href="/assets/templet/enterprise/common/css/jquery.mCustomScrollbar.css">
+<!--
+221215011
+default.css 와 font.css, contents.css분리layout
+-->
+<link rel="stylesheet" href="/assets/templet/enterprise/common/css/font.css?version=177099480011">
+<link rel="stylesheet" href="/assets/templet/enterprise/common/css/contents.css?version=177099480011">
+
+<!--contents2.css-->
+<link rel="stylesheet" href="/assets/templet/enterprise/common/css/contents2.css?version=177099480011">
+
+<link rel="stylesheet" href="/assets/templet/enterprise/common/css/layout.css?version=177099480011">
+<link rel="stylesheet" href="/assets/templet/enterprise/common/css/default.css?version=177099480011">
+<!--[if lt IE 9]>
+    <script src="./common/js/html5shiv.js"></script>
+<![endif]-->
+
+<!-- NABUS 공통 SCRIPT -->
+<script type="text/javascript" src="https://sc.11h11m.net/s/E13260.js"></script>
+
+</head>
+<body id="event_eventList" class="fb v2" onload="init()">
+
+    <div class="loading_div"></div><!--loading bar-->
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5Z8RXWX"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <!-- MC1팀 -->
+    <!-- Google Tag Manager (noscript) -->
+    <!-- 2024-03-26 MC1팀 이은비 삭제 요청 -->
+    <!-- <noscript><iframe src="https://www.googletagmanager.com/ns.html?id= GTM-TF84GSF"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript> -->
+    <!-- End Google Tag Manager (noscript) -->
+    
+
+    <!-- SKIP -->
+    <div id="SKIP"><a href="#CONTAINER">본문바로가기</a></div>
+    <!-- //SKIP -->
+
+
+
+    <!-- WRAP -->
+    <div id="WRAP">
+        <!-- HEADER -->
+        <header id="HEADER">
+<!--insider-->
+<div class="head__top2">
+    <div class="gnb--nav">
+        <ul class="gnb--menu">
+                <li><a href="/member/authentication">회원가입</a></li>
+                <li><a href="/member/login?url=%2Fevent%2FeventList">로그인</a></li>
+            <li><a href="/shop/cart/">장바구니</a></li>
+            <li><a href="/mypage/notiCenter">알림</a></li>
+            <li><a href="/mypage/pouch">내파우치</a></li>
+            <li><a href="/customer/faq">고객센터</a></li>
+        </ul>
+    </div>
+    <div class="maxWidth">
+        <a href="/" class="logo"><img src="/assets/templet/enterprise/images/layout/clubclio.svg" alt="CLUBCLIO" /></a>
+        <div class="head__search">
+            <label for="l_search" class="blind">검색</label>
+            <div class="head__search--int int_brand_sel">
+                <!-- 브랜드 선택박스 -->
+                <div class="keyword_auto_complete key_barnd_auto "><a href="/shop/brandsList/all/brand/"><span></span></a><a href="javascript:;"><i class="ico_close_s"></i></a></div>
+                <!-- 컬러 선택박스 -->
+                <div class="keyword_auto_complete key_color_auto " style="background-color:"><span></span><a href="javascript:;"><i class="ico_close_s"></i></a></div>
+
+                <div id="placeholder--div">
+                    <span id="placeholder--div--text"></span>
+                </div>
+                <style>
+                #placeholder--div {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    overflow: hidden;
+                    pointer-events: none;
+                    display: flex;
+                    align-items: center;
+                    padding-left: 1rem;
+                    box-sizing: border-box;
+                    font-size: 15px;
+                }
+                #placeholder--div--text {
+                    position: absolute;
+                    width: 90%;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    transition: transform 0.7s ease-in-out, opacity 0.7s ease-in-out;
+                    color: #111;
+                }
+                #devHeaderSearchText::placeholder {
+                    color: transparent;
+                }
+                </style>
+                <input type="text" name="sch1" class="search_int search_int1 devAutoComplete" id="devHeaderSearchText" devTagUrl="" placeholder="" value="" autocomplete="off">
+
+                <!-- search Tag 한글자씩 세팅 -->
+                <script>
+                    function escapeHtml(html) {
+                        var text = document.createElement('textarea');
+                        text.innerHTML = html;
+                        return text.value;
+                    }
+                    var searchTag_arr = [];
+                        var obj = {
+                            url : `https://clubclio.co.kr/shop/goodsView/0000005408#page1&id=0000005408`
+                            ,title : escapeHtml(`&#x1F90D;멀멀 라이트톤 청순 데일리 팔레트 &#x1F90D;`)
+                        };
+                        
+                        searchTag_arr.push(obj);
+                        var obj = {
+                            url : `https://clubclio.co.kr/shop/goodsView/0000006088#page1&id=0000006088`
+                            ,title : escapeHtml(`뮤트한 분위기갑 청순 블러셔 등장-&#x2601;&#xFE0F;`)
+                        };
+                        
+                        searchTag_arr.push(obj);
+                        var obj = {
+                            url : `https://clubclio.co.kr/shop/goodsView/0000005154#page1&id=0000005154`
+                            ,title : escapeHtml(`&#x1F4A6;무너지지 않는 수분장벽 #히알샷 라인&#x1F4A6;`)
+                        };
+                        
+                        searchTag_arr.push(obj);
+                        var obj = {
+                            url : `https://clubclio.co.kr/event/eventDetail/601`
+                            ,title : escapeHtml(`✨생기있게 형광등 ON #비타C알파✨`)
+                        };
+                        
+                        searchTag_arr.push(obj);
+                    var currentIndex = 0;
+                    /*
+                    function updatePlaceholder(index) {
+                        const $inputElement = $('#devHeaderSearchText');
+                        const currentData = searchTag_arr[index];
+                        
+                        $inputElement.attr('devTagUrl', currentData.url);
+
+                        let title = currentData.title;
+                        let charIndex = 0;
+
+                        function typeTitle() {
+                            if (charIndex <= title.length) {
+                                $inputElement.attr('placeholder', title.substring(0, charIndex));
+                                charIndex++;
+                                setTimeout(typeTitle, 100); // Change this value to control the typing speed
+                            }
+                        }
+                        typeTitle();
+                    }
+
+                    function changeData() {
+                        updatePlaceholder(currentIndex);
+                        currentIndex = (currentIndex + 1) % searchTag_arr.length;
+                    }
+
+                    // 최초 세팅
+                    updatePlaceholder(currentIndex);
+                    if(searchTag_arr.length > 1 ){
+                        currentIndex++;
+                        setInterval(changeData, 5000);
+                    }
+                    */
+                    let placeholderInterval;
+        
+                    const animationDuration = 700; //style 0.7s
+                    const displayDuration = 2500; 
+                    const $inputElement = $('#devHeaderSearchText');
+                    const $placeholderText = $('#placeholder--div--text');
+                    function updatePlaceholder() {
+                        
+                        // console.log('updatePlaceholder inputValue length', $inputElement.val().length);
+                        if ($inputElement.val() !== '') {
+                            return;
+                        }
+                        const currentData = searchTag_arr[currentIndex];
+                        // console.log('currentData', currentIndex, searchTag_arr[currentIndex]);
+                        $inputElement.attr('devTagUrl', currentData.url);
+                        $placeholderText.text(currentData.title);
+                        $placeholderText.css({
+                            'transform': 'translateY(0%)',
+                            'opacity': '1'
+                        });
+                        setTimeout(() => {
+                            $placeholderText.css({
+                                'transform': 'translateY(-100%)',
+                                'opacity': '0'
+                            });
+                        }, displayDuration);
+                        setTimeout(() => {
+                            currentIndex = (currentIndex + 1) % searchTag_arr.length;
+                            $placeholderText.text(searchTag_arr[currentIndex].title);
+                            $placeholderText.css({
+                                'transform': 'translateY(100%)',
+                                'opacity': '0'
+                            });
+                        }, displayDuration + animationDuration);
+                    }
+                    function startAnimation() {
+                        clearInterval(placeholderInterval);
+                        updatePlaceholder();
+                        placeholderInterval = setInterval(updatePlaceholder, displayDuration + animationDuration * 2);
+                    }
+                    function stopAnimation() {
+                        clearInterval(placeholderInterval);
+                        $placeholderText.css({ 'opacity': '0' });
+                    }
+                    $placeholderText.css({
+                        'transform': 'translateY(100%)',
+                        'opacity': '0'
+                    });
+                        setTimeout(() => {
+                            if ($inputElement.val() === '' && !$inputElement.is(':focus')) {
+                                startAnimation();
+                            }
+                        }, 2000);
+                    
+                    $inputElement.on('focus', function() {
+                        stopAnimation();
+                    });
+                    $inputElement.on('blur', function() {
+                        if ($inputElement.val() === '') {
+                            setTimeout(startAnimation, animationDuration); 
+                        }
+                    });
+                    $inputElement.on('input', function() {
+                        if ($inputElement.val().length > 0) {
+                            stopAnimation();
+                        }
+                    });
+                </script>
+
+                <input type="text" name="sch2" placeholder="" id="devHeaderSearchText" class="search_int search_int2" style="display:none" autocomplete='off'>
+
+            </div>
+            <button type="button" class="head__search--btn" id="devHeaderSearchButton"><i class="ico_search"></i></button>
+
+            <!-- 브랜드 input-->
+            <input type="hidden" name="inp_brand" id="inp_brand" value="" style="display:none" autocomplete='off'>
+            <input type="hidden" name="inp_brand_val" id="inp_brand_val" value="" style="display:none" autocomplete='off'>
+            <!-- 컬러 input-->
+            <input type="hidden" name="inp_color" id="inp_color" value="" style="display:none" autocomplete='off'>
+            <div class="search_auto_layer">
+
+
+                <div class="search__nopost">
+                    <i class="ico_search2"></i>
+                    <p>최근 검색어가 없습니다.</p>
+                </div>
+                <div class="search__keyword" style="width:38%; float:left" id="popularKeyword_area">                    
+                    <div class="keyword__head" id="popularKeyword-head">
+                        <h5 class="keyword_title color_222">실시간 인기검색어</h5>
+                    </div>
+                    <script>
+                        common.ajax('/etc/popularKeyword', {}, "", function (result) {
+                            $('#popularKeyword_area').append(result);
+                        }, 'html');
+                    </script>
+                </div><!-- //search__keyword -->
+                <!--
+                    급상승검색어
+                -->   
+                
+                            
+                <div class="search__popularKeyword search_auto_layer_slide_goods" style="width:56%; float:right">
+                    <div class="keyword__head" id="popularKeyword-head">
+                        <h5 class="keyword_title color_222">지금 인기 있는 상품</h5>
+                    </div>                    
+                    <div class="slide-bx type_list mt-15">
+                        <div class="swiper-wrapper"><!--6개 한도-->
+                        
+                            
+                                <div class="swiper-slide">
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000006670" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/66/70/m.gif?v=1770959333);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000006670">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>27,000</strong>
+                                                                    <span class="cost">36,000</span>
+                                                                    <strong class="percent">25%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">킬커버 파운웨어 쿠션 기획세트 [본품+리필] [증정] 쿠션퍼프2P</div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 5.0 (217) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                            
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000003203" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/32/03/m.gif?v=1770946571);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000003203">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>13,600</strong>
+                                                                    <span class="cost">22,000</span>
+                                                                    <strong class="percent">38%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">[2EA] 샤프 쏘 심플 워터프루프 펜슬 라이너</div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 4.9 (9,242) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                                </div>
+                            
+                                <div class="swiper-slide">
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000003371" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/33/71/m.gif?v=1770946180);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000003371">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>14,000</strong>
+                                                                    <span class="cost">20,000</span>
+                                                                    <strong class="percent">30%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">[2EA/공식몰단독컬러] 잉크 더 벨벳 </div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 4.9 (7,152) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                            
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000005300" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/53/00/m.gif?v=1770945876);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000005300">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>17,900</strong>
+                                                                    <span class="cost">23,000</span>
+                                                                    <strong class="percent">22%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">[눈매조각음영] 올테이크 무드 팔레트</div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 4.9 (2,005) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                                </div>
+                            
+                                <div class="swiper-slide">
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000004271" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/42/71/m.gif?v=1768432353);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000004271">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>36,700</strong>
+                                                                    <span class="cost">49,000</span>
+                                                                    <strong class="percent">25%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">[총 155ml/리뉴얼] 청귤 비타C 잡티케어 세럼 더블기획</div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 4.9 (4,168) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                            
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000007115" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/71/15/m.gif?v=1769995815);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000007115">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>19,000</strong>
+                                                                    <span class="cost">22,000</span>
+                                                                    <strong class="percent">14%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">맑은 어성초 진정 수분 선크림 50ml 1+1 기획</div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 4.9 (5,416) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                                </div>
+                            
+                                <div class="swiper-slide">
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000006246" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/62/46/m.gif?v=1770945420);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000006246">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>24,500</strong>
+                                                                    <span class="cost">39,000</span>
+                                                                    <strong class="percent">37%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">[매끈모공] 살리시닉 포어 클리어 블랙패드 리필기획(70+70매)</div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 4.9 (191) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                            
+                                    <div class="product__inner">
+                                        <dl class="product_details">
+                                            <dt class="blind">상품 정보</dt>
+                                            <dd class="details_thumb">
+                                                <a href="/shop/goodsView/0000005154" style="background-image:url(https://clubclio.co.kr/data/mall_data/images/product/00/00/00/51/54/m.gif?v=1770771404);"></a>
+                                            </dd>
+                                            <dd class="details_infos">
+                                                <a href="/shop/goodsView/0000005154">
+                                                    <div class="details_price mt-0 mb-10">
+                                                                <strong>28,600</strong>
+                                                                    <span class="cost">35,000</span>
+                                                                    <strong class="percent">18%</strong>
+                                                    </div>
+                                                    <div class="details_title normal">히알샷 베리어 앰플 B5 리필기획 (50ml+50ml)</div>
+                                                    <div class="details_review">
+                                                            <div class="clio_reviews_score__container">
+                                                                <div class="clio_reviews_score_star_wrapper full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+                                                                    <defs>
+                                                                    <path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+                                                                    </defs>
+                                                                    <use xlink:href="#star-full"></use>
+                                                                </svg>
+                                                                </div> 4.9 (1,316) 
+                                                            </div>
+                                                    </div>
+                                                </a>
+                                            </dd>
+                                        </dl>
+                                    </div><!-- //product__inner -->
+                                    
+                                </div>
+                        </div>
+                    </div>
+                    <div class="pag"></div>
+                </div>                
+                <!-- //search__keyword -->
+                <ul class="search_auto_list keyword__list" id="keyword_brand_select" style="width:50%; float:left">
+                </ul>
+                <ul class="search_auto_list keyword__list" id="keyword_typing">
+                </ul>
+                <ul class="search_auto_list keyword__list" id="keyword_typing2">
+                </ul>
+            </div><!-- //search_auto_layer 자동완성 -->
+
+            <div class="select_color_layer">
+                <ul>
+                    <li><a href="javascript:;" id="101" data-val="레드" data-val2="#fc0808" style="background-color:#fc0808;">레드 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="102" data-val="핑크" data-val2="#ff99cc" style="background-color:#ff99cc;">핑크 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="103" data-val="코랄/피치" data-val2="#ffb48f" style="background-color:#ffb48f;">코랄/피치 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="104" data-val="오렌지" data-val2="#ff9429" style="background-color:#ff9429;">오렌지 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="105" data-val="누디/베이지" data-val2="#f4c6aa" style="background-color:#f4c6aa;">누디/베이지 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="106" data-val="칠리/브릭" data-val2="#c0330c" style="background-color:#c0330c;">칠리/브릭 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="107" data-val="버건디" data-val2="#a50021" style="background-color:#a50021;">버건디 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="108" data-val="골드" data-val2="#ffcc00" style="background-color:#ffcc00;">골드 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="109" data-val="실버(라인)" data-val2="#e6e6e6" style="background-color:#e6e6e6;">실버(라인) <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="110" data-val="브라운" data-val2="#974706" style="background-color:#974706;">브라운 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="111" data-val="그레이" data-val2="#808080" style="background-color:#808080;">그레이 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="112" data-val="블랙" data-val2="#000000" style="background-color:#000000;">블랙 <i class="ico_close_s"></i></a></li>
+                    <li><a href="javascript:;" id="113" data-val="투명" data-val2="#ffffff" style="background-color:#ffffff;">투명 <i class="ico_close_s"></i></a></li>
+                </ul>
+            </div><!-- //select_color_layer 컬러선택 -->
+        </div>
+        <div class="head__navi">
+                                                <a class="" href="/shop/specialsList/all">오특</a>
+                        
+                                                <a class="" href="/shop/goodsList/035000000000000">랭킹</a>
+                        
+                                                <a class="" href="/shop/newList/036000000000000">신상</a>
+                        
+            <a class="pointColor head__navi__event" href="/event/eventList">이벤트</a>
+        </div>
+    </div>
+</div><!--Insider-->
+<div class="header__lnb header__lnb2">
+	<div class="maxWidth">
+		<div class="lnb--nav">
+			<div class="lnb--menu_first">
+				<button type="bottom" class="lnb_all_menu"><!--kang-->
+					<span class="mid1"></span>
+					<span class="mid mid2"></span>
+					<span class="mid3"></span>
+					<em>카테고리</em>
+				</button>
+				<div class="lnb--sub lnb--sub_all">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<ul class="sub_menu__bx">
+								<li><a href="/shop/goodsList/120000000000000">메이크업</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/120701000000000">베이스</a>
+										<a href="/shop/goodsList/120702000000000">립</a>
+										<a href="/shop/goodsList/120703000000000">아이</a>
+										<a href="/shop/goodsList/120704000000000">치크/컨투어링</a>
+									</div>
+								</li>
+								<li><a href="/shop/goodsList/121000000000000">스킨케어</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/121732000000000">세럼/에센스</a>
+										<a href="/shop/goodsList/121731000000000">토너/미스트</a>
+										<a href="/shop/goodsList/121733000000000">로션/크림</a>
+									</div>
+								</li>
+								<li><a href="/shop/goodsList/132000000000000">마스크/팩</a>
+								</li>
+							</ul>
+							<ul class="sub_menu__bx">
+								<li><a href="/shop/goodsList/146000000000000">선케어</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/146001000000000">선크림</a>
+										<a href="/shop/goodsList/146002000000000">선스틱</a>
+										<a href="/shop/goodsList/146003000000000">선세럼</a>
+									</div>
+								</li>
+								<li><a href="/shop/goodsList/147000000000000">클렌징</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/147001000000000">클렌징폼</a>
+										<a href="/shop/goodsList/147002000000000">오일/밤</a>
+										<a href="/shop/goodsList/147003000000000">패드</a>
+									</div>
+								</li>
+								<li><a href="/shop/goodsList/148000000000000">헤어케어</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/148001000000000">샴푸/트리트먼트</a>
+										<a href="/shop/goodsList/148002000000000">헤어오일</a>
+										<!-- <a href="/shop/goodsList/122707030000000">헤어스타일링</a> -->
+									</div>
+								</li>
+								
+							</ul>
+							<ul class="sub_menu__bx">
+								<li><a href="/shop/goodsList/122708000000000">바디케어</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/122708030000000">핸드크림</a>
+										<a href="/shop/goodsList/122708010000000">바디워시</a>
+										<a href="/shop/goodsList/122708006000000">바디미스트</a>
+									</div>
+								</li>
+								<li><a href="/shop/goodsList/123709000000000">미용소품/잡화</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/123709010000000">페이스소품</a>
+										<a href="/shop/goodsList/123709030000000">기타</a>
+									</div>
+								</li>
+								<li><a href="/shop/goodsList/099000000000000">이너뷰티</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/099001000000000">피부건강</a>
+										<a href="/shop/goodsList/099002000000000">유산균</a>
+										<a href="/shop/goodsList/099003000000000">영양케어</a>
+									</div>
+								</li>
+							</ul>
+							<ul class="sub_menu__bx">
+								<li><a href="/shop/goodsList/125000000000000">피부고민별</a>
+									<div class="sub_menu__bx__dp2">
+										<a href="/shop/goodsList/125001000000000">잡티/미백</a>
+										<a href="/shop/goodsList/125002000000000">수분/보습</a>
+										<a href="/shop/goodsList/125003000000000">트러블/모공</a>
+										<a href="/shop/goodsList/125004000000000">각질/피부결</a>
+										<a href="/shop/goodsList/125005000000000">진정/민감</a>
+										<a href="/shop/goodsList/125006000000000">주름/탄력</a>
+									</div>
+								</li>
+							</ul>
+						</div>
+						<div class="sub_menu__banner">
+								<a href="https://pf.kakao.com/_rxgZPV" target="_blank" class="menu_banner_inner">
+									<span class="tnumb">
+										<!--<img src="https://clubclio.co.kr/data/mall_data/images/banner/93/038c9f665600eb7bf5c6de705ba14b3b.jpg" alt="배너 이미지">-->
+										<img src="https://clubclio.co.kr/data/mall_data/images/banner/93/038c9f665600eb7bf5c6de705ba14b3b.jpg" alt="배너 이미지">
+										
+									</span>
+									<span class="txt">클리오는 매일이 제철이야 #후로페샤날청과</span>
+								</a>
+								<a href="/event/eventDetail/47" target="_blank" class="menu_banner_inner">
+									<span class="tnumb">
+										<!--<img src="https://clubclio.co.kr/data/mall_data/images/banner/94/003856d199df681da6696c906eea6c8d.jpg" alt="배너 이미지">-->
+										<img src="https://clubclio.co.kr/data/mall_data/images/banner/94/003856d199df681da6696c906eea6c8d.jpg" alt="배너 이미지">
+										
+									</span>
+									<span class="txt">클리오는 매일이 제철이야 #후로페샤날청과</span>
+								</a>
+								<a href="/shop/membersOnly" target="_blank" class="menu_banner_inner">
+									<span class="tnumb">
+										<!--<img src="https://clubclio.co.kr/data/mall_data/images/banner/330/968dde2c78ddaab5168ddeaf21d891d6.jpg" alt="배너 이미지">-->
+										<img src="https://clubclio.co.kr/data/mall_data/images/banner/330/968dde2c78ddaab5168ddeaf21d891d6.jpg" alt="배너 이미지">
+										
+									</span>
+									<span class="txt">PC GNB 배너 3클리오는 매일이 제철이야 #후로페샤날청과</span>
+								</a>
+
+						</div>
+					</div>
+				</div><!-- //lnb--sub -->
+			</div>
+			<script>
+
+			</script>
+		</div>
+		<ul class="lnb--menu">
+			<!--브랜드-->
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/1">클리오</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">클리오</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/1">전체보기</a></li>
+									<li><a href="/shop/brandsList/120701000000000/brand/1">베이스</a></li>
+									<li><a href="/shop/brandsList/120702000000000/brand/1">립</a></li>
+									<li><a href="/shop/brandsList/120703000000000/brand/1">아이</a></li>
+									<li><a href="/shop/brandsList/120704000000000/brand/1">치크/컨투어링</a></li>
+									<li><a href="/shop/brandsList/121072000000000/brand/1">클렌징/선케어</a></li>
+									<li><a href="/shop/brandsList/123709000000000/brand/1">미용소품/잡화</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006182"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006182"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006182"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/61/82/m.gif?v=1769751888" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006182">
+												<p class="details_brand"><span class="details_brand_name">클리오</span></p>
+												<div class="details_title">킬커버 메쉬 글로우 에센셜 쿠션 기획 [본품+리필+프렙베이스] [증정] 쿠션퍼프2P</div>
+												<div class="details_price">
+															<strong class="percent">25%</strong>
+															<strong>27,000</strong>
+															<span class="cost">36,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (456) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000004563"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000004563"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000004563"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/45/63/m.gif?v=1770946502" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000004563">
+												<p class="details_brand"><span class="details_brand_name">클리오</span></p>
+												<div class="details_title">프로 아이 팔레트 에어 [증정] 볼륨메이트 블러틴트(랜덤)</div>
+												<div class="details_price">
+															<strong class="percent">31%</strong>
+															<strong>23,500</strong>
+															<span class="cost">34,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (4,920) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000003203"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000003203"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000003203"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/32/03/m.gif?v=1770946571" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000003203">
+												<p class="details_brand"><span class="details_brand_name">클리오</span></p>
+												<div class="details_title">[2EA] 샤프 쏘 심플 워터프루프 펜슬 라이너</div>
+												<div class="details_price">
+															<strong class="percent">38%</strong>
+															<strong>13,600</strong>
+															<span class="cost">22,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (9,242) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/2">페리페라</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">페리페라</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/2">전체보기</a></li>
+									<li><a href="/shop/brandsList/120701000000000/brand/2">베이스</a></li>
+									<li><a href="/shop/brandsList/120702000000000/brand/2">립</a></li>
+									<li><a href="/shop/brandsList/120703000000000/brand/2">아이</a></li>
+									<li><a href="/shop/brandsList/120704000000000/brand/2">치크/컨투어링</a></li>
+									<li><a href="/shop/brandsList/123709000000000/brand/2">미용소품/잡화</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000004581"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000004581"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000004581"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/45/81/m.gif?v=1769475706" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000004581">
+												<p class="details_brand"><span class="details_brand_name">페리페라</span></p>
+												<div class="details_title">[NEW컬러] 스피디 펜슬 라이너</div>
+												<div class="details_price">
+															<strong class="percent">20%</strong>
+															<strong>6,400</strong>
+															<span class="cost">8,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (387) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006088"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006088"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006088"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/60/88/m.gif?v=1769761020" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006088">
+												<p class="details_brand"><span class="details_brand_name">페리페라</span></p>
+												<div class="details_title">[NEW컬러] 시럽피 톡 치크 (단품/기획)</div>
+												<div class="details_price">
+															<strong class="percent">20%</strong>
+															<strong>11,200</strong>
+															<span class="cost">14,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (451) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000005408"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000005408"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000005408"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/54/08/m.gif?v=1769750362" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000005408">
+												<p class="details_brand"><span class="details_brand_name">페리페라</span></p>
+												<div class="details_title">[NEW컬러] 잉크 포켓 섀도우 팔레트</div>
+												<div class="details_price">
+															<strong class="percent">22%</strong>
+															<strong>11,700</strong>
+															<span class="cost">15,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (1,439) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/3">구달</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">구달</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/3">전체보기</a></li>
+									<li><a href="/shop/brandsList/120701000000000/brand/3">베이스</a></li>
+									<li><a href="/shop/brandsList/121732000000000/brand/3">세럼/에센스</a></li>
+									<li><a href="/shop/brandsList/121731000000000/brand/3">토너/미스트</a></li>
+									<li><a href="/shop/brandsList/121733000000000/brand/3">로션/크림</a></li>
+									<li><a href="/shop/brandsList/121734000000000/brand/3">패드</a></li>
+									<li><a href="/shop/brandsList/121072000000000/brand/3">클렌징/선케어</a></li>
+									<li><a href="/shop/brandsList/121034000000000/brand/3">마스크/팩</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006856"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006856"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006856"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/68/56/m.gif?v=1769498082" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006856">
+												<p class="details_brand"><span class="details_brand_name">구달</span></p>
+												<div class="details_title">어성초 피디알엔 콜라겐 멜팅패치(4매)</div>
+												<div class="details_price">
+															<strong class="percent">25%</strong>
+															<strong>19,500</strong>
+															<span class="cost">26,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 5.0 (32) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006824"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006824"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006824"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/68/24/m.gif?v=1769497220" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006824">
+												<p class="details_brand"><span class="details_brand_name">구달</span></p>
+												<div class="details_title">어성초 피디알엔 히알루론 속광크림 60ml</div>
+												<div class="details_price">
+															<strong class="percent">25%</strong>
+															<strong>21,000</strong>
+															<span class="cost">28,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 5.0 (39) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006949"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006949"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006949"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/69/49/m.gif?v=1770803540" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006949">
+												<p class="details_brand"><span class="details_brand_name">구달</span></p>
+												<div class="details_title">[NEW] 구달 선크림 미니 25ml</div>
+												<div class="details_price">
+															<strong class="percent">10%</strong>
+															<strong>10,800</strong>
+															<span class="cost">12,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (2,876) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/5">더마토리</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">더마토리</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/5">전체보기</a></li>
+									<li><a href="/shop/brandsList/120702000000000/brand/5">립</a></li>
+									<li><a href="/shop/brandsList/121732000000000/brand/5">세럼/에센스</a></li>
+									<li><a href="/shop/brandsList/121731000000000/brand/5">토너/미스트</a></li>
+									<li><a href="/shop/brandsList/121733000000000/brand/5">로션/크림</a></li>
+									<li><a href="/shop/brandsList/121734000000000/brand/5">패드</a></li>
+									<li><a href="/shop/brandsList/121072000000000/brand/5">클렌징/선케어</a></li>
+									<li><a href="/shop/brandsList/121034000000000/brand/5">마스크/팩</a></li>
+									<li><a href="/shop/brandsList/123709000000000/brand/5">미용소품/잡화</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006820"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006820"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006820"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/68/20/m.gif?v=1770691240" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006820">
+												<p class="details_brand"><span class="details_brand_name">더마토리</span></p>
+												<div class="details_title">[속광치트키] 히알루론 스킨프렙 속광 로션 B5 200ml</div>
+												<div class="details_price">
+															<strong class="percent">32%</strong>
+															<strong>19,000</strong>
+															<span class="cost">28,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (51) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006918"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006918"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006918"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/69/18/m.gif?v=1770272071" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006918">
+												<p class="details_brand"><span class="details_brand_name">더마토리</span></p>
+												<div class="details_title">[NEW] 세라 NMN 리페어 크림 70ml (증정)세라크림 10ml</div>
+												<div class="details_price">
+															<strong class="percent">25%</strong>
+															<strong>22,500</strong>
+															<span class="cost">30,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (18) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000007074"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000007074"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000007074"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/70/74/m.gif?v=1770272000" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000007074">
+												<p class="details_brand"><span class="details_brand_name">더마토리</span></p>
+												<div class="details_title">[NEW] 세라 NMN 리페어 크림 겔 패치 4매 (증정)크림 10ml</div>
+												<div class="details_price">
+															<strong class="percent">10%</strong>
+															<strong>18,000</strong>
+															<span class="cost">20,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.8 (5) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/4">힐링버드</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">힐링버드</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/4">전체보기</a></li>
+									<li><a href="/shop/brandsList/148001000000000/brand/4">샴푸/트리트먼트</a></li>
+									<li><a href="/shop/brandsList/148002000000000/brand/4">헤어오일</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006624"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006624"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006624"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/66/24/m.gif?v=1769987659" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006624">
+												<p class="details_brand"><span class="details_brand_name">힐링버드</span></p>
+												<div class="details_title">[NEW/매일우유콜라보] 히알루론 밀크 헤어미스트 기획(본품200ml+미니어처키링)</div>
+												<div class="details_price">
+															<strong class="percent">20%</strong>
+															<strong>15,200</strong>
+															<span class="cost">19,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (107) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006623"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006623"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006623"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/66/23/m.gif?v=1770944936" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006623">
+												<p class="details_brand"><span class="details_brand_name">힐링버드</span></p>
+												<div class="details_title">[NEW/매일우유콜라보] 히알루론 밀크 헤어에센스 기획(본품150ml+파우치)</div>
+												<div class="details_price">
+															<strong class="percent">20%</strong>
+															<strong>17,600</strong>
+															<span class="cost">22,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 5.0 (158) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006435"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006435"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006435"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/64/35/m.gif?v=1768432274" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006435">
+												<p class="details_brand"><span class="details_brand_name">힐링버드</span></p>
+												<div class="details_title">[SET] 비어 피디알엔 탈모 샴푸 1L+두피 트리트먼트 1L [증정] 집게핀</div>
+												<div class="details_price">
+															<strong class="percent">35%</strong>
+															<strong>28,600</strong>
+															<span class="cost">44,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (38) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/14">심플레인</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">심플레인</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/14">전체보기</a></li>
+									<li><a href="/shop/brandsList/120702000000000/brand/14">립</a></li>
+									<li><a href="/shop/brandsList/120703000000000/brand/14">아이</a></li>
+									<li><a href="/shop/brandsList/120704000000000/brand/14">치크/컨투어링</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000005744"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000005744"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000005744"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/57/44/m.gif?v=1770598289" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000005744">
+												<p class="details_brand"><span class="details_brand_name">심플레인</span></p>
+												<div class="details_title">[NEW구운맛 컬러] 글림 온 치크</div>
+												<div class="details_price">
+															<strong class="percent">30%</strong>
+															<strong>9,800</strong>
+															<span class="cost">14,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (612) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006259"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006259"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006259"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/62/59/m.gif?v=1764125280" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006259">
+												<p class="details_brand"><span class="details_brand_name">심플레인</span></p>
+												<div class="details_title">글림 온 아이즈</div>
+												<div class="details_price">
+															<strong class="percent">30%</strong>
+															<strong>11,200</strong>
+															<span class="cost">16,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 5.0 (172) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006038"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006038"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006038"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/60/38/m.gif?v=1764125263" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006038">
+												<p class="details_brand"><span class="details_brand_name">심플레인</span></p>
+												<div class="details_title">글림 온 밤</div>
+												<div class="details_price">
+															<strong class="percent">30%</strong>
+															<strong>11,200</strong>
+															<span class="cost">16,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (176) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/13">타입넘버</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">타입넘버</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/13">전체보기</a></li>
+									<li><a href="/shop/brandsList/122708000000000/brand/13">바디케어</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000003594"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000003594"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000003594"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/35/94/m.gif?v=1770259211" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000003594">
+												<p class="details_brand"><span class="details_brand_name">타입넘버</span></p>
+												<div class="details_title">[NEW/신년에디션] TYPE No. 핸드크림 (본품+기능성 미니핸드쉴드 구성)</div>
+												<div class="details_price">
+															<strong class="percent">12%</strong>
+															<strong>10,500</strong>
+															<span class="cost">12,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (642) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000005310"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000005310"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000005310"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/53/10/m.gif?v=1769147648" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000005310">
+												<p class="details_brand"><span class="details_brand_name">타입넘버</span></p>
+												<div class="details_title">TYPE No.바디스크럽 300g [증정]우드 스패출러</div>
+												<div class="details_price">
+															<strong class="percent">19%</strong>
+															<strong>17,900</strong>
+															<span class="cost">22,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (207) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006379"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006379"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006379"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/63/79/m.gif?v=1768432284" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006379">
+												<p class="details_brand"><span class="details_brand_name">타입넘버</span></p>
+												<div class="details_title">TYPE No.바디스크럽 미니 듀오키트 기획세트(30g*2개) [증정]우드 스패출러</div>
+												<div class="details_price">
+															<strong class="percent">32%</strong>
+															<strong>12,300</strong>
+															<span class="cost">18,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 4.9 (20) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+						
+			<li class="" /event/eventList eventList>
+				<a href="/shop/brandsList/all/brand/12">트루알엑스</a>
+				<div class="lnb--sub lnb--sub_list">
+					<div class="maxWidth">
+						<div class="sub_menu__area">
+							<div class="sub_menu__title">트루알엑스</div>
+							<ul class="sub_menu__list">
+								<li><a href="/shop/brandsList/all/brand/12">전체보기</a></li>
+									<li><a href="/shop/brandsList/132000000000000/brand/12">이너뷰티</a></li>
+							</ul>
+						</div>
+						<div class="sub_menu__product">
+							<div class="product__list type_gallery">
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006570"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006570"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006570"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/65/70/m.gif?v=1770769017" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006570">
+												<p class="details_brand"><span class="details_brand_name">트루알엑스</span></p>
+												<div class="details_title">에이스 유기농 올리브 오일14포</div>
+												<div class="details_price">
+															<strong class="percent">42%</strong>
+															<strong>23,300</strong>
+															<span class="cost">40,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 5.0 (6) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+									<div class="product_details ver2">
+										<div class="details_thumb dev_icons_over">
+											<div class="prd_icon_list prd_icon_list_main">
+												<div class="icon_box">
+													<a class="bd" href="javascript:" dev-cart_pid="0000006150"><div class="ico1"><span></span></div></a>
+													<a class="bd item__wish  href="javascript:" data-devWishBtn="0000006150"><div class="ico2"><span></span></div></a>
+												</div>
+											</div>
+											<a href="/shop/goodsView/0000006150"><img src="https://clubclio.co.kr/data/mall_data/images/product/00/00/00/61/50/m.gif?v=1770768871" alt=""></a>
+										</div>
+										<div class="details_infos">
+											<a href="/shop/goodsView/0000006150">
+												<p class="details_brand"><span class="details_brand_name">트루알엑스</span></p>
+												<div class="details_title">슈퍼 다이어트 혈당컷 1BOX (14포)</div>
+												<div class="details_price">
+															<strong class="percent">33%</strong>
+															<strong>23,500</strong>
+															<span class="cost">35,000</span>
+												</div>
+												<div class="details_review">
+														<div class="clio_reviews_score__container">
+															<div class="clio_reviews_score_star_wrapper full">
+															<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20" class="clio_reviews_score_star_wrapper__star">
+															<defs>
+																<path id="star-full" d="M7.157 6.698l2.165-4.59a.743.743 0 0 1 1.358 0l2.165 4.59 4.84.74c.622.096.87.895.42 1.353l-3.503 3.57.827 5.044c.106.647-.544 1.141-1.1.835l-4.328-2.382-4.329 2.382c-.556.306-1.205-.188-1.099-.835l.826-5.044-3.502-3.57c-.45-.458-.202-1.257.42-1.352l4.84-.74z"></path>
+															</defs>
+															<use xlink:href="#star-full"></use>
+															</svg>
+															</div> 5.0 (2) 
+														</div>
+												</div>
+											</a>
+										</div>
+									</div>
+							</div>
+						</div><!-- //sub_menu__product -->
+					</div>
+				</div><!-- //lnb--sub -->
+			</li>
+		</ul><!-- //lnb-menu -->
+	</div>
+</div><!-- //header__lnb -->
+        </header>
+        <!-- //HEADER -->
+
+
+
+        <!-- CONTAINER --><!--코딩리스트의 본문이 들어갑니다.-->
+        <div id="CONTAINER" class="ver2" tabindex="0">
+
+<div id="EVENT">
+
+    <div class="sub__head tac">
+        <h3 class="sub__title">이벤트</h3>
+        <p class="sub__desc">클럽클리오에서 진행중인 특별한 이벤트를 만나보세요!</p>
+    </div>
+    <div class="sub__tabmenu maxWidth mt-50 mb-30">        
+        <a href="javascript:;" class="eventKind on" data-type="A">전체</a>
+        <a href="javascript:;" class="eventKind off" data-type="E">프로모션</a>
+        <a href="javascript:;" class="eventKind off" data-type="BE">쇼핑혜택</a>
+		<a href="javascript:;" class="eventKind off" data-type="b">뷰티테스터</a>
+    </div>  
+
+    <div class="sub__area maxWidth no_ASIDE">
+        <div class="sub__contents">
+            <div class="sub__body">
+
+
+                <section class="fb__event fb__layout__width">
+                    
+                    <!-- 필터 -->
+                    <form id="devEventForm">
+                        <input type="hidden" name="orderBy" value="startDate">
+                        <input type="hidden" name="orderByType" value="desc">
+                        <input type="hidden" name="page" value="1" id="devPage">
+                        <input type="hidden" name="max" value="36" id="devMax">
+                        <input type="hidden" name="eventKind" value="A" id="devEventKind">
+                    </form>
+
+                    <!-- 이벤트 -->
+                    <div class="fb__event__wrap">
+                        <ul id="devEventContent" class="fb__event__box">
+                            <script id="devEventLoading" type="text/x-handlebars-template">
+                            <li>
+                                <div class="fb__loading">
+                                    <div class="fb__loading__icon"></div>
+                                </div>
+                            </li>
+                            </script>
+
+                            <script id="devEventListEmpty" type="text/x-handlebars-template">
+                            <li class="fb__empty">
+                                <p class="fb__empty__text">등록된 이벤트가 없습니다.</p>
+                            </li>
+                            </script>
+
+                            <script id="devEventList" type="text/x-handlebars-template">
+                            <li class="fb__event__list">
+                                <a href="{[#if landing_url]}{[landing_url]}{[else]}{[eventLink]}{[/if]}" class="fb__event__link">
+                                    <figure class="fb__event__image">
+                                        <img src="/assets/templet/enterprise/images/common/loading.gif" data-src="{[imgPath]}" alt="" style="margin:0">
+                                        {[#if onOff]}{[else]}<span class="end__txt">이벤트가 종료되었습니다.</span>{[/if]}
+                                        <span class="blt-bx-event">
+                                            {{#each badges}}
+                                                <i>{[this]}</i>
+                                            {{/each}}
+                                        </span>
+                                    </figure>
+
+                                    <div class="fb__event__info{[#if onOff]}{[else]} end{[/if]}">
+                                        <p class="fb__event__name">{[event_title]}</p>
+                                        <p class="fb__event__desc">{[manage_title]}</p>
+                                        <p class="fb__event__date">{[startDate]} - {[endDate]}</p>
+                                    </div>
+                                </a>
+                                {[#if rsv_div]}
+                                <div class="funding-progress">
+                                    <div class="funding-tx">
+                                        <span class="funding-tx-t1"><b><strong>{[rsv_order_info.rsv_order_ratio]}%</strong> 달성</b> 
+                                        <span class="gray"><strong>{[rsv_order_info.total_pt_dcprice]}</strong>원</span></span>
+                                        <span class="funding-tx-t2"><b>{[rsv_order_info.rsv_priod_remaind]}</b>일 남음  </span>  
+                                    </div>
+                                    <div class="bar-bx">
+                                        <p class="bar"><i style="width: {[rsv_order_info.rsv_order_ratio_width]}%;"></i></p>
+                                    </div>
+                                </div>
+                                {[/if]}
+                            </li>
+                            </script>
+
+                        </ul>
+                    </div>
+
+                    <!-- 페이지네이션 -->
+                    <div id="devPageWrap"></div>
+                </section>
+
+    
+            </div>
+        </div><!-- //sub__contents -->
+    </div>
+
+</div>
+        </div>
+        <!-- //CONTAINER -->
+
+        <a href="#document" class='btn-top'></a>
+
+        <div class="chatBot-tbx">
+            <div class="inbx">
+                <button class="close"><span>닫기</span></button>
+                <p>클럽클리오 상담 챗봇입니다!</p>
+            </div>
+        </div>
+
+
+        <!-- FOOTER -->
+        <footer id="FOOTER">
+<div class="foot_wrap">
+	<div class="maxWidth">
+		<div class="foot_menu">
+			<a href="https://cliocosmetic.com/ko/main/main.asp?_ga=2.189319083.1225265922.1663552095-1223945213.1649138833&_gac=1.188617178.1662341828.Cj0KCQjwmdGYBhDRARIsABmSEeMlA9zxhrNj5i92xxk-rdbhLKu9nvGrY0UlTy2U0wUbJtoH9E-rDj8aAoaPEALw_wcB" target="_blank">회사소개</a>
+			<a href="/company/privacy" target="_blank"><strong class="color_444">개인정보 처리방침</strong></a>
+			<a href="/company/agreement" target="_blank">이용 약관</a>
+			<a href="/company/emailinfo" target="_blank">이메일무단수집거부</a>
+			<a href="/company/marketing" target="_blank">마케팅 활용동의</a>
+			<a href="javascript:callPop('#popF1');">제휴/마케팅 문의</a>
+			<a href="javascript:callPop('#popF2');">해외수출 문의</a>
+			<a href="javascript:callPop('#popF3');">클리오 IR</a>
+		</div>
+		<div class="foot_sns">
+			<a href="https://www.facebook.com/clubcliokr" target="_blank">Facebook</a>
+			<a href="https://www.instagram.com/p/Ch8Tlv6BLR6/" target="_blank">Instagram</a>
+			<a href="https://www.youtube.com/user/clubcliolove"" target="_blank">Youtube</a>
+		</div>
+	</div>
+</div>
+<div class="maxWidth">
+	<div class="foot__left">
+		<div class="foot_address">
+			<address>
+				<span>(주)클리오</span> <br>
+				대표 :  한현옥 &nbsp;&nbsp;&nbsp; 사업자등록번호 : 211-86-22189 &nbsp;&nbsp;&nbsp;
+				통신판매업신고번호 :  제 2020-서울성동-00339호 &nbsp;&nbsp;&nbsp; <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=2118622189&apv_perm_no" target="_blank">사업자정보확인</a><br>
+				개인정보담당자 : 이연재 팀장 &nbsp;&nbsp;&nbsp; 주소 : 서울 성동구 왕십리로 66 (성수동1가) 
+			</address>
+		</div><!--footer__body-->
+	</div>
+	<div class="foot__right">
+		<div class="foot_customer">
+			<p><a href="/customer/faq" target="_blank">고객센터</a> &nbsp;&nbsp;&nbsp; <strong>080-080-1510</strong></p>
+			평일: 10:00~17:00 <br />
+(점심시간 : 12:00~14:00) <br />
+주말/공휴일 휴무
+		</div>
+	</div>
+</div>
+
+<div id="popF1" class="pop-lay footPop">
+	<div class="pop-inner">
+		<div class="pop-bx">
+			<button class="pop-close"></button>
+			<div class="pop-tit">제휴/마케팅 문의</div>
+			<div class="pop-con">
+				<ul>
+						<li>• 클리오 : <a class="noline" href="mailto:hnlee@clio.co.kr">hnlee@clio.co.kr</a></li>
+						<li>• 페리페라 : <a class="noline" href="mailto:hj_kim1127@clio.co.kr">hj_kim1127@clio.co.kr</a></li>
+						<li>• 구달 : <a class="noline" href="mailto:jhlee@clio.co.kr">jhlee@clio.co.kr</a></li>
+						<li>• 더마토리 : <a class="noline" href="mailto:yujeong22@clio.co.kr">yujeong22@clio.co.kr</a></li>
+						<li>• 심플레인 / 타입넘버 : <a class="noline" href="mailto:sykim1@clio.co.kr">sykim1@clio.co.kr</a></li>
+						<li>• 힐링버드 / 에이블랙 : <a class="noline" href="mailto:soojk@clio.co.kr">soojk@clio.co.kr</a></li>
+						<li>• 트루알엑스 : <a class="noline" href="mailto:sykang@clio.co.kr">sykang@clio.co.kr</a></li>
+						<li>• 트윙클팝 : <a class="noline" href="mailto:yuhs@clio.co.kr">yuhs@clio.co.kr</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+<div id="popF2" class="pop-lay footPop">
+	<div class="pop-inner">
+		<div class="pop-bx">
+			<button class="pop-close"></button>
+			<div class="pop-tit">해외수출 문의</div>
+			<div class="pop-con">
+				<ul>
+						<li>• 해외수출(중국 외) : <a class="noline" href="mailto:clio.overseas1@gmail.com">clio.overseas1@gmail.com</a></li>
+						<li>• 해외수출(중국) : <a class="noline" href="mailto:ebcha1208@clio.co.kr">ebcha1208@clio.co.kr</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+<div id="popF3" class="pop-lay footPop">
+	<div class="pop-inner">
+		<div class="pop-bx">
+			<button class="pop-close"></button>
+			<div class="pop-tit">클리오 IR</div>
+			<div class="pop-con">
+				<ul>
+					<li>·  IR : <a href="mailto:clioir@clio.co.kr">clioir@clio.co.kr</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+        </footer>
+        <!-- //FOOTER -->
+    </div>
+    <!-- //WRAP -->
+    <div class="fb__modal__mask js__modal__mask"></div>
+    <article class="fb__modal__layer js__modal__layer">
+        <header class="fb__modal__header">
+            <h3 id="devModalTitle" class="fb__modal__title">제목</h3>
+            <span class="fb__modal__close js__modal__close close">팝업닫기</span>
+        </header>
+
+        <main id="devModalContent" class="fb__modal__content js__modal__content">내용</main>
+    </article>
+<!--팝업레이어창-->
+<script id="devNotiPopupTpl" type="text/x-handlebars-template">
+    <div class="main_popupL js__notice__popup devNotiPopup" devPopupIx="{[popup_ix]}" style="top: {[popup_top]}px; left: {[popup_left]}px;">
+        <section class="main_popupL-inner">
+            {[{popup_text}]}
+        </section>
+    </div>
+</script>
+
+
+<link rel="stylesheet" type="text/css" href="/assets/templet/enterprise/assets/css/event.css?version=177099480011">
+
+<!-- 퍼블&개발 공통:각 페이지 별 -->
+<script src="/assets/templet/enterprise/js/event/eventList.js?version=177099480011"></script>
+
+<link rel="stylesheet" href="/assets/templet/enterprise/common/css/swiper-bundle.min.css">
+<script type="text/javascript" src="/assets/templet/enterprise/common/js/jquery.mCustomScrollbar.concat.min.js"></script><!--검색창 스크롤-->
+<script type="text/javascript" src="/assets/templet/enterprise/common/js/design.js"></script>
+<script type="text/javascript" src="/assets/templet/enterprise/common/js/swiper-bundle.min.js"></script>
+<script type="text/javascript">
+$(function(){
+    // 우클릭 사용방지
+    document.oncontextmenu = function(){ alert('우클릭을 사용 할 수 없습니다.'); event.preventDefault();};
+    
+    // TOP 배너 슬라이더
+    var top_banner__slider = new Swiper(".top_banner__slider .mySwiper", {
+		slidesPerView: 1,
+        spaceBetween: 20,
+        pagination: {
+            el: ".top_banner__slider .swiper-pagination",
+            type: "fraction",
+        },
+        navigation: {
+            nextEl: ".top_banner__slider .swiper-button-next",
+            prevEl: ".top_banner__slider .swiper-button-prev",
+        },
+    });
+    $('.head__search').on('click', function() {
+        searchSw.update();
+        searchSw.autoplay.start()
+    });
+
+    // 검색레이어 안에 상품
+    var searchSw = new Swiper(".search__popularKeyword .slide-bx", {
+        slidesPerView: 1,
+        autoplay: {
+            delay: 2500,
+            pauseOnMouseEnter: true,
+        },
+        loop: true,
+        pagination: {
+            el: ".search__popularKeyword .pag",
+            clickable: true,
+        },
+    });
+    // 오늘의 선물 추천 슬라이더
+    var today_recommend__slider = new Swiper(".today_recommend__slider .mySwiper", {
+        slidesPerView: 4,
+        spaceBetween: 20,
+        pagination: {
+            el: ".today_recommend__slider .swiper-pagination",
+        },
+    });
+
+
+    // 선물하기 베스트 슬라이더
+    var give_gift_best__slider = new Swiper(".give_gift_best__slider .mySwiper", {
+        slidesPerView: 4,
+        spaceBetween: 20,
+        pagination: {
+            el: ".give_gift_best__slider .swiper-pagination",
+        },
+    });
+
+    // 테마별 or 브랜드별 선물하기 선택
+    $('.theme_or_brand').find('.list.brand').hide();
+    $('.theme_or_brand').find('.change_type > div').on('click', function (){
+        var tg_wrap = $('.theme_or_brand');
+
+        if($(this).hasClass('brand') == true) {
+            tg_wrap.find('.change_type .brand').removeClass('off').addClass('on');
+            tg_wrap.find('.change_type .theme').removeClass('on').addClass('off');
+            tg_wrap.find('.list.brand').show();
+            tg_wrap.find('.list.theme').hide();
+        } else {
+            tg_wrap.find('.change_type .theme').removeClass('off').addClass('on');
+            tg_wrap.find('.change_type .brand').removeClass('on').addClass('off');
+            tg_wrap.find('.list.theme').show();
+            tg_wrap.find('.list.brand').hide();
+        }
+    });
+
+
+	// 셀렉박스 -- 선택
+	$('.select_int_title').on('click', function(){
+		var option = $(this).next('.select_int_list');
+		option.slideToggle(200);
+		$('.select_int_list').not(option).hide();
+	});
+    $('.select_int_list li').click(function() {
+        var text = $(this).html();
+        var selected = $(this).closest('.select_int_list').siblings('.select_int_title');
+        selected.html(text);
+        $(this).closest('.select_int_list').hide();
+    });
+	$(document).mouseup(function (e){
+		var totalLayer = $('.select_int_list');
+		if(totalLayer.has(e.target).length === 0){
+			totalLayer.hide();
+		}
+	});
+
+    //인사이더 배너 쿠폰 발행 
+    //-----load language
+    common.lang.load('coupon.download.fail', '쿠폰 발급 조건에 해당하지 않습니다.');
+    common.lang.load('coupon.download.success', '쿠폰이 정상적으로 다운로드 되었습니다.');
+    common.lang.load('coupon.download.plz_login', '회원만 쿠폰 다운로드 할 수 있습니다.\n로그인 하시겠습니까?');
+    common.lang.load('coupon.download.published', '이미 쿠폰을 발급받았습니다.');
+    common.lang.load('coupon.download.onlyappfail', '앱 전용 쿠폰입니다.\n앱에서 다운로드 후 사용해주세요:)');
+
+    $('.devCouponContents_insider').on('click', '[devPublishIx]', function () {
+        var self = $(this);
+        var publishIx = $(this).attr('devPublishIx');
+        // console.log(publishIx);
+        var pid = $(this).attr('devPid');
+        if(publishIx == 'not_open'){
+            alert('쿠폰 발급일이 아닙니다');
+            return;
+        }
+        common.ajax(common.util.getControllerUrl('downCoupon', 'product'), {publishIx: publishIx, pid: pid}, "", function (result) {
+            if (result.result == 'success') {
+                common.noti.alert(common.lang.get('coupon.download.success'));
+            } else if(result.result == 'not_login'){
+                if(common.noti.confirm(common.lang.get('coupon.download.plz_login'))){
+                    location.href="/member/login";
+                }
+            } else if(result.result == 'published'){
+                common.noti.alert(common.lang.get('coupon.download.published'));
+            } else if(result.result == 'onlyappfail'){
+                common.noti.alert(common.lang.get('coupon.download.onlyappfail'));
+            } else{
+                common.noti.alert(common.lang.get('coupon.download.fail'));
+            }
+        })
+    });
+
+    //챗봇 말풍선 localStorage 하루 안보이게 처리
+    var speechBubble = localCookie.isEnd("speechBubble", 86400);		
+    if(speechBubble){
+        $('.chatBot-tbx').css('right','-200px');
+    }
+    //챗봇 말풍선
+    $('.chatBot-tbx .close').on('click', function() {        
+		localCookie.make("speechBubble");
+        //$('.chatBot-tbx').slideToggle(100);
+        // $('.btn-top').css('bottom', '125px');
+        $('.chatBot-tbx').animate({
+            right:'-200px'
+        },
+        'fast','linear');
+    });
+});
+</script>
+<script>
+    $(function(){
+
+        common.noti.popup.load(null);
+
+        // if('event_eventList' == 'main') {
+        //     aniMt();
+        // }
+    });
+</script>
+<script>
+
+</script>
+
+<!-- Start of clio-help Zendesk Widget script -->
+<!-- 클리오 사용중 위젯 -->
+<!--script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=ec8f34cd-d144-4326-a101-faa7012db3fe"></script-->
+<!-- End of clio-help Zendesk Widget script -->
+
+<!-- S: 챗봇 -->
+<div class="pop-lay" id="popChatTs">
+    <div class="pop-inner">
+        <div class="mBg"></div>
+        <div class="pop-bx">
+            <div class="pop-con">
+                <h3 class="tit">챗봇 개선을 위해 고객님의 소중한 의견을 남겨주세요!</h3>
+                <div class="chat-form">
+                    <p class="chat-tit">만족도를 별점으로 선택해주세요.</p>
+                    <div id="star"> <!-- 부모 -->
+                        <a href="#" value="1" class="">★</a> <!-- 자식들-->
+                        <a href="#" value="2">★</a>
+                        <a href="#" value="3">★</a>
+                        <a href="#" value="4">★</a>
+                        <a href="#" value="5">★</a>
+                    </div>
+                    <p class="chat-tit">내용을 입력해 주세요.</p>
+                    <textarea rows="5" class="textarea" placeholder="내용 입력" name="chatbotafter_cmt" id="chatbotafter_cmt"></textarea>   
+                </div>
+                <div class="view__foot_btns">
+                    <a href="javascript:;" class="btn_buynow close">취소</a>    
+                    <a href="javascript:;" class="btn_buynow on">확인</a>    
+                </div>
+            </div>
+            <button class="pop-close"></button>
+        </div>
+    </div>
+</div>
+
+
+<!-- 챗봇 사용설명서 팝업 -->
+<div class="chatbotgud-pop">
+    <div class="inner">
+        <div class="chatbotgud-slide">
+            <img src="/assets/templet/enterprise/images/chatbot/gud00.png">
+            <button class="cGud-close"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('.media-con-simg > img').click(
+        function(){
+            var addr=$(this).attr('src');
+            $(this).addClass('on').siblings().removeClass('on');
+            $('.media-con-timg > img').attr('src',addr);
+        }
+    );
+    $('.pop-review .reviewClose').click(function(){
+        $('.pop-review').fadeOut();
+    });
+
+    //0823 
+    $(function(){
+        
+        var chatbotGud = new Swiper('.chatbotgud-slide .slide-bx', {
+            speed: 400,
+            spaceBetween: 40,
+            navigation: {
+                nextEl: ".chatbotgud-slide .next",
+                prevEl: ".chatbotgud-slide .prev",
+            },
+        });
+
+    });
+</script>
+<!-- 추후 조건 빼면 됨-->
+<link rel="stylesheet" type="text/css" href="/assets/templet/enterprise/common/css/chatbot.css?version=177099480011"/>
+<!-- S: 챗봇용 전역변수 -->
+<script language="javascript">    
+    var csno = "" == "" ? "m6tl1jkmivddbj06egf4f2lt59" : "";    
+    var givenName = "" == "" ? "비회원" : "";
+    var email = "";
+    var givenPcs = "";
+</script>
+<!-- E: 챗봇용 전역변수 -->
+<script src="/assets/templet/enterprise/common/js/chatbot.js?version=177099480011"></script>    
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/hmac-sha256.min.js"></script>
+<script type="text/javascript">                    
+    const url = new URL(window.location.href);
+    const urlParams = url.searchParams;
+    const uid = "";
+    const uname = "";
+    const umail = "";
+
+    // zE('messenger:on', 'open', SetContentWidth);
+
+    $(document).ready(function () {
+        //if(uid != ""){
+        //  setTimeout(function () {
+                
+        //    zE("messenger", "loginUser", function (callback) {
+                    /*클리오 연동 토큰*/
+        //         let jwtheader = {
+        //             "alg": "HS256",
+        //             "typ": "JWT",
+        //              "kid": "app_63a3d5b702e1f401056a1b58"
+        //         }
+                    
+        //          let jwtpayload = {
+        //              "external_id": uid,
+        //             "email": umail,
+        //              "name": uname,
+        //              "scope": "user"
+        //         };
+
+        //         var stringifiedHeader = CryptoJS.enc.Utf8.parse(JSON.stringify(jwtheader));
+        //          var encodedHeader = base64url(stringifiedHeader);
+
+        //          var stringifiedData = CryptoJS.enc.Utf8.parse(JSON.stringify(jwtpayload));
+        //          var encodedData = base64url(stringifiedData);
+
+        //          var token = encodedHeader + "." + encodedData;
+                    /*클리오 연동 토큰*/
+                    // 초기 발급받았던 비밀키
+        //          var secret = "wM7gRs1X2WraqQgfzdEnPYxJy8CZQClWjVO01NIp74dRCYjyG_UqZOOk-DLfIRtbOJH4bUCob-i6PMjILcAwNA";
+
+        //          var signature2 = CryptoJS.HmacSHA256(token, secret);
+        //          signature2 = base64url(signature2);
+
+        //          var signedToken = token + "." + signature2;
+
+        //          callback(signedToken);
+
+        //          setTimeout(function () {
+                        /*zE('messenger', 'open');*/
+        //              SetContentWidth();
+        //          }, 2000);
+        //      });
+        //  }, 2000);
+        //};
+        //챗봇고객의견청취 별점
+        var __star = 0;
+        $('#star a').click(function(){ 
+            $(this).parent().children("a").removeClass("on");    
+            $(this).addClass("on").prevAll("a").addClass("on");
+            __star = $(this).attr("value");
+        });
+        //챗봇고객의견청취
+        $(".pop-lay .pop-close,.pop-lay .mBg").on("click", function(){
+            $(".pop-lay").fadeOut(100);
+        });
+        $("#popChatTs .btn_buynow.close").click(function(){
+            $(".pop-lay").fadeOut(100);
+        });
+        $("#popChatTs .btn_buynow.on").click(function(){
+            
+            var star = __star;
+            var cmt = $("#chatbotafter_cmt").val();
+            // console.log(__star);
+            // console.log(cmt.length);
+            // return;
+            if(star <=3){
+                if(cmt.length==0){
+                    alert('내용을 입력해 주세요.');
+                    $("#chatbotafter_cmt").focus();
+                    return;
+                }
+            }
+            common.ajax(common.util.getControllerUrl('chatbot_after', 'member'), {m_code: '', star: star, comment:cmt}, "", function (result) {
+                if (result.result == 'success') {
+                    alert('소중한 의견주셔서 감사드립니다.');
+                    window.location.reload();
+                } else{
+                    // console.log(result);
+                }
+            })
+        });
+
+    });
+
+    function base64url(source) {
+        encodedSource = CryptoJS.enc.Base64.stringify(source);
+
+        encodedSource = encodedSource.replace(/=+$/, '');
+
+        encodedSource = encodedSource.replace(/\+/g, '-');
+        encodedSource = encodedSource.replace(/\//g, '_');
+
+        return encodedSource;
+    }
+
+    function SetContentWidth() {
+        setTimeout(function () {
+            let objs = document.querySelectorAll('[role="presentation"]');
+            let isExisting = false;
+            objs.forEach(function (obj) {
+                if (obj.nodeName === "DIV") {
+                    isExisting = true;
+                    $(obj).width("98%");
+                    $(obj).height("100%");
+                }
+            });
+
+            if (!isExisting)
+                SetContentWidth();
+        }, 500);
+
+    }
+</script>
+<!-- E: 챗봇 -->
+<script>
+// 클리오리뷰 
+function cl(){
+
+}    
+
+$('.clio__review__bx').on('click', function (event) { 
+    /*
+    var $this = $(this);
+    var is_best_review = ($this.hasClass('clio__best_review_bx'))?'y':'n';
+    var request = [];
+    request = $(this).data();
+    request.is_best_review = is_best_review;
+    //request.id = request.pid;
+    request.pageType = 'prd';
+    request.max = 9999;
+    console.log(request);
+    // ajax
+    
+    common.ajax(common.util.getControllerUrl('reviewLists', 'product'), request , "", function (response) {
+        console.log(response);
+        if (response.result == 'success') {
+            console.log(response.data);
+            $('.pop-review').show();
+        }else if(response.result != 'success'){
+            console.log(response.data);
+            alert(response.data.msg);
+        }else{
+            console.log(response);
+        }
+    });
+    */
+});
+$('.clio__review__bx .goods-bx').click(function(event) {
+    event.stopPropagation();
+    var pid = $(this).attr("data-pid");
+    window.location.href = '/shop/goodsView/'+ pid ;
+});
+</script>
+<!-- 장바구니 알림 레이어 -->
+<div class="pop-lay popArm hide" id="pop_cart_layer" >
+    <div class="pop-inner">
+        <div class="pop-bx">
+            <button class="pop-close close"></button>
+            <div class="pop-con">
+                선택하신 상품을<br>
+                장바구니에 담았습니다.
+            </div>
+            <div class="pop-btz">
+                <a href="javascript:$('.pop-close.close').click();">쇼핑 계속하기</a>
+                <a href="/shop/cart" class="dark">장바구니 확인</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="pop-lay popArm hide close2000" id="pop_morning_noti" >
+    <div class="pop-inner">
+        <div class="pop-bx">
+            <button class="pop-close close"></button>
+            <div class="pop-con">
+                <strong>★새벽배송 배송 지연 안내★ </strong> <br><br> 
+                폭설로 인한 출고 지연 이슈로  <br>                
+                11/28 (목) 주문건은    <br>
+                당일 출고가 어려운 점  안내드립니다.  <br><br>                
+                11/29 (금) 부터 순차출고 예정이오니  <br>  
+                이 점 너른 양해 부탁드리겠습니다. 
+            </div>
+            <div class="pop-btz">
+                <a href="javascript:;" id="pop_morning_noti_close1">오늘 하루 열지 않기</a>
+                <a href="javascript:$('.pop-close.close').click();" class="close dark">닫기</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 챗봇 사용설명서 팝업 -->
+<div class="chatbotgud-pop">
+    <div class="inner">
+        <div class="chatbotgud-slide">
+            <img src="/assets/templet/enterprise/images/chatbot/gud00.png">
+            <button class="cGud-close"></button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+<!-- 공통 적용 스크립트 , 모든 페이지에 노출되도록 설치. 단 전환페이지 설정값보다 항상 하단에 위치해야함 --> 
+<script type="text/javascript" src="//wcs.naver.net/wcslog.js"> </script> 
+<script type="text/javascript"> 
+if (!wcs_add) var wcs_add={};
+wcs_add["wa"] = "s_150a4abb960c";
+if (!_nasa) var _nasa={};
+if(window.wcs){
+wcs.inflow("clubclio.co.kr");
+wcs_do(_nasa);
+}
+$( window ).scroll( function() {
+            if ( $( document ).scrollTop() > 90 ) {
+                $("#WRAP").addClass('fixed');
+                // console.log("a");
+            }
+            else {
+                $("#WRAP").removeClass('fixed');
+                // console.log("b");
+            }  
+        });
+</script>
+
+<!-- TRADINGWORKS SCRIPT-->
+
+<script type="text/javascript" src="//s3-ap-northeast-1.amazonaws.com/tradingworks-scripts/js/igw_tw_script_v2.js"></script>
+<script type="text/javascript">
+    IGATrackingPush({
+        custom_param : "bid" 
+    });
+</script>
+
+<!-- // TRADINGWORKS SCRIPT-->
+
+<!-- Criteo 로더 파일 -->
+<script type="text/javascript" src="//dynamic.criteo.com/js/ld/ld.js?a=7593" async="true"></script>
+<!-- END Criteo 로더 파일 -->
+
+<!-- Criteo 홈페이지 태그 -->
+<script type="text/javascript">
+window.criteo_q = window.criteo_q || [];
+var deviceType = /iPad/.test(navigator.userAgent) ? "t" : /Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Silk/.test(navigator.userAgent) ? "m" : "d";
+window.criteo_q.push(
+ { event: "setAccount", account: 7593},
+ { event: "setEmail", email: "", hash_method: "sha256" },
+ { event: "setZipcode", zipcode: "" },
+ { event: "setSiteType", type: deviceType},
+ { event: "viewHome"});
+</script>
+<!-- END Criteo 홈페이지 태그 -->
+
+<!-- 리뷰 타입 -->
+<script>
+    document.REVIEW_TYPE = 'CLIO';
+    document.appTypeDetail = '';
+</script>
+
+<!-- 빅인사이트 시작 [s] -->
+<script id="bigin-common-page" type="text/javascript">
+(function () {
+  /**
+   * @typedef  User
+   * @property  id           - [Required] 회원 ID
+   * @property  email        - [Required] 회원 이메일 주소
+   * @property  name         - [Required] 회원 이름
+   * @property  phone        - [Required] 회원 휴대폰 번호
+   * @property  [membership] - [Optional] 회원 등급
+   */
+  /**
+   * @typedef  SignUp
+   * @property  userId  - [Required] 회원 가입한 회원 ID
+   * @property  provider - [Required] 회원 가입 방법(ex. local, kakao, naver, ...)
+   * @property  signedUpAt - [Required] 회원 가입일
+   */
+  /**
+   * @typedef  CommonPage
+   * @property {function(): ?User} getUser               -
+   * [Required] 회원 정보를 반환
+   * return User: 로그인 상태일 경우
+   * return null: 미로그인 상태일 경우
+   * @property {function(): ?SignUp} getSignUp           -
+   * [Required] 회원 가입한 정보를 반환
+   * return SignUp: 회원 가입 완료후 랜딩 페이지일 경우
+   * return null: 그 외의 경우
+   * @property {function(): Element[]} getLoginElements  -
+   * [Required] 로그인 버튼 목록을 반환
+   * @property {function(): Element[]} getLogoutElements -
+   * [Required] 로그아웃 버튼 목록을 반환
+   */
+  /** @type  */
+  var page = {
+    getUser: function () {
+      // TODO
+      return {
+        id: '', // ex) 'kakao_xxxxxxxxx'
+        email: '', // ex) 'user@gmail.com'
+        name: '', // ex) '홍길동'
+        phone: '', // ex) '010-1234-1234'
+        membership: '', // ex) '임직원'
+      };
+    },
+    getSignUp: function () {
+      // TODO
+      return {
+        userId: '', // ex) 'kakao_xxxxxxxxx'
+        provider: '', // ex) 'kakao'
+        signedUpAt: new Date(''), // ex) new Date('2023-11-11 11:11:11')
+      };
+    },
+    getLoginElements: function () {
+      // TODO
+      return []
+        .concat(Array.from(document.querySelectorAll('.bigin-login-btn')));
+    },
+    getLogoutElements: function () {
+      // TODO
+      return []
+        .concat(Array.from(document.querySelectorAll('.bigin-logout-btn')));
+    },
+  };
+
+  /**
+   * @typedef window
+   * @property {Object[]} dataLayer
+   */
+  (window._bigin = window._bigin || {}).commonPage = page;
+  window.dataLayer.push({ event: 'bg.notify' });
+})();
+</script>
+
+<script id="bigin-gtm">
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-546CPJ6K');
+</script>
+<!-- 빅인사이트 끝 [e] -->
+
+<!-- aedi common. 지우시면 안됩니다! -->
+<script>
+if (typeof aisum_params === "undefined") {
+    var aisum_params = new Object();
+    aisum_params.type = "self";
+    aisum_params.siteID = "2736";
+}
+</script>
+<script type="text/javascript" src="https://api.aedi.ai/common/js/v1/ctad.js"></script>
+
+<script>
+//toss 픽셀 s
+function jump_toss_addToCart(data){
+    
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.charset = 'UTF-8';
+    script.src = 'https://static.toss.im/lex/v1.js';
+    
+    document.head.appendChild(script);
+    setTimeout(function() {
+        new TossPixel('4540656118849879368').addToCart(data);
+    }, 200); // 200ms(0.2초) 지연    
+}
+//toss 픽셀 e
+//zE('webWidget', 'hide');
+</script>
+<script language="javascript" src="/analysisTag.js"></script>
+<script language="javascript">window.onload = function() {SetSalesAnalysisTag("-|-|-|2|-|-|-|-|-|-|-|-|-|-|-|-","002","","");};</script>

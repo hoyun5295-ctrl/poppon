@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+    --background: #ffffff;
+    --foreground: #0f172a;
+    --primary: #FF4133;
+    --primary-foreground: #ffffff;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #FF4133;
+    /* Safe area for notch/gesture bar */
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+  }
+
+  body {
+    @apply bg-white text-slate-900;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior-y: contain;
+  }
+
+  /* Ensure tap highlights don't linger */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .deal-card {
+    @apply transition-all duration-200;
+  }
+  .deal-card:hover {
+    @apply shadow-md -translate-y-0.5;
+  }
+
+  .coupon-code {
+    border: 2px dashed #FFC7C2;
+    background-color: #FFF1F0;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-family: monospace;
+    font-size: 1.125rem;
+    letter-spacing: 0.05em;
+    color: #C01E13;
+    cursor: pointer;
+  }
+
+  .badge-sponsor {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+    background-color: #FFF0D4;
+    color: #C74E09;
+  }
+
+  .badge-ending-soon {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .badge-new {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+    background-color: #dcfce7;
+    color: #15803d;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar but keep scrollable */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area padding */
+  .pt-safe { padding-top: var(--sat); }
+  .pb-safe { padding-bottom: var(--sab); }
+  .pl-safe { padding-left: var(--sal); }
+  .pr-safe { padding-right: var(--sar); }
+
+  /* Prevent text selection on interactive elements */
+  .select-none-touch {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+
+  /* Smooth momentum scrolling for iOS */
+  .scroll-smooth-touch {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+}
+
+/* ---- Animations ---- */
+
+/* Slide up (mobile menu, search bar) */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+/* Bottom sheet slide */
+@keyframes bottom-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-bottom-sheet-up {
+  animation: bottom-sheet-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Fade in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Overlay backdrop */
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-overlay-in {
+  animation: overlay-in 0.2s ease-out;
+}
+
+/* Pretendard 폰트 (CDN) */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');

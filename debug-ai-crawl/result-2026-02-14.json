@@ -1,0 +1,641 @@
+[
+  {
+    "name": "올리브영",
+    "url": "https://www.oliveyoung.co.kr/store/main/getEventList.do?t_page=%ED%99%88&t_click=GNB&t_gnb_type=%EC%9D%B4%EB%B2%A4%ED%8A%B8&t_swiping_type=N",
+    "status": "성공",
+    "dealCount": 39,
+    "tokens": 16658,
+    "duration": 47764,
+    "deals": [
+      {
+        "title": "2월 최대 혜택 올-쇼핑위크",
+        "description": "최대 3만 8천원 쿠폰&포인트",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/2967910411977682927.jpg",
+        "benefitSummary": "최대 3만 8천원 쿠폰&포인트",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-09",
+        "endsAt": "2026-02-15",
+        "badges": [
+          "쿠폰",
+          "포인트"
+        ]
+      },
+      {
+        "title": "설 기프트에서 쿠폰+경품 받아가세요",
+        "description": "쿠폰 받아 설 선물 준비해요",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/5234938835595799961.jpg",
+        "benefitSummary": "쿠폰+경품",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-09",
+        "endsAt": "2026-02-22",
+        "badges": [
+          "쿠폰",
+          "경품"
+        ]
+      },
+      {
+        "title": "올리브베러와 함께하는 매일 스탬프이벤트",
+        "description": "매일 50P + 경품응모",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/7005455002939479568.jpg",
+        "benefitSummary": "매일 50P + 경품응모",
+        "couponCode": null,
+        "discountValue": 50,
+        "discountType": "amount",
+        "startsAt": "2026-02-09",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "포인트",
+          "경품"
+        ]
+      },
+      {
+        "title": "올리브영이 PICK한 이 달의 브랜드",
+        "description": "온오프라인에서 만나보세요!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/2863669437136313376.jpg",
+        "benefitSummary": "브랜드 기획전",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": []
+      },
+      {
+        "title": "가까워질수록 자신있게 리뷰 쓰고 혜택 받기",
+        "description": "리뷰 작성 고객 기프트카드 증정",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/6814575172351240693.jpg",
+        "benefitSummary": "리뷰 작성 시 기프트카드 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-14",
+        "endsAt": "2026-03-07",
+        "badges": [
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "올리브영 x 망곰 콜라보 이벤트",
+        "description": "단독 굿즈+이벤트까지!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/3374331329152129090.jpg",
+        "benefitSummary": "단독 굿즈+이벤트",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "단독",
+          "콜라보"
+        ]
+      },
+      {
+        "title": "2월 올리브 멤버스 혜택 받기",
+        "description": "등급 확인하고 혜택 받기",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/7903963647963745703.jpg",
+        "benefitSummary": "멤버스 등급별 혜택",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "멤버십"
+        ]
+      },
+      {
+        "title": "만 14-19세만 스페셜 혜택",
+        "description": "쿠폰 + 무료배송 + 제휴 혜택",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/6613391467785590879.jpg",
+        "benefitSummary": "쿠폰 + 무료배송 + 제휴 혜택",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "쿠폰",
+          "무료배송"
+        ]
+      },
+      {
+        "title": "나라사랑카드 전용 최대1.2만원 캐시백",
+        "description": "매월 돌려 받는 즐거움!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/5183468141833867169.jpg",
+        "benefitSummary": "최대 1.2만원 캐시백",
+        "couponCode": null,
+        "discountValue": 12000,
+        "discountType": "amount",
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-12-31",
+        "badges": [
+          "캐시백",
+          "제휴"
+        ]
+      },
+      {
+        "title": "밸런타인 초코 선물 고민 중이라면?",
+        "description": "죄책감 없는 초코템 모아보기",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/8117639561828445183.jpg",
+        "benefitSummary": "발렌타인 초코 기획전",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-13",
+        "endsAt": "2026-02-15",
+        "badges": [
+          "기획전"
+        ]
+      },
+      {
+        "title": "2월 올리브 클래스",
+        "description": "참여 브랜드 확인하기",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/695041722707433714.jpg",
+        "benefitSummary": "골드&블랙 상위 등급 전용 혜택",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "멤버십",
+          "상위등급"
+        ]
+      },
+      {
+        "title": "상위 등급 전용 무료 포장 서비스",
+        "description": "전국 올리브영 매장에서 만나요",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/4105064629619260891.jpg",
+        "benefitSummary": "무료 포장 서비스",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-01-01",
+        "endsAt": "2026-12-31",
+        "badges": [
+          "무료",
+          "상위등급"
+        ]
+      },
+      {
+        "title": "웨이크메이크 립 마켓 단독 리뷰 이벤트",
+        "description": "리뷰 작성 시 2+1 정품 증정",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/6494652993821991927.jpg",
+        "benefitSummary": "리뷰 작성 시 2+1 정품 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-02",
+        "endsAt": "2026-02-20",
+        "badges": [
+          "단독",
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "바이오힐보 탄력마스터 서포터즈 공개 모집",
+        "description": "탄력 풀케어 KIT 증정",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": "https://image.oliveyoung.co.kr/uploads/images//event/4825753661192923163.jpg",
+        "benefitSummary": "탄력 풀케어 KIT 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-02",
+        "endsAt": "2026-03-01",
+        "badges": [
+          "서포터즈",
+          "경품"
+        ]
+      },
+      {
+        "title": "신규 가입 단 한 번의 혜택!",
+        "description": "올리브 멤버스 가입하고 4천원",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "신규 가입 시 4천원 제공",
+        "couponCode": null,
+        "discountValue": 4000,
+        "discountType": "amount",
+        "startsAt": "2026-01-01",
+        "endsAt": "2026-06-30",
+        "badges": [
+          "신규가입",
+          "혜택"
+        ]
+      },
+      {
+        "title": "APP 첫 구매라면?",
+        "description": "쿠폰+100원딜 혜택",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "쿠폰+100원딜",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "앱",
+          "첫구매"
+        ]
+      },
+      {
+        "title": "로레알 마이뷰티멤버십 CJ ONE 추가적립",
+        "description": "멤버십 연동후 첫 구매하기",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "추가적립",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-01-15",
+        "endsAt": "2026-12-31",
+        "badges": [
+          "제휴",
+          "적립"
+        ]
+      },
+      {
+        "title": "퀴즈만 풀어도 쿠폰&경품이 와르르!",
+        "description": "매주 목요일에 만나는 럭-퀴즈온",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "쿠폰&경품",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "쿠폰",
+          "경품"
+        ]
+      },
+      {
+        "title": "W챌린지 W케어와 함께해요!",
+        "description": "누적 하트마다 달라지는 리워드!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "누적 하트마다 리워드",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-03-31",
+        "badges": [
+          "챌린지",
+          "리워드"
+        ]
+      },
+      {
+        "title": "올리브 멤버스 라운지 이용 대상자 안내",
+        "description": "N성수 + 센트럴 강남 타운",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "멤버스 라운지 이용",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-01-01",
+        "endsAt": "2026-12-31",
+        "badges": [
+          "멤버십",
+          "라운지"
+        ]
+      },
+      {
+        "title": "결광케어 유자바디워시 리뷰 쓰고 선물 받기",
+        "description": "올영 기프트카드 5천원권 드려요",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "리뷰 작성 시 기프트카드 5천원권 증정",
+        "couponCode": null,
+        "discountValue": 5000,
+        "discountType": "amount",
+        "startsAt": "2026-01-28",
+        "endsAt": "2026-02-15",
+        "badges": [
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "포토리뷰 작성하고 짝꿍 펜슬 받기",
+        "description": "리뷰쓰면 국민 브로우 펜슬 당첨",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "포토리뷰 작성 시 펜슬 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-01-19",
+        "endsAt": "2026-02-15",
+        "badges": [
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "동구밭 100% 당첨 포토 리뷰 이벤트",
+        "description": "올리브영 기프트카드 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "포토리뷰 100% 당첨 기프트카드",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-18",
+        "badges": [
+          "리뷰",
+          "경품",
+          "100당첨"
+        ]
+      },
+      {
+        "title": "시크릿 뷰티 파우더 리뷰 쓰고 선물 받기",
+        "description": "추첨 통해 사은품 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "리뷰 작성 시 사은품 추첨",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-02",
+        "endsAt": "2026-02-22",
+        "badges": [
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "블랑디바 파데 출시 리뷰 쓰고 선물 받기",
+        "description": "글림 커버리지 파운데이션 이벤트",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "리뷰 작성 시 경품 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-09",
+        "endsAt": "2026-02-27",
+        "badges": [
+          "리뷰",
+          "경품",
+          "신제품"
+        ]
+      },
+      {
+        "title": "필립스의 새해 선물 올리브영 기프트 카드",
+        "description": "100% 증정 포토리뷰 이벤트",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "포토리뷰 100% 기프트카드 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-02",
+        "endsAt": "2026-03-14",
+        "badges": [
+          "리뷰",
+          "경품",
+          "100당첨"
+        ]
+      },
+      {
+        "title": "스킨푸드 파우더케익 해피 발렌타인 이벤트",
+        "description": "투썸플레이스 기프티콘 증정",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "투썸플레이스 기프티콘 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-05",
+        "endsAt": "2026-02-15",
+        "badges": [
+          "경품",
+          "발렌타인"
+        ]
+      },
+      {
+        "title": "톰 더 글로우 시그니처 리뷰 이벤트",
+        "description": "선착순 30명 앰플 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "선착순 30명 앰플 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-13",
+        "endsAt": "2026-02-16",
+        "badges": [
+          "리뷰",
+          "경품",
+          "선착순"
+        ]
+      },
+      {
+        "title": "힌스 누 블러 틴트 포토리뷰 이벤트",
+        "description": "올영 기프트카드 100% 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "포토리뷰 100% 기프트카드 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-02",
+        "endsAt": "2026-02-22",
+        "badges": [
+          "리뷰",
+          "경품",
+          "100당첨"
+        ]
+      },
+      {
+        "title": "수분천재 에스네이처 고급 올리브오일 증정",
+        "description": "14만원 상당 경품을 드려요",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "14만원 상당 올리브오일 증정",
+        "couponCode": null,
+        "discountValue": 140000,
+        "discountType": "amount",
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-22",
+        "badges": [
+          "경품"
+        ]
+      },
+      {
+        "title": "NEW 라로슈포제 100% 경품 증정",
+        "description": "참여고객 전원 기프트카드 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "100% 기프트카드 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-01-26",
+        "endsAt": "2026-02-22",
+        "badges": [
+          "경품",
+          "100당첨"
+        ]
+      },
+      {
+        "title": "정규 2집 팝업기념 이벤트 경품 증정",
+        "description": "올리브영에서 만나요!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "팝업 기념 경품 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-13",
+        "endsAt": "2026-02-26",
+        "badges": [
+          "경품",
+          "팝업"
+        ]
+      },
+      {
+        "title": "로레알파리 셀프 염색 리뷰 인증 이벤트",
+        "description": "5천원 기프트카드 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "리뷰 작성 시 5천원 기프트카드 증정",
+        "couponCode": null,
+        "discountValue": 5000,
+        "discountType": "amount",
+        "startsAt": "2026-02-06",
+        "endsAt": "2026-02-27",
+        "badges": [
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "리터니티 베스트상품 포토 리뷰 이벤트",
+        "description": "올리브영 기프트카드 증정",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "포토리뷰 작성 시 기프트카드 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "르넥트 쿨링 비기너 구매 리뷰 이벤트",
+        "description": "포토리뷰 작성 시 경품 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "포토리뷰 작성 시 경품 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-09",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "리뷰",
+          "경품"
+        ]
+      },
+      {
+        "title": "그라운드플랜 버블토너 입점 기념 리뷰이벤트",
+        "description": "베스트 리뷰어 10만원권 증정",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "베스트 리뷰어 10만원권 증정",
+        "couponCode": null,
+        "discountValue": 100000,
+        "discountType": "amount",
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "리뷰",
+          "경품",
+          "신제품"
+        ]
+      },
+      {
+        "title": "퍼셀 리뷰쓰고 핑크한정키트 받기",
+        "description": "기프트카드 5천원권도 드려요",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "리뷰 작성 시 한정키트+5천원권 증정",
+        "couponCode": null,
+        "discountValue": 5000,
+        "discountType": "amount",
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "리뷰",
+          "경품",
+          "한정"
+        ]
+      },
+      {
+        "title": "삐아 NEW애플에디션 구매 리뷰 인증",
+        "description": "애플 에디션 전품목 10종 증정",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "리뷰 인증 시 신제품 10종 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-01",
+        "endsAt": "2026-02-28",
+        "badges": [
+          "리뷰",
+          "경품",
+          "신제품"
+        ]
+      },
+      {
+        "title": "셀퓨전씨 비비크림 선착순 리뷰이벤트",
+        "description": "100% 당첨 기프트카드 증정!",
+        "landingUrl": "https://www.oliveyoung.co.kr/store/main/getEventList.do",
+        "thumbnailUrl": null,
+        "benefitSummary": "100% 당첨 기프트카드 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2026-02-09",
+        "endsAt": "2026-03-07",
+        "badges": [
+          "리뷰",
+          "경품",
+          "100당첨"
+        ]
+      }
+    ],
+    "skipped": false
+  }
+]

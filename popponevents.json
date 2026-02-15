@@ -1,0 +1,1709 @@
+[
+  {
+    "category": "패션",
+    "brands": [
+      {
+        "brand_name": "무신사",
+        "official_domain": "musinsa.com",
+        "event_hub_urls": [
+          "https://www.musinsa.com/events/main"
+        ],
+        "page_type": "login_required",
+        "top_category": "패션",
+        "mid_category": "종합/편집숍",
+        "coupon_types_found": [
+          "new_user",
+          "percent_off",
+          "amount_off",
+          "member_only"
+        ],
+        "update_frequency": "daily",
+        "notes": "접속 시 통합 로그인으로 리다이렉트될 수 있음(쿠폰/혜택 일부 로그인 필요)."
+      },
+      {
+        "brand_name": "29CM",
+        "official_domain": "29cm.co.kr",
+        "event_hub_urls": [
+          "https://www.29cm.co.kr/store/event"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "패션",
+        "mid_category": "종합/편집숍",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트/기획전 페이지. 일부 혜택(쿠폰)은 로그인 필요."
+      },
+      {
+        "brand_name": "W컨셉",
+        "official_domain": "wconcept.co.kr",
+        "event_hub_urls": [
+          "https://display.wconcept.co.kr/event"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "패션",
+        "mid_category": "종합/편집숍",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "접속 시 403 등 봇 차단이 발생할 수 있어 헤더/UA 설정 등 필요."
+      },
+      {
+        "brand_name": "SSF샵",
+        "official_domain": "ssfshop.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "패션몰",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "한섬",
+        "official_domain": "thehandsome.com",
+        "event_hub_urls": [
+          "https://www.thehandsome.com/ko/DP/planshopList"
+        ],
+        "page_type": "mixed",
+        "top_category": "패션",
+        "mid_category": "브랜드몰/백화점형",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "Plan Shop(기획전) 목록 형태. 일부 콘텐츠는 동적 로딩 가능."
+      },
+      {
+        "brand_name": "지그재그",
+        "official_domain": "zigzag.kr",
+        "event_hub_urls": [],
+        "page_type": "dynamic_js",
+        "top_category": "패션",
+        "mid_category": "패션 플랫폼",
+        "coupon_types_found": [
+          "app_only",
+          "member_only",
+          "percent_off",
+          "amount_off"
+        ],
+        "update_frequency": "daily",
+        "notes": "웹에선 개별 이벤트 딥링크(/events/{uuid}) 형태가 확인됨(허브/목록 페이지는 미확인). 앱 내 '혜택/이벤트' 탭 중심 운영 가능."
+      },
+      {
+        "brand_name": "에이블리",
+        "official_domain": "a-bly.com",
+        "event_hub_urls": [],
+        "page_type": "dynamic_js",
+        "top_category": "패션",
+        "mid_category": "패션 플랫폼",
+        "coupon_types_found": [
+          "app_only",
+          "new_user",
+          "percent_off",
+          "amount_off"
+        ],
+        "update_frequency": "daily",
+        "notes": "웹은 메인 위주로 제공, 이벤트 목록 허브 URL 미확인(앱 내 혜택 탭 중심 운영 가능)."
+      },
+      {
+        "brand_name": "브랜디",
+        "official_domain": "brandi.co.kr",
+        "event_hub_urls": [
+          "https://www.brandi.co.kr/event"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "패션",
+        "mid_category": "패션 플랫폼",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트 페이지 접근 가능하나 UI가 동적 렌더링일 수 있음."
+      },
+      {
+        "brand_name": "ABC마트",
+        "official_domain": "abcmart.a-rt.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "신발/편집",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "나이키코리아",
+        "official_domain": "nike.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "스포츠웨어",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "세일/프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "아디다스코리아",
+        "official_domain": "adidas.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "스포츠웨어",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "세일/프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "유니클로코리아",
+        "official_domain": "uniqlo.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "SPA",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "특가/프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "자라코리아",
+        "official_domain": "zara.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "SPA",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "세일/프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "H&M코리아",
+        "official_domain": "hm.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "SPA",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "세일/프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "탑텐",
+        "official_domain": "topten10.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "패션",
+        "mid_category": "SPA",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "뷰티",
+    "brands": [
+      {
+        "brand_name": "올리브영",
+        "official_domain": "oliveyoung.co.kr",
+        "event_hub_urls": [
+          "https://m.oliveyoung.co.kr/m/mtn?menu=event",
+          "https://m.oliveyoung.co.kr/m/mypage/getCouponList.do"
+        ],
+        "page_type": "mixed",
+        "top_category": "뷰티",
+        "mid_category": "종합 H&B",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "member_only",
+          "app_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트 목록은 접근 가능. 쿠폰함은 로그인 필요."
+      },
+      {
+        "brand_name": "시코르",
+        "official_domain": "chicor.com",
+        "event_hub_urls": [
+          "https://www.chicor.com/events"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "뷰티",
+        "mid_category": "종합 H&B",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트/기획전 페이지."
+      },
+      {
+        "brand_name": "아모레퍼시픽몰",
+        "official_domain": "apmall.com",
+        "event_hub_urls": [
+          "https://www.apmall.com/kr/ko/display/event/"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "뷰티",
+        "mid_category": "브랜드몰",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "기획전/이벤트 섹션."
+      },
+      {
+        "brand_name": "이니스프리",
+        "official_domain": "innisfree.com",
+        "event_hub_urls": [
+          "https://m.innisfree.com/kr/ko/Events.do"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "뷰티",
+        "mid_category": "브랜드몰",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "모바일 이벤트 목록 페이지."
+      },
+      {
+        "brand_name": "미샤",
+        "official_domain": "missha.com",
+        "event_hub_urls": [
+          "https://missha.com/kr/m/event/event_list"
+        ],
+        "page_type": "mixed",
+        "top_category": "뷰티",
+        "mid_category": "브랜드몰",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트 목록 페이지(진행중 이벤트가 없을 경우 '없음' 안내)."
+      },
+      {
+        "brand_name": "클리오",
+        "official_domain": "cliocosmetic.com",
+        "event_hub_urls": [
+          "https://www.cliocosmetic.com/ko/event/eventList"
+        ],
+        "page_type": "mixed",
+        "top_category": "뷰티",
+        "mid_category": "브랜드몰",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트 목록 페이지."
+      },
+      {
+        "brand_name": "닥터지",
+        "official_domain": "dr-g.co.kr",
+        "event_hub_urls": [
+          "https://www.dr-g.co.kr/board/event/list"
+        ],
+        "page_type": "mixed",
+        "top_category": "뷰티",
+        "mid_category": "더마코스메틱",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트 게시판 리스트."
+      },
+      {
+        "brand_name": "셀리턴",
+        "official_domain": "cellreturnmall.co.kr",
+        "event_hub_urls": [
+          "https://cellreturnmall.co.kr/article/%EC%9D%B4%EB%B2%A4%ED%8A%B8/8/2/"
+        ],
+        "page_type": "static_html",
+        "top_category": "뷰티",
+        "mid_category": "뷰티디바이스",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase"
+        ],
+        "update_frequency": "monthly",
+        "notes": "이벤트 게시판 형태."
+      },
+      {
+        "brand_name": "화해",
+        "official_domain": "hwahae.co.kr",
+        "event_hub_urls": [],
+        "page_type": "dynamic_js",
+        "top_category": "뷰티",
+        "mid_category": "앱/리뷰 플랫폼",
+        "coupon_types_found": [
+          "app_only",
+          "percent_off",
+          "amount_off"
+        ],
+        "update_frequency": "weekly",
+        "notes": "개별 이벤트 페이지(/deal-event/{id})는 확인되나, 이벤트 목록 허브 URL 미확인(추측 URL 금지로 공란). 앱 내 이벤트 중심일 수 있음."
+      },
+      {
+        "brand_name": "뷰티컬리",
+        "official_domain": "kurly.com",
+        "event_hub_urls": [
+          "https://www.kurly.com/shop/event/kurlyEvent.php"
+        ],
+        "page_type": "mixed",
+        "top_category": "뷰티",
+        "mid_category": "뷰티 커머스",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "컬리 이벤트 허브(뷰티/일반 공용)."
+      }
+    ]
+  },
+  {
+    "category": "식품/배달",
+    "brands": [
+      {
+        "brand_name": "배달의민족",
+        "official_domain": "baemin.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "배달 플랫폼",
+        "coupon_types_found": [
+          "app_only",
+          "member_only",
+          "amount_off"
+        ],
+        "update_frequency": "daily",
+        "notes": "소비자용 이벤트 목록 URL 미확인(앱 내 쿠폰/이벤트 중심 운영 가능)."
+      },
+      {
+        "brand_name": "요기요",
+        "official_domain": "yogiyo.co.kr",
+        "event_hub_urls": [
+          "https://partner.yogiyo.co.kr/information"
+        ],
+        "page_type": "mixed",
+        "top_category": "식품/배달",
+        "mid_category": "배달 플랫폼",
+        "coupon_types_found": [
+          "app_only",
+          "amount_off"
+        ],
+        "update_frequency": "weekly",
+        "notes": "해당 URL은 파트너(사장님)용 공지/이벤트. 소비자용 이벤트 목록은 앱 중심일 수 있음."
+      },
+      {
+        "brand_name": "쿠팡이츠",
+        "official_domain": "coupangeats.com",
+        "event_hub_urls": [
+          "https://ces.coupangeats.com/event/"
+        ],
+        "page_type": "mixed",
+        "top_category": "식품/배달",
+        "mid_category": "배달 플랫폼",
+        "coupon_types_found": [
+          "amount_off",
+          "app_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "파트너/라이더용 공지·이벤트 성격의 페이지."
+      },
+      {
+        "brand_name": "버거킹",
+        "official_domain": "burgerking.co.kr",
+        "event_hub_urls": [
+          "https://www.burgerking.co.kr/event/ongoing"
+        ],
+        "page_type": "static_html",
+        "top_category": "식품/배달",
+        "mid_category": "QSR",
+        "coupon_types_found": [
+          "amount_off",
+          "bundle_deal",
+          "app_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "진행중 이벤트 목록."
+      },
+      {
+        "brand_name": "맥도날드",
+        "official_domain": "mcdonalds.co.kr",
+        "event_hub_urls": [
+          "https://www.mcdonalds.co.kr/kor/promotion/list"
+        ],
+        "page_type": "static_html",
+        "top_category": "식품/배달",
+        "mid_category": "QSR",
+        "coupon_types_found": [
+          "amount_off",
+          "bundle_deal",
+          "app_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "프로모션 목록."
+      },
+      {
+        "brand_name": "교촌치킨",
+        "official_domain": "kyochon.com",
+        "event_hub_urls": [
+          "https://www.kyochon.com/event/ing.asp"
+        ],
+        "page_type": "static_html",
+        "top_category": "식품/배달",
+        "mid_category": "치킨",
+        "coupon_types_found": [
+          "amount_off",
+          "percent_off",
+          "app_only"
+        ],
+        "update_frequency": "monthly",
+        "notes": "진행중 이벤트 목록."
+      },
+      {
+        "brand_name": "BBQ",
+        "official_domain": "bbq.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "치킨",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "도미노피자",
+        "official_domain": "dominos.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "피자",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "스타벅스",
+        "official_domain": "starbucks.co.kr",
+        "event_hub_urls": [
+          "https://www.starbucks.co.kr/whats_new/campaign_list.do"
+        ],
+        "page_type": "mixed",
+        "top_category": "식품/배달",
+        "mid_category": "카페",
+        "coupon_types_found": [
+          "member_only",
+          "gift_with_purchase",
+          "bundle_deal"
+        ],
+        "update_frequency": "weekly",
+        "notes": "캠페인/프로모션 목록."
+      },
+      {
+        "brand_name": "투썸플레이스",
+        "official_domain": "twosome.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "카페",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "이디야",
+        "official_domain": "ediya.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "카페",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "메가커피",
+        "official_domain": "megacoffee.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "카페",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "CU",
+        "official_domain": "cu.bgfretail.com",
+        "event_hub_urls": [
+          "https://cu.bgfretail.com/event/plus.do?category=event&depth2=1&sf=N"
+        ],
+        "page_type": "static_html",
+        "top_category": "식품/배달",
+        "mid_category": "편의점",
+        "coupon_types_found": [
+          "bogo",
+          "clearance",
+          "bundle_deal"
+        ],
+        "update_frequency": "monthly",
+        "notes": "행사상품(1+1/2+1 등) 목록."
+      },
+      {
+        "brand_name": "GS25",
+        "official_domain": "gs25.gsretail.com",
+        "event_hub_urls": [
+          "https://gs25.gsretail.com/customer-engagement/event/current-events?uiel=Mobile",
+          "https://gs25.gsretail.com/gscvs/en/products/event-goods"
+        ],
+        "page_type": "mixed",
+        "top_category": "식품/배달",
+        "mid_category": "편의점",
+        "coupon_types_found": [
+          "bogo",
+          "clearance",
+          "bundle_deal",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "진행중 이벤트 + 행사상품 목록."
+      },
+      {
+        "brand_name": "세븐일레븐",
+        "official_domain": "7-eleven.co.kr",
+        "event_hub_urls": [
+          "https://m.7-eleven.co.kr/product/eventList.asp"
+        ],
+        "page_type": "static_html",
+        "top_category": "식품/배달",
+        "mid_category": "편의점",
+        "coupon_types_found": [
+          "bogo",
+          "clearance",
+          "bundle_deal",
+          "member_only"
+        ],
+        "update_frequency": "monthly",
+        "notes": "모바일 이벤트 목록."
+      },
+      {
+        "brand_name": "마켓컬리",
+        "official_domain": "kurly.com",
+        "event_hub_urls": [
+          "https://www.kurly.com/shop/event/kurlyEvent.php"
+        ],
+        "page_type": "mixed",
+        "top_category": "식품/배달",
+        "mid_category": "장보기/신선식품",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "free_shipping",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "컬리 이벤트 허브."
+      },
+      {
+        "brand_name": "SSG닷컴",
+        "official_domain": "ssg.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "장보기/이커머스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "오아시스마켓",
+        "official_domain": "oasis.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "식품/배달",
+        "mid_category": "장보기/신선식품",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "생활/리빙",
+    "brands": [
+      {
+        "brand_name": "오늘의집",
+        "official_domain": "ohou.se",
+        "event_hub_urls": [
+          "https://ohou.se/competitions/feed",
+          "https://events.ohou.se/"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "생활/리빙",
+        "mid_category": "리빙/인테리어 플랫폼",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "free_shipping",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "이벤트 모아보기/프로모션 영역."
+      },
+      {
+        "brand_name": "이케아코리아",
+        "official_domain": "ikea.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "생활/리빙",
+        "mid_category": "가구",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "한샘",
+        "official_domain": "hanssem.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "생활/리빙",
+        "mid_category": "가구/인테리어",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "다이소",
+        "official_domain": "daisomall.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "생활/리빙",
+        "mid_category": "리빙/잡화",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "쿠팡",
+        "official_domain": "coupang.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "생활/리빙",
+        "mid_category": "이커머스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "기획전/쿠폰/할인 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "11번가",
+        "official_domain": "11st.co.kr",
+        "event_hub_urls": [
+          "https://www.11st.co.kr/display-view/pc/main/billboard"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "생활/리빙",
+        "mid_category": "이커머스",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "free_shipping",
+          "member_only"
+        ],
+        "update_frequency": "daily",
+        "notes": "이벤트 전체보기(빌보드) 형태."
+      },
+      {
+        "brand_name": "G마켓",
+        "official_domain": "gmarket.co.kr",
+        "event_hub_urls": [
+          "https://promotion.gmarket.co.kr/planshop/PlanShop.asp",
+          "https://www.gmarket.co.kr/n/superdeal"
+        ],
+        "page_type": "mixed",
+        "top_category": "생활/리빙",
+        "mid_category": "이커머스",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "free_shipping",
+          "clearance"
+        ],
+        "update_frequency": "daily",
+        "notes": "기획전/슈퍼딜 등 이벤트 허브."
+      },
+      {
+        "brand_name": "옥션",
+        "official_domain": "auction.co.kr",
+        "event_hub_urls": [
+          "https://eventv2.auction.co.kr/event3/Monthly/CouponZone/w_event.aspx"
+        ],
+        "page_type": "mixed",
+        "top_category": "생활/리빙",
+        "mid_category": "이커머스",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "member_only"
+        ],
+        "update_frequency": "monthly",
+        "notes": "쿠폰존(프로모션 허브)."
+      },
+      {
+        "brand_name": "위메프",
+        "official_domain": "wemakeprice.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "생활/리빙",
+        "mid_category": "이커머스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "티몬",
+        "official_domain": "tmon.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "생활/리빙",
+        "mid_category": "이커머스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 페이지 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "디지털/가전",
+    "brands": [
+      {
+        "brand_name": "삼성닷컴",
+        "official_domain": "samsung.com",
+        "event_hub_urls": [
+          "https://www.samsung.com/sec/event/new-year-bigsale/",
+          "https://www.samsung.com/sec/event/galaxy-s25/promotion/"
+        ],
+        "page_type": "mixed",
+        "top_category": "디지털/가전",
+        "mid_category": "브랜드몰",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "bundle_deal"
+        ],
+        "update_frequency": "seasonal",
+        "notes": "대표 이벤트 페이지 예시(시즌/제품별 프로모션)."
+      },
+      {
+        "brand_name": "LG전자",
+        "official_domain": "lge.co.kr",
+        "event_hub_urls": [
+          "https://www.lge.co.kr/benefits",
+          "https://bestshop.lge.co.kr/event/eventList/bestshop"
+        ],
+        "page_type": "mixed",
+        "top_category": "디지털/가전",
+        "mid_category": "브랜드몰",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "bundle_deal",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "LGE.COM 혜택/이벤트 + 베스트샵 이벤트 목록."
+      },
+      {
+        "brand_name": "쿠팡",
+        "official_domain": "coupang.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "디지털/가전",
+        "mid_category": "이커머스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "기획전/쿠폰 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "하이마트",
+        "official_domain": "e-himart.co.kr",
+        "event_hub_urls": [
+          "https://company.himart.co.kr/event/list",
+          "https://www.e-himart.co.kr/app/display/eventHall"
+        ],
+        "page_type": "mixed",
+        "top_category": "디지털/가전",
+        "mid_category": "가전 유통",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "bundle_deal"
+        ],
+        "update_frequency": "monthly",
+        "notes": "기업사이트 이벤트 목록 + 온라인몰 이벤트홀. 온라인몰 이벤트홀은 앱 기능 안내가 포함될 수 있음."
+      },
+      {
+        "brand_name": "전자랜드",
+        "official_domain": "etland.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "디지털/가전",
+        "mid_category": "가전 유통",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "컴퓨존",
+        "official_domain": "compuzone.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "디지털/가전",
+        "mid_category": "PC/부품 쇼핑",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "다나와",
+        "official_domain": "danawa.com",
+        "event_hub_urls": [
+          "https://event.danawa.com/"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "디지털/가전",
+        "mid_category": "가격비교/커뮤니티",
+        "coupon_types_found": [
+          "gift_with_purchase",
+          "member_only",
+          "bundle_deal"
+        ],
+        "update_frequency": "daily",
+        "notes": "이벤트/체험단/룰렛 등 상시 진행."
+      },
+      {
+        "brand_name": "애플코리아",
+        "official_domain": "apple.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "디지털/가전",
+        "mid_category": "브랜드",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 할인/프로모션은 교육할인·트레이드인 등 형태로 운영 가능하나 이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "여행/레저",
+    "brands": [
+      {
+        "brand_name": "여기어때",
+        "official_domain": "goodchoice.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "여행 플랫폼",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "야놀자",
+        "official_domain": "yanolja.com",
+        "event_hub_urls": [
+          "https://nol.yanolja.com/event",
+          "https://content.yanolja.com/promotions/coupon-benefit"
+        ],
+        "page_type": "mixed",
+        "top_category": "여행/레저",
+        "mid_category": "여행 플랫폼",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "free_shipping",
+          "member_only",
+          "app_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "NOL 이벤트 페이지 및 쿠폰/혜택 모아보기."
+      },
+      {
+        "brand_name": "아고다",
+        "official_domain": "agoda.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "OTA",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "부킹닷컴",
+        "official_domain": "booking.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "OTA",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "트립닷컴",
+        "official_domain": "trip.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "OTA",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "인터파크투어",
+        "official_domain": "interpark.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "여행사/티켓",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "투어 이벤트/쿠폰 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "하나투어",
+        "official_domain": "hanatour.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "여행사",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/기획전 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "모두투어",
+        "official_domain": "modetour.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "여행사",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/기획전 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "클룩",
+        "official_domain": "klook.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "투어/티켓",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션/쿠폰 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "에어비앤비",
+        "official_domain": "airbnb.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "여행/레저",
+        "mid_category": "숙소/체험",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "쿠폰/프로모션 허브 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "문화/콘텐츠",
+    "brands": [
+      {
+        "brand_name": "CGV",
+        "official_domain": "cgv.co.kr",
+        "event_hub_urls": [
+          "https://cgv.co.kr/evt/giveawayState"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "영화관",
+        "coupon_types_found": [
+          "gift_with_purchase",
+          "member_only"
+        ],
+        "update_frequency": "weekly",
+        "notes": "경품/이벤트 관련 페이지(세부 이벤트는 앱/웹 분산)."
+      },
+      {
+        "brand_name": "메가박스",
+        "official_domain": "megabox.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "영화관",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "롯데시네마",
+        "official_domain": "lottecinema.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "영화관",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "넷플릭스",
+        "official_domain": "netflix.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "OTT",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "일반적으로 상시 할인/쿠폰 이벤트 허브를 운영하지 않음(제휴/통신사 프로모션은 제휴사에서 제공)."
+      },
+      {
+        "brand_name": "웨이브",
+        "official_domain": "wavve.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "OTT",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "쿠팡플레이",
+        "official_domain": "coupangplay.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "OTT",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션은 쿠팡/와우 멤버십 연계 형태가 많으나 이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "티빙",
+        "official_domain": "tving.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "OTT",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "왓챠",
+        "official_domain": "watcha.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "OTT",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "멜론",
+        "official_domain": "melon.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "음원",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "지니뮤직",
+        "official_domain": "genie.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "음원",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "YES24",
+        "official_domain": "yes24.com",
+        "event_hub_urls": [
+          "https://event.yes24.com/",
+          "https://m.yes24.com/home/event"
+        ],
+        "page_type": "mixed",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "도서/티켓/굿즈",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "member_only"
+        ],
+        "update_frequency": "daily",
+        "notes": "이벤트세상(전 카테고리 이벤트 허브)."
+      },
+      {
+        "brand_name": "알라딘",
+        "official_domain": "aladin.co.kr",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "도서",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/프로모션 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "교보문고",
+        "official_domain": "kyobobook.co.kr",
+        "event_hub_urls": [
+          "https://event.kyobobook.co.kr/"
+        ],
+        "page_type": "mixed",
+        "top_category": "문화/콘텐츠",
+        "mid_category": "도서",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase",
+          "member_only"
+        ],
+        "update_frequency": "daily",
+        "notes": "혜택·이벤트 허브."
+      }
+    ]
+  },
+  {
+    "category": "키즈/교육",
+    "brands": [
+      {
+        "brand_name": "아이챌린지",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "교육",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "윤선생",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "교육",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "밀크T",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "교육",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "웅진씽크빅",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "교육",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "에듀윌",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "교육/자격",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "메가스터디",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "교육/입시",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "대교",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "교육",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "레고코리아",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "키즈/교육",
+        "mid_category": "완구/체험",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "건강/헬스",
+    "brands": [
+      {
+        "brand_name": "닥터나우",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "건강/헬스",
+        "mid_category": "의료/비대면",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "굿닥",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "건강/헬스",
+        "mid_category": "의료/예약",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "올리브영(건강)",
+        "official_domain": "oliveyoung.co.kr",
+        "event_hub_urls": [
+          "https://m.oliveyoung.co.kr/m/mtn?menu=event"
+        ],
+        "page_type": "mixed",
+        "top_category": "건강/헬스",
+        "mid_category": "건강기능식품",
+        "coupon_types_found": [
+          "percent_off",
+          "amount_off",
+          "gift_with_purchase"
+        ],
+        "update_frequency": "weekly",
+        "notes": "올리브영 이벤트 허브(카테고리 공용)."
+      },
+      {
+        "brand_name": "아이허브",
+        "official_domain": "iherb.com",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "건강/헬스",
+        "mid_category": "해외직구",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션/세일 페이지 존재 가능하나 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "GNM자연의품격",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "건강/헬스",
+        "mid_category": "건기식",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "종근당건강",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "건강/헬스",
+        "mid_category": "건기식",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "정관장",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "건강/헬스",
+        "mid_category": "홍삼/건기식",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "필리",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "건강/헬스",
+        "mid_category": "영양제 구독",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "공식 도메인/이벤트 허브 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "반려동물",
+    "brands": [
+      {
+        "brand_name": "펫프렌즈",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "반려동물",
+        "mid_category": "펫커머스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "바잇미",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "반려동물",
+        "mid_category": "펫용품",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "핏펫",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "반려동물",
+        "mid_category": "펫헬스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "퍼피런",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "반려동물",
+        "mid_category": "펫서비스",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "로얄캐닌코리아",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "반려동물",
+        "mid_category": "펫푸드",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/쿠폰 허브 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  },
+  {
+    "category": "자동차/주유",
+    "brands": [
+      {
+        "brand_name": "SK에너지",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "자동차/주유",
+        "mid_category": "주유",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "GS칼텍스",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "자동차/주유",
+        "mid_category": "주유",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "S-OIL",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "자동차/주유",
+        "mid_category": "주유",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "현대오일뱅크",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "자동차/주유",
+        "mid_category": "주유",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "타이어뱅크",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "자동차/주유",
+        "mid_category": "정비/타이어",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "불스원",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "자동차/주유",
+        "mid_category": "차량용품",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "카카오T(주유)",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "자동차/주유",
+        "mid_category": "모빌리티",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "주유 혜택/이벤트는 앱 내에서 운영 가능(웹 허브 URL 미확인)."
+      }
+    ]
+  },
+  {
+    "category": "금융/통신",
+    "brands": [
+      {
+        "brand_name": "삼성카드",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "카드",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "신한카드",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "카드",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "KB국민카드",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "카드",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "현대카드",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "카드",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "롯데카드",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "카드",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택 허브 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "토스",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "핀테크",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "이벤트/혜택은 앱 내에서 운영되는 경우가 많음(웹 허브 URL 미확인)."
+      },
+      {
+        "brand_name": "카카오페이",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "간편결제",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "혜택/이벤트는 앱 내 운영 가능(웹 허브 URL 미확인)."
+      },
+      {
+        "brand_name": "네이버페이",
+        "official_domain": "",
+        "event_hub_urls": [
+          "https://mkt.naver.com/promotion"
+        ],
+        "page_type": "dynamic_js",
+        "top_category": "금융/통신",
+        "mid_category": "간편결제",
+        "coupon_types_found": [
+          "member_only",
+          "amount_off",
+          "percent_off"
+        ],
+        "update_frequency": "weekly",
+        "notes": "네이버 이벤트 모아보기(네이버페이/플러스 스토어 등 캠페인 포함)."
+      },
+      {
+        "brand_name": "KT",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "통신",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션/이벤트 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "SKT",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "통신",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션/이벤트 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "LGU+",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "통신",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션/이벤트 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "헬로모바일",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "알뜰폰",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션/이벤트 페이지 URL 미확인(추측 URL 금지로 공란)."
+      },
+      {
+        "brand_name": "리브모바일",
+        "official_domain": "",
+        "event_hub_urls": [],
+        "page_type": "unknown",
+        "top_category": "금융/통신",
+        "mid_category": "알뜰폰",
+        "coupon_types_found": [],
+        "update_frequency": "unknown",
+        "notes": "프로모션/이벤트 페이지 URL 미확인(추측 URL 금지로 공란)."
+      }
+    ]
+  }
+]

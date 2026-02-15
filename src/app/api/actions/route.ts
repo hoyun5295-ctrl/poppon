@@ -75,8 +75,7 @@ export async function POST(request: NextRequest) {
     if (action_type === 'view') {
       supabase
         .rpc('increment_view_count', { deal_id_input: deal_id })
-        .then(() => {})
-        .catch(() => {});
+        .then(() => {}, () => {});
     }
 
     return NextResponse.json({ ok: true });

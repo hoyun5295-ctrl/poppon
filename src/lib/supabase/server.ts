@@ -12,13 +12,13 @@ export async function createServerSupabaseClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Server Component에서는 쿠키 설정 불가 — 무시
+            // Server Component?�서??쿠키 ?�정 불�? ??무시
           }
         },
       },
@@ -27,7 +27,7 @@ export async function createServerSupabaseClient() {
 }
 
 /**
- * 서비스 역할 키로 접근 (어드민 작업용, RLS 우회)
+ * ?�비????�� ?�로 ?�근 (?�드�??�업?? RLS ?�회)
  */
 export async function createServiceClient() {
   const cookieStore = await cookies();
@@ -40,7 +40,7 @@ export async function createServiceClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
@@ -53,3 +53,4 @@ export async function createServiceClient() {
     }
   );
 }
+

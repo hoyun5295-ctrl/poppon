@@ -107,8 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 초기 세션 확인 + 리스너
   useEffect(() => {
     const initAuth = async () => {
+      const safetyTimeout = setTimeout(() => setIsLoading(false), 3000);
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
+        clearTimeout(safetyTimeout);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setTrackingUserId(currentSession?.user?.id ?? null);

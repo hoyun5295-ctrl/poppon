@@ -23,33 +23,21 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // 세션 갱신 (Supabase Auth 필수)
+  await supabase.auth.getUser();
 
-  // ── 브랜드 포털 보호 (기존) ──
+  // ── 브랜드 포털 보호 ──
   const protectedPaths = ['/brand'];
   const isProtectedPath = protectedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
 
-  if (isProtectedPath && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth';
-    url.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // ── 어드민 비밀번호 보호 ──
-  const isAdminPath = request.nextUrl.pathname.startsWith('/admin');
-  const isAdminLoginPath = request.nextUrl.pathname === '/admin/login';
-  const isAdminAuthApi = request.nextUrl.pathname === '/api/admin/auth';
-
-  if (isAdminPath && !isAdminLoginPath && !isAdminAuthApi) {
-    const adminToken = request.cookies.get('admin_token')?.value;
-    const expectedToken = process.env.ADMIN_SECRET;
-
-    if (!expectedToken || adminToken !== expectedToken) {
+  if (isProtectedPath) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
       const url = request.nextUrl.clone();
-      url.pathname = '/admin/login';
+      url.pathname = '/auth';
+      url.searchParams.set('redirect', request.nextUrl.pathname);
       return NextResponse.redirect(url);
     }
   }
@@ -60,7 +48,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/brand/:path*',
-    '/admin/:path*',
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

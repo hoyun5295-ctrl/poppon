@@ -3,6 +3,8 @@ import { SEO_DEFAULTS, APP_NAME } from '@/lib/constants';
 import { TopNav } from '@/components/layout/TopNav';
 import { Footer } from '@/components/layout/Footer';
 import { SourceProtection } from '@/components/layout/SourceProtection';
+import { AuthProvider } from '@/lib/auth/AuthProvider';
+import { AuthSheet } from '@/components/auth/AuthSheet';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -33,13 +35,17 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="font-sans antialiased min-h-screen flex flex-col">
-      <SourceProtection />
-        <TopNav />
-        <main className="flex-1">
-          {children}
-        </main>
-        {modal}
-        <Footer />
+        <AuthProvider>
+          <SourceProtection />
+          <TopNav />
+          <main className="flex-1">
+            {children}
+          </main>
+          {modal}
+          <Footer />
+          {/* 가입/로그인 바텀시트 (전역) */}
+          <AuthSheet />
+        </AuthProvider>
       </body>
     </html>
   );

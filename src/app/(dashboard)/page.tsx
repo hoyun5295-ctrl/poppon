@@ -23,8 +23,8 @@ export default function AdminDashboard() {
     async function fetchStats() {
       try {
         const [dealsRes, merchantsRes] = await Promise.all([
-          fetch('/api/admin/deals?limit=1'),
-          fetch('/api/admin/merchants?limit=1'),
+          fetch('/api/deals?limit=1'),
+          fetch('/api/merchants?limit=1'),
         ]);
         const dealsData = await dealsRes.json();
         const merchantsData = await merchantsRes.json();
@@ -45,30 +45,30 @@ export default function AdminDashboard() {
 
   const cards = [
     {
-      href: '/admin/deals',
+      href: '/deals',
       title: '딜 관리',
       desc: '검수, 승인, 숨김, 병합',
       stat: loading ? '...' : `${stats.totalDeals}개`,
       color: 'bg-red-50 text-red-700',
     },
     {
-      href: '/admin/merchants',
+      href: '/merchants',
       title: '브랜드 관리',
       desc: '브랜드 등록/수정',
       stat: loading ? '...' : `${stats.totalMerchants}개`,
       color: 'bg-blue-50 text-blue-700',
     },
     {
-      href: '/admin/deals/new',
-      title: '➕ 새 딜 등록',
-      desc: '수동으로 딜 추가',
+      href: '/crawls',
+      title: '수급 모니터링',
+      desc: 'AI 크롤러 현황',
       stat: '',
       color: 'bg-green-50 text-green-700',
     },
     {
-      href: '/admin/merchants/new',
-      title: '➕ 새 브랜드 등록',
-      desc: '브랜드 정보 추가',
+      href: '/users',
+      title: '회원 관리',
+      desc: '가입자 조회/관리',
       stat: '',
       color: 'bg-purple-50 text-purple-700',
     },
@@ -98,13 +98,23 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="font-semibold text-gray-900 mb-3">빠른 시작 가이드</h2>
-        <ol className="space-y-2 text-sm text-gray-600">
-          <li>1. <Link href="/admin/merchants/new" className="text-red-500 underline">브랜드 등록</Link> — 먼저 딜을 올릴 브랜드를 추가하세요</li>
-          <li>2. <Link href="/admin/deals/new" className="text-red-500 underline">딜 등록</Link> — 브랜드를 선택하고 딜 정보를 입력하세요</li>
-          <li>3. 상태를 &quot;active&quot;로 변경하면 홈 화면에 바로 노출됩니다</li>
-        </ol>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="font-semibold text-gray-900 mb-3">빠른 시작</h2>
+          <ol className="space-y-2 text-sm text-gray-600">
+            <li>1. <Link href="/merchants" className="text-red-500 underline">브랜드 관리</Link> — 브랜드 추가/수정</li>
+            <li>2. <Link href="/deals" className="text-red-500 underline">딜 관리</Link> — 딜 상태 변경</li>
+            <li>3. <Link href="/crawls" className="text-red-500 underline">수급 모니터링</Link> — 크롤러 확인</li>
+          </ol>
+        </div>
+
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="font-semibold text-gray-900 mb-3">크롤 스케줄</h2>
+          <div className="space-y-2 text-sm text-gray-600">
+            <p>매일 06:00 KST — 자동 크롤 + 만료 처리</p>
+            <p className="text-xs text-gray-400">Vercel Cron으로 실행, 수동 실행은 수급 모니터링에서</p>
+          </div>
+        </div>
       </div>
     </div>
   );

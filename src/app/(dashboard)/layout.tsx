@@ -4,15 +4,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
-  { href: '/admin', label: '대시보드', icon: '📊' },
-  { href: '/admin/deals', label: '딜 관리', icon: '🏷️' },
-  { href: '/admin/merchants', label: '브랜드 관리', icon: '🏪' },
-  { href: '/admin/crawls', label: '수급 모니터링', icon: '🔄' },
-  { href: '/admin/ads', label: '광고 관리', icon: '📢' },
-  { href: '/admin/policies', label: '운영 정책', icon: '⚙️' },
+  { href: '/', label: '대시보드', icon: '📊' },
+  { href: '/deals', label: '딜 관리', icon: '🏷️' },
+  { href: '/merchants', label: '브랜드 관리', icon: '🏪' },
+  { href: '/crawls', label: '수급 모니터링', icon: '🔄' },
+  { href: '/users', label: '회원 관리', icon: '👤' },
+  { href: '/ads', label: '광고 관리', icon: '📢' },
+  { href: '/policies', label: '운영 정책', icon: '⚙️' },
 ];
 
-export default function AdminLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -24,16 +25,21 @@ export default function AdminLayout({
       {/* Top bar */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-4">
-          <Link href="/admin" className="text-lg font-bold text-red-500">
+          <Link href="/" className="text-lg font-bold text-red-500">
             POPPON Admin
           </Link>
           <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
-            Phase 0
+            Phase 1
           </span>
         </div>
-        <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-          ← 사이트 보기
-        </Link>
+        <a
+          href={process.env.NEXT_PUBLIC_MAIN_URL || 'https://poppon.kr'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          ↗ 사이트 보기
+        </a>
       </header>
 
       <div className="flex">
@@ -42,8 +48,8 @@ export default function AdminLayout({
           <ul className="space-y-1">
             {NAV_ITEMS.map((item) => {
               const isActive =
-                item.href === '/admin'
-                  ? pathname === '/admin'
+                item.href === '/'
+                  ? pathname === '/'
                   : pathname.startsWith(item.href);
               return (
                 <li key={item.href}>

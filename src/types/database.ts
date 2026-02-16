@@ -1,15 +1,10 @@
 // ===========================================
 // POPPON 데이터베이스 타입 정의
-// 기획서 v1.2.1 기준
+// 기획서 v1.2.1 + 회원가입/인증 시스템
 // ===========================================
 
 // --- 딜 (Deal) ---
 export type DealType = 'A1' | 'A2' | 'B' | 'C';
-// A1: 쿠폰/프로모션 코드형
-// A2: 가격딜/핫딜 (최저가/특가) — 제휴 네트워크
-// B: 앱쿠폰/링크형
-// C: 오프라인 이벤트
-
 export type DealStatus = 'pending' | 'active' | 'hidden' | 'expired';
 export type DealChannel = 'online' | 'offline' | 'hybrid';
 export type SourceType = 'crawl' | 'brand' | 'user_submit' | 'affiliate' | 'admin';
@@ -34,9 +29,9 @@ export type UrgencyTag =
   | 'updated_today';
 
 export interface DealCondition {
-  type: string;       // min_spend, excluded, max_qty 등
+  type: string;
   value: number | null;
-  text: string;       // "3만원 이상 구매 시"
+  text: string;
 }
 
 export interface Deal {
@@ -44,64 +39,44 @@ export interface Deal {
   merchant_id: string;
   category_id: string;
   subcategory_id: string | null;
-
-  // 기본 정보
   title: string;
   description: string | null;
   deal_type: DealType;
   status: DealStatus;
   channel: DealChannel;
-
-  // 혜택
   benefit_tags: BenefitTag[];
-  benefit_summary: string;        // "최대 50% 할인"
-  coupon_code: string | null;     // A1 타입
-  discount_value: number | null;  // % 또는 원
+  benefit_summary: string;
+  coupon_code: string | null;
+  discount_value: number | null;
   discount_type: 'percent' | 'amount' | null;
-
-  // 가격 (A2 가격딜)
   price: number | null;
   original_price: number | null;
   discount_rate: number | null;
-
-  // 조건
   conditions: DealCondition[];
   how_to_use: string | null;
-
-  // 기간
   starts_at: string | null;
   ends_at: string | null;
-  is_evergreen: boolean;          // 상시 진행
-
-  // 출처/링크
+  is_evergreen: boolean;
   source_type: SourceType;
-  source_url: string;             // 원본 링크
-  landing_url: string;            // 이동 링크
-  affiliate_url: string | null;   // 제휴 링크
+  source_url: string;
+  landing_url: string;
+  affiliate_url: string | null;
   affiliate_disclosure: boolean;
-
-  // 이미지
   thumbnail_url: string | null;
   og_image_url: string | null;
-
-  // 점수/통계
-  quality_score: number;          // 0~100
+  quality_score: number;
   trending_score: number;
   view_count: number;
   click_out_count: number;
   save_count: number;
   feedback_work_count: number;
   feedback_fail_count: number;
-
-  // 메타
-  slug: string;                   // SEO URL
+  slug: string;
   meta_title: string | null;
   meta_description: string | null;
-
-  // 시간
   created_at: string;
   updated_at: string;
-  expired_at: string | null;      // 실제 만료 처리 시각
+  expired_at: string | null;
 }
 
 // --- 카테고리 ---
@@ -115,7 +90,7 @@ export interface Category {
   sort_order: number;
   is_active: boolean;
   deal_count: number;
-  depth: number;                  // 0=대, 1=중, 2=소
+  depth: number;
   created_at: string;
 }
 
@@ -125,47 +100,66 @@ export interface Merchant {
   name: string;
   slug: string;
   logo_url: string | null;
-  brand_color: string | null;     // 브랜드 고유 색상 (#hex)
+  brand_color: string | null;
   description: string | null;
   official_url: string | null;
   category_ids: string[];
-  is_verified: boolean;           // 공식 등록 여부
+  is_verified: boolean;
   follower_count: number;
   active_deal_count: number;
   created_at: string;
   updated_at: string;
 }
 
-// --- 유저(Member) ---
-export type UserRole = 'member' | 'brand_admin' | 'admin' | 'super_admin';
+// --- 유저 프로필 (신규) ---
+export type UserStatus = 'active' | 'suspended' | 'withdrawn';
+export type AuthProvider = 'kmc' | 'kakao' | 'naver' | 'apple' | 'phone';
+export type ConsentType = 'terms' | 'privacy' | 'marketing' | 'third_party';
 
-export interface User {
+export interface Profile {
   id: string;
   phone: string;
+  name: string | null;
   nickname: string | null;
-  role: UserRole;
-  interests: string[];            // 관심 카테고리 ID
-  marketing_opt_in: boolean;
-  marketing_opt_in_at: string | null;
-  notification_preferences: NotificationPreferences;
+  birth_date: string | null;
+  gender: string | null;
+  ci: string | null;
+  di: string | null;
+  interest_categories: string[];
+  marketing_agreed: boolean;
+  marketing_agreed_at: string | null;
+  marketing_channel: string[];
+  avatar_url: string | null;
+  provider: AuthProvider;
+  linked_providers: AuthProvider[];
+  status: UserStatus;
+  last_login_at: string | null;
   created_at: string;
   updated_at: string;
-  last_login_at: string | null;
+}
+
+export interface UserConsent {
+  id: string;
+  user_id: string;
+  consent_type: ConsentType;
+  agreed: boolean;
+  agreed_at: string;
+  revoked_at: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
 }
 
 export interface NotificationPreferences {
-  channels: {
-    kakao: boolean;
-    sms: boolean;
-    email: boolean;
-    push: boolean;
-  };
-  frequency: 'instant' | 'daily_digest' | 'weekly_digest';
-  quiet_hours: {
-    start: string;    // "22:00"
-    end: string;      // "08:00"
-  };
-  digest_time: string;  // "12:00"
+  user_id: string;
+  kakao_enabled: boolean;
+  sms_enabled: boolean;
+  email_enabled: boolean;
+  push_enabled: boolean;
+  frequency: 'realtime' | 'daily' | 'weekly';
+  quiet_start: string;
+  quiet_end: string;
+  updated_at: string;
 }
 
 // --- 저장/구독 ---
@@ -174,6 +168,46 @@ export interface SavedDeal {
   user_id: string;
   deal_id: string;
   created_at: string;
+}
+
+export interface FollowedMerchant {
+  id: string;
+  user_id: string;
+  merchant_id: string;
+  notify: boolean;
+  created_at: string;
+}
+
+export interface FollowedCategory {
+  id: string;
+  user_id: string;
+  category_id: string;
+  notify: boolean;
+  created_at: string;
+}
+
+// --- 기존 타입 유지 ---
+export type UserRole = 'member' | 'brand_admin' | 'admin' | 'super_admin';
+
+export interface User {
+  id: string;
+  phone: string;
+  nickname: string | null;
+  role: UserRole;
+  interests: string[];
+  marketing_opt_in: boolean;
+  marketing_opt_in_at: string | null;
+  notification_preferences: NotificationPreferencesLegacy;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string | null;
+}
+
+export interface NotificationPreferencesLegacy {
+  channels: { kakao: boolean; sms: boolean; email: boolean; push: boolean };
+  frequency: 'instant' | 'daily_digest' | 'weekly_digest';
+  quiet_hours: { start: string; end: string };
+  digest_time: string;
 }
 
 export interface Follow {
@@ -288,7 +322,6 @@ export interface HomeResponse {
   categories: Category[];
 }
 
-// 리스트용 경량 딜 카드
 export interface DealCard {
   id: string;
   title: string;
@@ -296,7 +329,7 @@ export interface DealCard {
   deal_type: DealType;
   merchant_name: string;
   merchant_logo_url: string | null;
-  merchant_brand_color: string | null;  // 브랜드 고유 색상
+  merchant_brand_color: string | null;
   category_name: string;
   thumbnail_url: string | null;
   coupon_code: string | null;

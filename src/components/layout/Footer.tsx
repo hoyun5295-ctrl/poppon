@@ -14,11 +14,11 @@ export function Footer() {
             </p>
           </div>
 
-          {/* 카테고리 */}
+          {/* 카테고리 (6개 한 컬럼) */}
           <div>
             <h3 className="text-sm font-semibold text-white mb-3">카테고리</h3>
             <ul className="space-y-2">
-              {MAIN_CATEGORIES.slice(0, 6).map((cat) => (
+              {MAIN_CATEGORIES.map((cat) => (
                 <li key={cat.slug}>
                   <Link href={`/c/${cat.slug}`} className="text-sm text-surface-400 hover:text-white transition-colors">
                     {cat.name}
@@ -28,16 +28,25 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* 서비스 */}
           <div>
-            <h3 className="text-sm font-semibold text-white mb-3">카테고리</h3>
+            <h3 className="text-sm font-semibold text-white mb-3">서비스</h3>
             <ul className="space-y-2">
-              {MAIN_CATEGORIES.slice(6).map((cat) => (
-                <li key={cat.slug}>
-                  <Link href={`/c/${cat.slug}`} className="text-sm text-surface-400 hover:text-white transition-colors">
-                    {cat.name}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link href="/submit" className="text-sm text-surface-400 hover:text-white transition-colors">
+                  딜 제보하기
+                </Link>
+              </li>
+              <li>
+                <Link href="/me" className="text-sm text-surface-400 hover:text-white transition-colors">
+                  마이페이지
+                </Link>
+              </li>
+              <li>
+                <Link href="/search" className="text-sm text-surface-400 hover:text-white transition-colors">
+                  딜 검색
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -45,11 +54,6 @@ export function Footer() {
           <div>
             <h3 className="text-sm font-semibold text-white mb-3">안내</h3>
             <ul className="space-y-2">
-              <li>
-                <Link href="/submit" className="text-sm text-surface-400 hover:text-white transition-colors">
-                  딜 제보하기
-                </Link>
-              </li>
               <li>
                 <Link href="/legal/terms" className="text-sm text-surface-400 hover:text-white transition-colors">
                   이용약관

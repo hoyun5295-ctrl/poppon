@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight } from 'lucide-react';
+import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight, LogOut } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
+import { useAuth } from '@/lib/auth/AuthProvider';
 
 const MOBILE_MENU_LINKS = [
-  { href: '/me/saved', icon: Heart, label: '저장한 딜' },
-  { href: '/me/follows', icon: Bell, label: '구독 관리' },
-  { href: '/submit', icon: Send, label: '딜 제보하기' },
+  { href: '/me', icon: Heart, label: '저장한 딜', authRequired: true },
+  { href: '/me', icon: Bell, label: '구독 관리', authRequired: true },
+  { href: '/submit', icon: Send, label: '딜 제보하기', authRequired: false },
 ];
 
 const QUICK_CATEGORIES = [
@@ -17,22 +18,21 @@ const QUICK_CATEGORIES = [
   { href: '/c/beauty', label: '뷰티', icon: '💄' },
   { href: '/c/food', label: '식품/배달', icon: '🍔' },
   { href: '/c/living', label: '생활/리빙', icon: '🏠' },
-  { href: '/c/digital', label: '디지털/가전', icon: '📱' },
   { href: '/c/travel', label: '여행/레저', icon: '✈️' },
+  { href: '/c/culture', label: '문화/콘텐츠', icon: '🎬' },
 ];
 
 export function TopNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
+  const { isLoggedIn, profile, signOut, openAuthSheet } = useAuth();
 
-  // 페이지 이동 시 메뉴 닫기
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsSearchOpen(false);
   }, [pathname]);
 
-  // 모바일 메뉴 열릴 때 스크롤 방지
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -41,6 +41,15 @@ export function TopNav() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
+
+  const handleAuthAction = () => {
+    if (isLoggedIn) {
+      // 로그인 상태 → 마이페이지
+      window.location.href = '/me';
+    } else {
+      openAuthSheet();
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-200 pt-safe">
@@ -61,28 +70,47 @@ export function TopNav() {
           {/* 데스크탑 네비게이션 */}
           <nav className="hidden md:flex items-center gap-1">
             <Link
-              href="/me/saved"
+              href="/me"
               className="p-2.5 rounded-lg text-surface-500 hover:text-surface-900 hover:bg-surface-100 transition-colors"
               title="저장한 딜"
             >
               <Heart className="w-5 h-5" />
             </Link>
             <Link
-              href="/me/settings"
+              href="/me"
               className="p-2.5 rounded-lg text-surface-500 hover:text-surface-900 hover:bg-surface-100 transition-colors"
               title="알림"
             >
               <Bell className="w-5 h-5" />
             </Link>
-            <Link
-              href="/auth"
-              className="ml-2 px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
-            >
-              로그인
-            </Link>
+
+            {isLoggedIn ? (
+              <div className="flex items-center gap-2 ml-2">
+                <Link
+                  href="/me"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-100 transition-colors"
+                >
+                  <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">
+                      {profile?.nickname?.charAt(0) || profile?.name?.charAt(0) || 'P'}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-surface-700">
+                    {profile?.nickname || profile?.name || '마이'}
+                  </span>
+                </Link>
+              </div>
+            ) : (
+              <button
+                onClick={openAuthSheet}
+                className="ml-2 px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
+              >
+                로그인
+              </button>
+            )}
           </nav>
 
-          {/* 모바일 버튼들 — 최소 44px 터치 영역 */}
+          {/* 모바일 버튼 */}
           <div className="flex md:hidden items-center gap-0.5">
             <button
               onClick={() => {
@@ -94,13 +122,21 @@ export function TopNav() {
             >
               <Search className="w-5 h-5" />
             </button>
-            <Link
-              href="/auth"
+            <button
+              onClick={handleAuthAction}
               className="flex items-center justify-center w-11 h-11 rounded-lg text-surface-500 active:bg-surface-100 transition-colors"
-              aria-label="로그인"
+              aria-label={isLoggedIn ? '마이페이지' : '로그인'}
             >
-              <User className="w-5 h-5" />
-            </Link>
+              {isLoggedIn ? (
+                <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-white">
+                    {profile?.nickname?.charAt(0) || profile?.name?.charAt(0) || 'P'}
+                  </span>
+                </div>
+              ) : (
+                <User className="w-5 h-5" />
+              )}
+            </button>
             <button
               onClick={() => {
                 setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -114,7 +150,7 @@ export function TopNav() {
           </div>
         </div>
 
-        {/* 모바일 검색바 — 부드러운 전환 */}
+        {/* 모바일 검색바 */}
         <div
           className={`md:hidden overflow-hidden transition-all duration-200 ease-out ${
             isSearchOpen ? 'max-h-16 pb-3 opacity-100' : 'max-h-0 pb-0 opacity-0'
@@ -127,20 +163,35 @@ export function TopNav() {
       {/* 모바일 메뉴 오버레이 */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 top-14 z-40">
-          {/* 배경 오버레이 */}
           <div
             className="absolute inset-0 bg-black/30 animate-overlay-in"
             onClick={() => setIsMobileMenuOpen(false)}
           />
 
-          {/* 메뉴 패널 */}
           <div className="relative bg-white border-t border-surface-200 animate-slide-up max-h-[calc(100vh-3.5rem)] overflow-y-auto pb-safe">
             <nav className="max-w-7xl mx-auto px-4 py-3">
+              {/* 로그인 상태 헤더 */}
+              {isLoggedIn && (
+                <div className="flex items-center gap-3 px-3 py-3 mb-2 bg-surface-50 rounded-xl">
+                  <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">
+                      {profile?.nickname?.charAt(0) || profile?.name?.charAt(0) || 'P'}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-surface-900">
+                      {profile?.nickname || profile?.name || '사용자'}
+                    </p>
+                    <p className="text-xs text-surface-400">{profile?.phone}</p>
+                  </div>
+                </div>
+              )}
+
               {/* 메뉴 링크 */}
               <div className="space-y-0.5">
                 {MOBILE_MENU_LINKS.map(({ href, icon: Icon, label }) => (
                   <Link
-                    key={href}
+                    key={label}
                     href={href}
                     className="flex items-center gap-3 px-3 py-3 rounded-xl active:bg-surface-50 text-surface-700 transition-colors"
                   >
@@ -169,15 +220,25 @@ export function TopNav() {
                 </div>
               </div>
 
-              {/* 로그인 CTA */}
+              {/* 로그인/로그아웃 CTA */}
               <div className="mt-4 pt-4 border-t border-surface-100">
-                <Link
-                  href="/auth"
-                  className="flex items-center justify-center gap-2 w-full py-3 bg-primary-500 text-white text-sm font-semibold rounded-xl active:bg-primary-600 transition-colors"
-                >
-                  로그인 / 회원가입
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
+                {isLoggedIn ? (
+                  <button
+                    onClick={() => { signOut(); setIsMobileMenuOpen(false); }}
+                    className="flex items-center justify-center gap-2 w-full py-3 text-sm text-surface-500 hover:text-surface-700 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    로그아웃
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setIsMobileMenuOpen(false); openAuthSheet(); }}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-primary-500 text-white text-sm font-semibold rounded-xl active:bg-primary-600 transition-colors"
+                  >
+                    로그인 / 회원가입
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </nav>
           </div>

@@ -6,10 +6,16 @@
 - **한줄 정의**: 한국의 모든 할인/쿠폰/프로모션을 한 곳에 모아, 검색·필터·카테고리·캘린더·큐레이션으로 탐색 → 저장/구독/알림으로 DB 축적 → TargetUP-AI CRM-Outside 고단가 타겟마케팅으로 수익화하는 딜 플랫폼
 - **MVP 우선순위**: A(온라인 쿠폰/프로모션 코드) → B(앱쿠폰/링크형) → C(오프라인 이벤트)
 - **핵심 방향**: 할인정보를 보기 쉽게 모아서 DB 축적 → 수익화 (RetailMeNot 코드복사/캐시백 모델과 다름)
-- **프로젝트 경로**: `C:\projects\poppon`
+
+### 프로젝트 구조 (2개 분리)
+| 프로젝트 | 경로 | 용도 | 배포 |
+|---------|------|------|------|
+| **poppon** (메인) | `C:\projects\poppon` | 사용자 웹 (딜 탐색/저장/인증) | `https://poppon.vercel.app` ✅ |
+| **poppon-admin** (어드민) | `C:\projects\poppon-admin` | 관리자 (딜CRUD/크롤러/Cron) | `https://poppon-admin.vercel.app` ✅ |
+
 - **도메인**: `poppon.kr` (가비아, DNS 설정 필요)
-- **배포 URL**: `https://poppon.vercel.app` ✅ 라이브
-- **GitHub**: `https://github.com/hoyun5295-ctrl/poppon` (private)
+- **GitHub (메인)**: `https://github.com/hoyun5295-ctrl/poppon` (private)
+- **GitHub (어드민)**: `https://github.com/hoyun5295-ctrl/poppon-admin` (private) ✅
 
 ---
 
@@ -22,7 +28,7 @@
 
 ## 핵심 사용자 흐름 (Top 5)
 1. 홈 → 검색/카테고리 탐색 → 딜 상세(모달) → 코드복사/사이트이동
-2. 딜 상세 → "저장/알림" → 휴대폰 가입/동의 → 저장 완료
+2. 딜 상세 → "저장/알림" → 가입 바텀시트 → SNS 로그인 → 저장 완료
 3. 카테고리 허브 → 마감임박/이번주 탐색 → 트렌딩 딜 소비
 4. 브랜드관 → 구독 → 신규 딜 알림 수신
 5. 유저 제보(링크 제출) → 자동 파싱 → 운영자 승인 → 인벤토리 확장
@@ -56,13 +62,20 @@ ORDER BY active_deals DESC;
 
 -- 커넥터 현황
 SELECT status, COUNT(*) FROM crawl_connectors GROUP BY status;
+
+-- 회원 테이블 확인
+SELECT COUNT(*) FROM profiles;
+SELECT COUNT(*) FROM saved_deals;
+SELECT COUNT(*) FROM followed_merchants;
 ```
 
 ---
 
 ## 📁 참조 파일 목록
 
-### 컴포넌트 / UI
+### 🔵 poppon (메인 앱)
+
+#### 컴포넌트 / UI
 | 파일 | 경로 |
 |------|------|
 | DealCard.tsx | `src/components/deal/DealCard.tsx` |
@@ -75,6 +88,7 @@ SELECT status, COUNT(*) FROM crawl_connectors GROUP BY status;
 | TopNav.tsx | `src/components/layout/TopNav.tsx` |
 | Footer.tsx | `src/components/layout/Footer.tsx` |
 | SourceProtection.tsx | `src/components/layout/SourceProtection.tsx` |
+| **AuthSheet.tsx** | `src/components/auth/AuthSheet.tsx` ✅ 신규 |
 | MobileFilterSheet.tsx | `src/components/search/MobileFilterSheet.tsx` |
 | SearchBar.tsx | `src/components/search/SearchBar.tsx` |
 | SearchFilters.tsx | `src/components/search/SearchFilters.tsx` |
@@ -87,10 +101,10 @@ SELECT status, COUNT(*) FROM crawl_connectors GROUP BY status;
 | Pagination.tsx | `src/components/common/Pagination.tsx` |
 | SortDropdown.tsx | `src/components/common/SortDropdown.tsx` |
 
-### 페이지
+#### 페이지
 | 파일 | 경로 |
 |------|------|
-| 루트 레이아웃 | `src/app/layout.tsx` |
+| 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider 래핑) |
 | 글로벌 CSS | `src/app/globals.css` |
 | 미들웨어 | `src/middleware.ts` |
 | 홈 | `src/app/page.tsx` |
@@ -100,44 +114,82 @@ SELECT status, COUNT(*) FROM crawl_connectors GROUP BY status;
 | 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
-| 마이페이지 | `src/app/me/page.tsx` |
-| 로그인 | `src/app/auth/page.tsx` |
-| 어드민 로그인 | `src/app/admin/login/page.tsx` |
+| 마이페이지 | `src/app/me/page.tsx` ✅ 데이터 연동 |
+| 로그인 | `src/app/auth/page.tsx` ✅ 바텀시트 연동 |
+| OAuth 콜백 | `src/app/auth/callback/route.ts` ✅ 신규 |
 
-### 데이터 / 타입 / 유틸
+#### 데이터 / 타입 / 유틸 / 인증
 | 파일 | 경로 |
 |------|------|
-| database.ts (타입) | `src/types/database.ts` |
+| database.ts (타입) | `src/types/database.ts` ✅ Profile, SavedDeal 등 추가 |
 | index.ts (re-export) | `src/types/index.ts` |
 | deals.ts (데이터) | `src/lib/deals.ts` |
 | tracking.ts (행동추적) | `src/lib/tracking.ts` |
 | format.ts (유틸) | `src/lib/utils/format.ts` |
 | constants.ts | `src/lib/constants.ts` |
+| **AuthProvider.tsx** | `src/lib/auth/AuthProvider.tsx` ✅ 신규 |
 | Supabase 서버 | `src/lib/supabase/server.ts` |
 | Supabase 브라우저 | `src/lib/supabase/client.ts` |
 
-### 크롤러 / API
+#### API (메인 앱)
 | 파일 | 경로 |
 |------|------|
-| AI 크롤 엔진 (v3) | `src/lib/crawl/ai-engine.ts` |
-| 딜 저장 (v2) | `src/lib/crawl/save-deals.ts` |
-| Cron 배치 | `src/app/api/cron/crawl/route.ts` |
-| AI 크롤 API (v3) | `src/app/api/admin/ai-crawl/route.ts` |
-| AI 크롤 API (단일) | `src/app/api/admin/ai-crawl/[connectorId]/route.ts` |
 | 제보 API | `src/app/api/submit/route.ts` |
 | 행동추적 API | `src/app/api/actions/route.ts` |
 | 클릭 트래킹 | `src/app/out/[dealId]/route.ts` |
-| 어드민 인증 | `src/app/api/admin/auth/route.ts` |
+| **딜 저장 API** | `src/app/api/me/saved-deals/route.ts` ✅ 신규 |
+| **브랜드 구독 API** | `src/app/api/me/follows/merchants/route.ts` ✅ 신규 |
 
-### 스크립트 (크롤러/로고)
+### 🔴 poppon-admin (어드민 앱)
+
+#### 페이지
+| 파일 | 경로 |
+|------|------|
+| 루트 레이아웃 | `src/app/layout.tsx` |
+| 글로벌 CSS | `src/app/globals.css` |
+| 미들웨어 | `src/middleware.ts` (비밀번호 보호) |
+| 로그인 | `src/app/login/page.tsx` |
+| 대시보드 | `src/app/(dashboard)/page.tsx` |
+| 대시보드 레이아웃 | `src/app/(dashboard)/layout.tsx` ✅ 경로 수정 완료 |
+| 딜 목록 | `src/app/(dashboard)/deals/page.tsx` |
+| 딜 생성 | `src/app/(dashboard)/deals/new/page.tsx` |
+| 딜 수정 | `src/app/(dashboard)/deals/[id]/edit/page.tsx` |
+| 머천트 목록 | `src/app/(dashboard)/merchants/page.tsx` |
+| 머천트 생성 | `src/app/(dashboard)/merchants/new/page.tsx` |
+| 머천트 수정 | `src/app/(dashboard)/merchants/[id]/edit/page.tsx` |
+| 크롤 모니터링 | `src/app/(dashboard)/crawls/page.tsx` |
+
+#### API (어드민 앱)
+| 파일 | 경로 |
+|------|------|
+| 어드민 인증 | `src/app/api/auth/route.ts` |
+| 딜 CRUD | `src/app/api/deals/route.ts` |
+| 딜 단일 | `src/app/api/deals/[id]/route.ts` |
+| 머천트 CRUD | `src/app/api/merchants/route.ts` |
+| 머천트 단일 | `src/app/api/merchants/[id]/route.ts` |
+| AI 크롤 (배치) | `src/app/api/ai-crawl/route.ts` |
+| AI 크롤 (단일) | `src/app/api/ai-crawl/[connectorId]/route.ts` |
+| Cron 크롤 | `src/app/api/cron/crawl/route.ts` |
+| Cron 만료 | `src/app/api/cron/expire/route.ts` |
+
+#### 크롤러 / 스크립트 (어드민에만 존재)
 | 파일 | 경로 | 설명 |
 |------|------|------|
+| AI 크롤 엔진 (v3) | `src/lib/crawl/ai-engine.ts` | Puppeteer + Claude Haiku |
+| 딜 저장 (v2) | `src/lib/crawl/save-deals.ts` | URL+title 중복체크 |
 | 크롤러 테스트 | `scripts/test-ai-crawl.ts` | 변경 감지 포함 v2 |
 | 이벤트 페이지 탐지 | `scripts/detect-event-pages.ts` | 홈페이지→이벤트URL 자동 찾기 |
 | 머천트 로고 v2 | `scripts/fetch-merchant-logos.ts` | HTTP apple-touch-icon 수집 |
 | 머천트 로고 v3.1 | `scripts/fetch-merchant-logos-v3.ts` | Puppeteer 사이트 접속 수집 |
 | 구글 이미지 로고 | `scripts/fetch-logos-google.ts` | `"[브랜드명] CI"` 검색 크롤링 |
 | OG 이미지 수집 | `scripts/fetch-og-images.ts` | landing_url에서 og:image 추출 |
+
+#### 공유 파일 (양쪽 동일)
+| 파일 | 경로 |
+|------|------|
+| database.ts (타입) | `src/types/database.ts` |
+| Supabase 서버 | `src/lib/supabase/server.ts` |
+| Supabase 브라우저 | `src/lib/supabase/client.ts` |
 
 ### 데이터 파일
 | 파일 | 설명 |
@@ -151,32 +203,42 @@ SELECT status, COUNT(*) FROM crawl_connectors GROUP BY status;
 ---
 
 ## 기술 스택
+
+### 메인 앱 (poppon)
 | 영역 | 기술 | 비고 |
 |------|------|------|
 | Frontend + Backend | **Next.js 15 (App Router)** | SSR/SSG, API Routes |
-| Database + Auth | **Supabase (PostgreSQL)** | RLS, Phone OTP |
+| Database + Auth | **Supabase (PostgreSQL)** | RLS, OAuth (카카오/네이버/애플) |
 | 스타일링 | **Tailwind CSS + shadcn/ui** | Pretendard |
 | 상태관리 | **Zustand** | 경량 |
-| 배포 | **Vercel** | Git push 자동 배포, Cron |
-| 검색 | **PostgreSQL 풀텍스트 (pg_trgm)** | 초기 1만건 수준 충분, 추후 Elasticsearch |
-| AI 크롤러 | **Puppeteer + Claude Haiku** | 커넥터 기반 |
-| 본인인증 | **PASS** | 이관 예정 |
+| 배포 | **Vercel** | Git push 자동 배포 |
+| 검색 | **PostgreSQL 풀텍스트 (pg_trgm)** | 초기 1만건 수준 충분 |
+| 본인인증 | **KMC** (월 55,000원 기존 계약) | 가입 시 본인인증 |
 | 알림 | **카카오 알림톡** | 채널 개설 필요 |
+
+### 어드민 앱 (poppon-admin)
+| 영역 | 기술 | 비고 |
+|------|------|------|
+| Frontend + Backend | **Next.js 15 (App Router)** | SSR/SSG, API Routes |
+| Database | **Supabase (동일 DB)** | 메인과 공유 |
+| AI 크롤러 | **Puppeteer + Claude Haiku** | 커넥터 기반 |
+| 배포 | **Vercel** ✅ | `poppon-admin.vercel.app` |
+| 인증 | **비밀번호 (ADMIN_SECRET)** | 쿠키 기반 |
 
 ---
 
 ## 프론트엔드 라우팅 구조
 
-### 딜 상세 (하이브리드 모달)
+### 메인 앱 (poppon)
 ```
 src/app/
-├── layout.tsx               — modal parallel route slot 포함
+├── layout.tsx               — AuthProvider + AuthSheet 래핑
 ├── @modal/
 │   ├── default.tsx          — 모달 없을 때 null
 │   └── (.)d/[slug]/
-│       └── page.tsx         — 인터셉팅 모달 (리스트에서 클릭 시)
+│       └── page.tsx         — 인터셉팅 모달
 ├── d/[slug]/
-│   └── page.tsx             — SEO 풀 페이지 (직접접속/구글봇)
+│   └── page.tsx             — SEO 풀 페이지
 ├── m/[merchantSlug]/
 │   └── page.tsx             — 브랜드관
 ├── c/[categorySlug]/
@@ -186,24 +248,51 @@ src/app/
 ├── submit/
 │   └── page.tsx             — 유저 제보
 ├── me/
-│   └── page.tsx             — 마이페이지
+│   └── page.tsx             — 마이페이지 (저장딜/구독/설정 탭)
 ├── auth/
-│   └── page.tsx             — 로그인/가입
+│   ├── page.tsx             — 로그인/가입 (바텀시트 연동)
+│   └── callback/
+│       └── route.ts         — SNS OAuth 콜백
+├── api/
+│   ├── submit/route.ts
+│   ├── actions/route.ts
+│   └── me/
+│       ├── saved-deals/route.ts
+│       └── follows/merchants/route.ts
+└── out/[dealId]/route.ts    — 클릭 트래킹
 ```
-- 홈에서 클릭 → 모달 (URL 변경, 뒤로가기=닫힘)
-- `/d/:slug` 직접접속 → 풀 페이지 렌더링 (SSR, SEO)
-- 한글 slug → decodeURIComponent 처리 필요 (deals.ts)
-- 머천트/카테고리 slug는 영문 (merchants: innisfree, categories: beauty)
+
+### 어드민 앱 (poppon-admin)
+```
+src/app/
+├── layout.tsx               — 루트 레이아웃
+├── login/
+│   └── page.tsx             — 비밀번호 로그인
+├── (dashboard)/
+│   ├── layout.tsx           — 사이드바 네비게이션 (경로 수정 완료)
+│   ├── page.tsx             — 대시보드
+│   ├── deals/               — 딜 CRUD
+│   ├── merchants/           — 머천트 CRUD
+│   └── crawls/              — 크롤 모니터링
+├── api/
+│   ├── auth/route.ts
+│   ├── deals/route.ts
+│   ├── merchants/route.ts
+│   ├── ai-crawl/route.ts
+│   └── cron/
+│       ├── crawl/route.ts
+│       └── expire/route.ts
+```
 
 ### 미들웨어 보호 경로
-- `/brand/*` — 로그인 필수 (→ /auth 리다이렉트)
-- `/submit`, `/me` — 비로그인 접근 허용 (페이지 내에서 유도)
+- **메인**: `/brand/*` → 로그인 필수
+- **어드민**: 전체 → ADMIN_SECRET 쿠키 필수 (login 제외)
 
 ---
 
 ## API 구조 요약
 
-### Public (비로그인)
+### 메인 앱 — Public (비로그인)
 - `GET /deals` — 딜 목록/검색 (q, category, merchant, benefit_tag, channel, date, sort)
 - `GET /deals/:id` — 딜 상세
 - `GET /categories` — 카테고리 트리
@@ -211,35 +300,31 @@ src/app/
 - `GET /home` — 홈 섹션 (sponsored, trending, new, ending_soon, categories)
 - `POST /api/submit` — 유저 제보 ✅
 
-### Member (로그인)
-- `POST /auth/phone/request` / `POST /auth/phone/verify` / `POST /auth/logout`
-- `GET|PUT /me` — 내 정보
-- 저장: `POST|DELETE|GET /me/saved-deals`
-- 구독: `POST|DELETE|GET /me/follows/merchants|categories`
-- 알림: `PUT /me/notification-preferences` (kakao/sms/email/push, 빈도, quiet hours)
+### 메인 앱 — Member (로그인)
+- `GET /auth/callback` — SNS OAuth 콜백 ✅
+- `GET|POST|DELETE /api/me/saved-deals` — 딜 저장/해제 ✅
+- `GET|POST|DELETE /api/me/follows/merchants` — 브랜드 구독/해제 ✅
+- 알림: `PUT /me/notification-preferences` (kakao/sms/email/push)
 - 동의: `PUT /me/consents`
 - 액션: `POST /deals/:id/actions` (view, click_out, copy_code, save, share)
 - 피드백: `POST /deals/:id/feedback` (work/fail)
-- 제보: `POST /submissions` / `GET /submissions/my`
 
-### Brand Portal
+### 어드민 앱
+- `POST /api/auth` — 비밀번호 인증 ✅
+- `GET|POST /api/deals` + `GET|PUT|DELETE /api/deals/:id` ✅
+- `GET|POST /api/merchants` + `GET|PUT|DELETE /api/merchants/:id` ✅
+- `GET|POST /api/ai-crawl` — AI 크롤 현황/실행 ✅
+- `POST /api/ai-crawl/:connectorId` — 단일 AI 크롤 ✅
+- `GET /api/cron/crawl` — 일일 자동 크롤 배치 ✅
+- `GET /api/cron/expire` — 만료 딜 자동 처리 ✅
+
+### Brand Portal (미착수)
 - `POST /brand/auth/login`
 - `GET|PUT /brand/profile`
 - `GET|POST|PUT /brand/deals` + `POST /brand/deals/:id/submit`
 - `GET /brand/stats`
 
-### Admin
-- `GET|PATCH /admin/deals` (approve/reject/hide/merge)
-- `GET|POST|PUT /admin/connectors` + test
-- `GET|POST /admin/ai-crawl` — AI 크롤 현황/실행 ✅
-- `POST /admin/ai-crawl/:connectorId` — 단일 AI 크롤 ✅
-- `GET|POST|PUT /admin/ads/*`
-- `GET /admin/affiliate/*` (runs, offers, sync, health)
-
-### Cron
-- `GET /api/cron/crawl` — 일일 자동 크롤 배치 ✅
-
-### 트래킹
+### 트래킹 (메인 앱)
 - `GET /out/:dealId` — 아웃바운드 리다이렉트 (클릭로그 + 302) ✅
 
 ---
@@ -287,12 +372,18 @@ src/app/
 ## DB 테이블 (주요)
 | 테이블 | 상태 | 데이터 |
 |--------|------|--------|
-| deals | ✅ | **~639 active** (풀크롤 후 +173 신규, +115 업데이트) |
-| merchants | ✅ | **~339개** (기존 264 + 신규 75, 전원 로고+brand_color 보유) |
+| deals | ✅ | **~639 active** |
+| merchants | ✅ | **~339개** (전원 로고+brand_color 보유) |
 | categories | ✅ | **6개 active** / 6개 비활성 |
-| crawl_connectors | ✅ | **243 active** / 136 disabled / 35 error |
+| crawl_connectors | ✅ | **256 active** / 157 disabled / 0 error |
 | deal_actions | ✅ | 72건+ (트래킹 작동중) |
 | submissions | ✅ | 0 |
+| **profiles** | ✅ | 0 (신규 테이블) |
+| **user_consents** | ✅ | 0 (신규 테이블) |
+| **saved_deals** | ✅ | 0 (신규 테이블) |
+| **followed_merchants** | ✅ | 0 (신규 테이블) |
+| **followed_categories** | ✅ | 0 (신규 테이블) |
+| **notification_preferences** | ✅ | 0 (신규 테이블) |
 
 ### 카테고리별 머천트/딜 현황 (2/16 풀크롤 후 — SQL 재조회 필요)
 | 카테고리 | 머천트 | active 딜 (추정) |
@@ -358,7 +449,7 @@ src/app/
 | name | varchar | |
 | slug | varchar | SEO URL (영문: oliveyoung, innisfree 등) |
 | logo_url | text | Puppeteer/구글 이미지 수집 |
-| brand_color | varchar | 브랜드 고유 색상 (#hex), 264개 적용 |
+| brand_color | varchar | 브랜드 고유 색상 (#hex), 339개 적용 |
 | description | text | |
 | official_url | text | |
 | category_ids | uuid[] | **✅ 6개 카테고리 매핑 완료** |
@@ -383,6 +474,41 @@ src/app/
 | depth | integer | 0=대, 1=중, 2=소 |
 | created_at | timestamptz | |
 
+### profiles 테이블 ✅ 신규
+| 컬럼 | 타입 | 비고 |
+|------|------|------|
+| id | uuid | PK, FK → auth.users |
+| phone | varchar | 전화번호 |
+| name | varchar | 이름 |
+| nickname | varchar | 닉네임 |
+| avatar_url | text | |
+| gender | varchar | |
+| birth_year | integer | |
+| interested_categories | uuid[] | 관심 카테고리 |
+| marketing_opt_in | boolean | 마케팅 동의 |
+| marketing_opt_in_at | timestamptz | |
+| role | varchar | user/admin/super_admin |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
+
+### saved_deals 테이블 ✅ 신규
+| 컬럼 | 타입 | 비고 |
+|------|------|------|
+| id | uuid | PK |
+| user_id | uuid | FK → auth.users |
+| deal_id | uuid | FK → deals |
+| created_at | timestamptz | |
+| UNIQUE(user_id, deal_id) | | |
+
+### followed_merchants 테이블 ✅ 신규
+| 컬럼 | 타입 | 비고 |
+|------|------|------|
+| id | uuid | PK |
+| user_id | uuid | FK → auth.users |
+| merchant_id | uuid | FK → merchants |
+| created_at | timestamptz | |
+| UNIQUE(user_id, merchant_id) | | |
+
 ### crawl_connectors 테이블 (v3 컬럼 추가)
 ```
 id, name, merchant_id, source_url, config, status, fail_count,
@@ -400,6 +526,11 @@ deals.merchant_id → merchants.id
 deals.category_id → categories.id (FK: deals_category_id_fkey)
 deals.subcategory_id → categories.id (FK: deals_subcategory_id_fkey)
 categories.parent_id → categories.id (셀프조인)
+profiles.id → auth.users.id
+saved_deals.user_id → auth.users.id
+saved_deals.deal_id → deals.id
+followed_merchants.user_id → auth.users.id
+followed_merchants.merchant_id → merchants.id
 ```
 **⚠️ Supabase 조인 시 주의**: deals → categories 조인 시 FK 명시 필요
 ```
@@ -415,10 +546,60 @@ categories!deals_category_id_fkey (name)
 | categories | Categories are viewable by everyone | SELECT: 전체 |
 | submissions | Anyone can insert | INSERT: true |
 | submissions | Users can view own | SELECT: auth.uid() = user_id |
+| profiles | Users can view/update own | SELECT/UPDATE: auth.uid() = id |
+| saved_deals | Users can manage own | ALL: auth.uid() = user_id |
+| followed_merchants | Users can manage own | ALL: auth.uid() = user_id |
 
 ---
 
-## AI 크롤러 v3
+## 회원가입/인증 시스템 ✅ 신규
+
+### 아키텍처
+```
+가입 트리거 (딜 저장/브랜드 구독/쿠폰 3회/피드백)
+  → AuthSheet 바텀시트 노출
+    → SNS 간편 로그인 (카카오/네이버/애플) 또는 전화번호 OTP
+      → Supabase Auth → profiles 자동 생성 (트리거)
+        → 관심 카테고리 선택 (선택)
+          → 마케팅 동의
+```
+
+### 구현 현황
+- ✅ DB 마이그레이션 완료 (profiles, user_consents, saved_deals, followed_merchants, followed_categories, notification_preferences + RLS + 트리거)
+- ✅ AuthProvider (전역 인증 상태 관리)
+- ✅ AuthSheet (가입/로그인 바텀시트 UI)
+- ✅ auth/page.tsx (로그인 페이지)
+- ✅ auth/callback/route.ts (OAuth 콜백)
+- ✅ me/page.tsx (데이터 연동 마이페이지)
+- ✅ saved-deals API (GET/POST/DELETE)
+- ✅ follows/merchants API (GET/POST/DELETE)
+- ⬜ Supabase Auth Provider 설정 (카카오/네이버/애플)
+- ⬜ KMC 본인인증 연동
+- ⬜ 카카오 알림톡 (채널 개설 필요)
+
+### 환경변수
+
+#### 메인 앱 (.env.local)
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_... (✅ 신규 키 시스템)
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_... (✅ 신규 키 시스템)
+```
+
+#### 어드민 앱 (.env.local)
+```
+NEXT_PUBLIC_SUPABASE_URL=... (동일)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_... (동일)
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_... (동일)
+ADMIN_SECRET=... (✅ 2/16 변경됨)
+ANTHROPIC_API_KEY=sk-ant-api03-... (✅ 2/16 재발급)
+CRON_SECRET=...
+NEXT_PUBLIC_MAIN_URL=https://poppon.kr
+```
+
+---
+
+## AI 크롤러 v3 (어드민 앱에서 관리)
 
 ### 전략 전환 히스토리
 1. **static_html 파싱** → 실패 (한국 사이트 대부분 JS 렌더링 + AJAX)
@@ -442,12 +623,6 @@ categories!deals_category_id_fkey (name)
 | 현재 ~150개 | ~$3 | ~$15 |
 | 목표 300개+ | ~$7 | ~$20 (2만원) |
 
-### 환경변수 (.env.local)
-```
-ANTHROPIC_API_KEY=sk-ant-api03-... (poppon 전용 키, console.anthropic.com에서 발급)
-CRON_SECRET=... (Vercel Cron 인증용, 선택)
-```
-
 ---
 
 ## 머천트 로고 수집 히스토리
@@ -463,7 +638,7 @@ CRON_SECRET=... (Vercel Cron 인증용, 선택)
 | 파일명 | 머천트 |
 |--------|--------|
 | samsung.svg | 삼성닷컴 |
-| oliveyoung.png | 올리브영 |
+| oliveyoung.png | 올리브영 (여백 크롭) |
 | kyobobook.png | 교보문고 |
 | lottecinema.jpg | 롯데시네마 |
 | baskinrobbins.png | 배스킨라빈스 |
@@ -471,9 +646,11 @@ CRON_SECRET=... (Vercel Cron 인증용, 선택)
 | nintendo.jpg | 닌텐도 |
 | doubleheart.png | 더블하트 |
 | upang.jpg | 유팡 |
+| coupang.png | 쿠팡 (여백 크롭) |
+| nongshim.jpg | 농심 (여백 크롭, 신라면→농심 이름변경) |
+| 29cm.png | 29CM (여백 크롭) |
 
 ### ⚠️ 로고 미해결
-- 신규 75개 머천트: 로고 없음 → 수집 필요
 - 기존 저품질 ~100개: 교체 필요
 
 ---
@@ -483,7 +660,6 @@ CRON_SECRET=... (Vercel Cron 인증용, 선택)
 ### 카테고리 구조조정 (2/16)
 - **12개 → 6개**: 자동차/주유, 금융/통신 제거 (딜 플랫폼 부적합), 디지털/가전 → 생활/리빙 흡수, 건강/키즈/반려동물 보류
 - **사유**: 적은 카테고리에 딜이 빽빽한 게 사용자 신뢰감 높음
-- 디지털/가전 64개 딜 → 생활/리빙으로 이동, 나머지 5개 카테고리 147개 딜 hidden 처리
 
 ### 브랜드 마스터 리스트 (poppon-brand-master.csv)
 | 카테고리 | 브랜드 수 |
@@ -495,12 +671,6 @@ CRON_SECRET=... (Vercel Cron 인증용, 선택)
 | 여행/레저 | 30 |
 | 문화/콘텐츠 | 30 |
 | **합계** | **230** |
-
-### 머천트 대정리 (2/16)
-- 기존 264개 vs 마스터 230개 대조
-- category_ids 일괄 매핑 (~170개)
-- 신규 75개 머천트 INSERT (카테고리 포함)
-- 불필요 커넥터 disabled (자동차/금융/통신/기타)
 
 ### 브랜드 확장 파이프라인
 ```
@@ -515,19 +685,23 @@ CRON_SECRET=... (Vercel Cron 인증용, 선택)
 
 ---
 
-## 👤 회원가입 & 행동추적 (설계 완료)
+## 👤 회원가입 & 행동추적
 
 ### 가입 트리거
-딜 저장, 브랜드 구독, 쿠폰 3회~, 피드백 → 가입 바텀시트
+딜 저장, 브랜드 구독, 쿠폰 3회~, 피드백 → AuthSheet 바텀시트
 
 ### 플로우
-PASS 본인인증 → 관심 카테고리(3개+) → 마케팅 동의 → 완료
+SNS 간편 로그인 (카카오/네이버/애플) → 관심 카테고리(선택) → 마케팅 동의 → 완료
 
 ### 구현 현황
-- ✅ deal_actions 테이블 + 인덱스 + RLS + increment 함수 (Supabase 실행 완료)
-- ✅ tracking.ts + API (session_id 기반)
-- ✅ DealDetail/CopyCodeButton/out 연동
-- ⬜ PASS 본인인증, 가입 UI, 딜 저장, 구독, 알림톡
+- ✅ 회원 DB 6개 테이블 + RLS + 트리거 (Supabase 실행 완료)
+- ✅ AuthProvider + AuthSheet + 바텀시트 UI
+- ✅ 딜 저장/브랜드 구독 API
+- ✅ 마이페이지 데이터 연동
+- ✅ deal_actions 테이블 + tracking.ts + API 연동
+- ⬜ Supabase OAuth Provider 설정 (카카오/네이버/애플)
+- ⬜ KMC 본인인증
+- ⬜ 카카오 알림톡
 
 ---
 
@@ -559,7 +733,7 @@ deal_view, deal_click_out, deal_copy_code, deal_save, merchant_follow, category_
 DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관/딜상세/제보/로그인/마이페이지), 어드민 대시보드, AI 크롤러 v3, Vercel 배포
 
 ### Phase 1 — 진행중
-크롤러 운영 + 만료 자동화 + 디자인 보강 + 회원 기능 + **브랜드 확장**
+크롤러 운영 + 만료 자동화 + 디자인 보강 + 회원 기능 + **브랜드 확장** + **어드민 분리** ✅
 
 ### Phase 2 — 미착수
 브랜드 포털 / 스폰서 슬롯 / 성과 정산
@@ -622,7 +796,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 ### 크롤러 v3 최적화 (2/16)
 - [x] DB 해시 변경감지 (content_hash, hash_updated_at)
 - [x] save-deals v2 (title 기반 중복체크 + 배치내 중복방지)
-- [x] 커넥터 정리 (349→243 active, 136 disabled, 35 error)
+- [x] 커넥터 정리 (349→243→**256 active**, 157 disabled, 0 error)
 - [x] 삼성 머천트 병합 (삼성닷컴+삼성전자가전)
 
 ### 카테고리 페이지 리디자인 (2/16)
@@ -660,35 +834,96 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] 신규 75개 머천트 로고 수집 (apple-touch-icon 36 + 구글이미지 39, 실패 0)
 - [x] 풀크롤 실행 (243개 active, 성공 78 + 스킵 134 + 실패 31, 신규 173딜 + 업데이트 115, $1.41)
 
+### 카테고리 UI 통일 + 언더라인 탭 (2/16)
+- [x] CategoryGrid: 컬러 배경 박스 → 언더라인 탭 스타일(Style D)로 변경
+- [x] CategoryTabBar: 카테고리 페이지도 홈과 동일한 언더라인 탭 통일
+- [x] 아이콘 20px→32px (1.5배), 간격 px-4→px-8 (2배)
+- [x] 모바일 Android 스크롤 수정 (justify-center → sm:justify-center)
+- [x] constants.ts 6개 카테고리 Vercel 배포 반영
+
+### 로고 여백 크롭 + 머천트 수정 (2/16)
+- [x] 쿠팡, 올리브영, 농심, 29CM 로고 여백 자동 크롭 (numpy 기반)
+- [x] 신라면 → 농심 머천트 이름 변경 (slug: nongshim 유지)
+
+### 소스 보호 강화 (2/16)
+- [x] SourceProtection: 텍스트 선택/드래그/복사 방지 추가 (input/textarea 제외)
+- [x] SourceProtection: Ctrl+S 저장 방지, 단축키 대소문자 모두 처리
+- [x] next.config: productionBrowserSourceMaps: false (프로덕션 소스맵 제거)
+- [x] next.config: poweredByHeader: false (X-Powered-By 헤더 제거)
+
+### 크롤 커넥터 대정리 (2/16)
+- [x] 비활성 카테고리 브랜드 10개 disabled (자동차/금융/통신)
+- [x] 보류 카테고리 브랜드 11개 disabled (반려/키즈/건강)
+- [x] 중복 커넥터 8개 disabled (야놀자×3, 버거킹×2, GS25×3 등)
+- [x] 앱 전용/SPA 차단 11개 disabled (무신사/지그재그/배민/야놀자 등)
+- [x] URL 재시도 가능 24개 fail_count 리셋 (유니클로/아디다스/도미노 등)
+- [x] 최종 현황: 256 active / 157 disabled / 0 error
+
+### 어드민 분리 + 회원 인증 시스템 (2/16)
+- [x] 회원 DB 마이그레이션 (profiles, user_consents, saved_deals, followed_merchants, followed_categories, notification_preferences + RLS + 트리거 + 자동 증감 함수)
+- [x] 어드민 앱 분리 (poppon-admin 프로젝트 생성)
+- [x] 메인 앱에서 크롤러/어드민 코드 제거 (puppeteer, cheerio 등 의존성 제거)
+- [x] 어드민 페이지/API 이동 (deals, merchants, crawls, ai-crawl, cron)
+- [x] AuthProvider (전역 인증 상태 관리 Context)
+- [x] AuthSheet (가입/로그인 바텀시트 — 카카오/네이버/애플/전화번호)
+- [x] auth/callback/route.ts (SNS OAuth 콜백)
+- [x] me/page.tsx (저장딜/구독/설정 탭 — 실제 데이터 연동)
+- [x] saved-deals API (GET/POST/DELETE)
+- [x] follows/merchants API (GET/POST/DELETE)
+- [x] TopNav 로그인 상태 반영 + Footer 카테고리 6개 정리
+- [x] poppon 빌드 ✅ (15 페이지)
+- [x] poppon-admin 빌드 ✅ (19 라우트)
+
+### 키 로테이션 + 어드민 배포 (2/16)
+- [x] Supabase 신규 API Keys 전환 (sb_publishable_ / sb_secret_)
+- [x] 레거시 JWT 키 Disable (eyJhbGci... → 무효화)
+- [x] Anthropic API Key 재발급 (console.anthropic.com)
+- [x] ADMIN_SECRET 변경
+- [x] poppon + poppon-admin 양쪽 .env.local 새 키 적용 + 빌드 성공
+- [x] poppon Vercel 환경변수 업데이트 + Redeploy 확인
+- [x] 어드민 사이드바 경로 수정 (`/admin/deals` → `/deals`, 미착수 메뉴 제거, Phase 1, 사이트보기 외부링크)
+- [x] poppon-admin .gitignore 생성 (node_modules/.next/.env.local 제외)
+- [x] poppon-admin GitHub 레포 생성 (private) + push
+- [x] poppon-admin Vercel 배포 성공 (`poppon-admin.vercel.app`, 환경변수 9개)
+
 ---
 
 ## 🔴 미해결 버그 / 즉시 처리 필요
 
 - ⚠️ 홈 서브카피 "283개 브랜드" → 머천트 수 동적 표시 또는 업데이트 필요
-- ⚠️ 크롤 실패 31개 커넥터 원인 분석 필요 (타임아웃/차단 등)
-- ⚠️ 일부 구글 이미지 로고 품질 낮음 → 수동 교체 검토 (나무위키 SVG 등 외부 이미지)
+- ⚠️ 일부 구글 이미지 로고 품질 낮음 → 수동 교체 검토
+- ⚠️ 푸터 빈 카테고리 컬럼 정리 필요 (12→6 변경 잔재)
+- ⚠️ poppon-admin에 layout.tsx 수정 커밋 아직 미반영 (로컬 파일 교체 + git push 필요)
 
 ---
 
 ## 🔲 진행 예정 작업
 
-**크롤러 운영 안정화**
-- [ ] 크롤 실패 31개 커넥터 원인 분석 + 수정
-- [ ] 크롤 error 상태 35개 커넥터 재점검
-- [ ] 일부 머천트 official_url 추가 수정 (까사미아→guud.com 등)
+**도메인 연결 (최우선)**
+- [ ] 가비아 DNS 설정 — poppon.kr: A: `@`→Vercel IP, CNAME: `www`→Vercel DNS
+- [ ] Vercel poppon 프로젝트에 poppon.kr 도메인 추가
+- [ ] admin.poppon.kr CNAME 추가 → poppon-admin Vercel 도메인 연결
+- [ ] HTTPS/SSL 자동 발급 확인
 
-**DNS & 배포**
-- [ ] 가비아 DNS — A: `@`→`216.198.79.1`, CNAME: `www`→`12a1927535fa4753.vercel-dns-017.com.`
-- [ ] constants.ts 6개 카테고리 배포 반영 (git push)
+**회원 기능 연동 (최우선)**
+- [ ] Supabase Auth Provider 설정 (카카오 OAuth)
+- [ ] Supabase Auth Provider 설정 (네이버 — 커스텀 OIDC)
+- [ ] Supabase Auth Provider 설정 (애플 — 앱 출시 전)
+- [ ] KMC 본인인증 연동
+- [ ] 가입 플로우 E2E 테스트
+- [ ] 카카오 알림톡 (채널 개설 필요)
+
+**어드민 마무리**
+- [ ] layout.tsx 수정 커밋 + push (사이드바 경로 수정분)
+- [ ] poppon에서 어드민 관련 잔재 정리 확인
+
+**크롤러 운영 안정화**
+- [ ] 리셋한 24개 커넥터 재크롤 결과 확인
+- [ ] 일부 머천트 official_url 추가 수정 (까사미아→guud.com 등)
 
 **UI 반영**
 - [ ] 홈 서브카피 머천트 수 반영
-
-**회원 기능**
-- [ ] PASS 본인인증
-- [ ] 가입 UI + 딜 저장 + 브랜드 구독
-- [ ] 마이페이지 기능 연결
-- [ ] 카카오 알림톡 (채널 개설 필요)
+- [ ] 푸터 카테고리 컬럼 정리
 
 **인프라**
 - [ ] NCP 이관 (s2-g3 4vCPU/16GB, 월 ~13만원)
@@ -696,7 +931,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 
 ---
 
-## 배치 스케줄
+## 배치 스케줄 (어드민 앱에서 관리)
 - **현재**: Vercel Cron — 매일 06:00 KST (21:00 UTC)
 - **추후**: 06:00 / 12:00 / 18:00 / 23:00
 - **순서**: ① Affiliate Ingest → ② Crawl Ingest → ③ Expire/Quality 재계산 → ④ 리포트 생성
@@ -704,7 +939,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 ---
 
 ## 🖥️ 인프라 설계 (합의, 미착수)
-- **현재**: Vercel Pro ($20/월) — 개발 중 사용, NCP 이관 전까지
+- **현재**: Vercel Pro ($20/월 × 2) — 메인 + 어드민 각각
 - **이관 계획**: NCP s2-g3 (4vCPU/16GB) ~8만 + Supabase Pro ~3.4만 + Haiku ~1.4만 = **월 ~13만원**
 - Docker 구성 → 상용서버 이관 대비
 
@@ -722,6 +957,10 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - Vercel 빌드: Supabase `.rpc()` 반환 PromiseLike에 `.catch()` 불가 → `.then(() => {}, () => {})` 사용
 - Vercel 빌드: 타입 체크 로컬보다 엄격 — SaveResult 등 인터페이스 필수 필드 누락 주의
 - 로고 수동교체: `public/logos/` + DB logo_url 동시 업데이트 필요
+- CategoryGrid/CategoryTabBar: 'use client' (usePathname 사용), CategoryIcon에 style prop 지원 안 함 → color prop만 사용
+- **PowerShell Set-Content 인코딩 주의**: 한글 파일 치환 시 UTF-8 BOM 없이 저장 → node 스크립트 사용 권장
+- **어드민 앱 tsconfig.json**: `"exclude": ["node_modules", "scripts"]` (빌드에서 스크립트 제외)
+- **Supabase API Keys**: 레거시(eyJhbGci...) Disabled → 신규 sb_publishable_ / sb_secret_ 사용 중. 양쪽 .env.local + Vercel 환경변수 모두 신규 키로 설정 필수
 
 ---
 
@@ -743,9 +982,12 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | 팝폰-크롤링최적화+회원설계+행동추적 | 2/16 | 크롤러 v3, 커넥터 정리, deal_actions, 회원설계 |
 | 팝폰-STATUS복원+로고+카테고리리디자인 | 2/16 | STATUS 복원, 로고 9종, 카테고리 리디자인, Vercel Pro |
 | 팝폰-디자인개선+모달속도+만료필터 | 2/16 | 홈 검색창 제거, 카테고리 Lucide 통일, 이모지 제거, filterActiveDeals 전페이지, 딜 모달 클라이언트 fetch 전환 |
-| **팝폰-카테고리구조조정+머천트대정리** | **2/16** | **카테고리 12→6, 디지털→생활 흡수, 머천트 category_ids 매핑, 신규 75개 등록, 브랜드 마스터 230개, 불필요 커넥터 disabled** |
-| **팝폰-브랜드확장+풀크롤** | **2/16** | **커넥터 중복정리 14개, 이벤트URL 탐지+커넥터 65개 등록, 로고 75개 수집, brand_color 75개, 카테고리 탭바 6개, 풀크롤 243개(신규 173딜, $1.41)** |
+| 팝폰-카테고리구조조정+머천트대정리 | 2/16 | 카테고리 12→6, 디지털→생활 흡수, 머천트 category_ids 매핑, 신규 75개 등록, 브랜드 마스터 230개, 불필요 커넥터 disabled |
+| 팝폰-브랜드확장+풀크롤 | 2/16 | 커넥터 중복정리 14개, 이벤트URL 탐지+커넥터 65개 등록, 로고 75개 수집, brand_color 75개, 카테고리 탭바 6개, 풀크롤 243개(신규 173딜, $1.41) |
+| 팝폰-카테고리언더라인+소스보호+커넥터정리 | 2/16 | 카테고리 언더라인 탭 통일(Style D), 아이콘 1.5배+간격 2배, 로고 여백 크롭 4종, 신라면→농심, 소스보호 강화(선택/드래그/복사/소스맵), 커넥터 대정리(error 35→0, 256 active) |
+| 팝폰-인증시스템+어드민분리 | 2/16 | 회원 DB 6개 테이블 마이그레이션, AuthProvider+AuthSheet+OAuth콜백, 딜저장/브랜드구독 API, 마이페이지 데이터연동, 어드민 별도 프로젝트(poppon-admin) 분리, 크롤러/Cron 이동, 양쪽 빌드 성공 |
+| **팝폰-키로테이션+어드민배포** | **2/16** | **Supabase 신규 키 전환(sb_publishable/sb_secret) + 레거시 Disable, Anthropic 키 재발급, ADMIN_SECRET 변경, 어드민 사이드바 경로 수정, poppon-admin GitHub 생성 + Vercel 배포 완료** |
 
 ---
 
-*마지막 업데이트: 2026-02-16 (브랜드 확장 완료 + 커넥터 65개 등록 + 로고/컬러 75개 + 풀크롤 639 active 딜)*
+*마지막 업데이트: 2026-02-16 (키 로테이션 완료 + poppon-admin Vercel 배포 완료, poppon.vercel.app ✅ + poppon-admin.vercel.app ✅)*

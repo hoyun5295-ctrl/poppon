@@ -2,38 +2,8 @@
 
 import { useRef, useEffect } from 'react';
 import Link from 'next/link';
-import {
-  Shirt,
-  Sparkles,
-  UtensilsCrossed,
-  Home,
-  Smartphone,
-  Plane,
-  Film,
-  BookOpen,
-  HeartPulse,
-  PawPrint,
-  Car,
-  CreditCard,
-  Tag,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { MAIN_CATEGORIES } from '@/lib/constants';
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  Shirt,
-  Sparkles,
-  UtensilsCrossed,
-  Home,
-  Smartphone,
-  Plane,
-  Film,
-  BookOpen,
-  HeartPulse,
-  PawPrint,
-  Car,
-  CreditCard,
-};
+import { CategoryIcon } from '@/components/category/CategoryIcon';
 
 interface CategoryTabBarProps {
   currentSlug: string;
@@ -56,31 +26,44 @@ export function CategoryTabBar({ currentSlug }: CategoryTabBarProps) {
   return (
     <div
       ref={scrollRef}
-      className="flex gap-1.5 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide"
+      className="flex overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center border-b border-surface-100"
     >
       {MAIN_CATEGORIES.map((cat) => {
         const isActive = cat.slug === currentSlug;
-        const IconComp = ICON_MAP[cat.lucideIcon] || Tag;
-
         return (
           <Link
             key={cat.slug}
             href={`/c/${cat.slug}`}
             data-active={isActive}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{
-              backgroundColor: isActive ? `${cat.color}12` : 'transparent',
-              color: isActive ? cat.color : '#6B7280',
-              border: isActive ? `1.5px solid ${cat.color}30` : '1.5px solid transparent',
-            }}
+            className="group relative flex flex-col items-center gap-2 px-8 sm:px-10 pt-3 pb-4 shrink-0 transition-colors"
           >
-            <IconComp
-              size={15}
-              strokeWidth={isActive ? 2.2 : 1.8}
-              className="shrink-0"
-              style={{ color: isActive ? cat.color : '#9CA3AF' }}
+            <CategoryIcon
+              slug={cat.slug}
+              size={32}
+              color={isActive ? cat.color : '#9ca3af'}
             />
-            <span className="text-xs sm:text-sm whitespace-nowrap">{cat.name}</span>
+            <span
+              className={`text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                isActive
+                  ? ''
+                  : 'text-surface-500 group-hover:text-surface-800'
+              }`}
+              style={isActive ? { color: cat.color } : undefined}
+            >
+              {cat.name}
+            </span>
+            {/* 언더라인 */}
+            <span
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all duration-200
+                         w-0 group-hover:w-3/5"
+              style={{ backgroundColor: cat.color }}
+            />
+            {isActive && (
+              <span
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-3/5 rounded-full"
+                style={{ backgroundColor: cat.color }}
+              />
+            )}
           </Link>
         );
       })}

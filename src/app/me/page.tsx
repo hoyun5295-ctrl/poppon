@@ -25,6 +25,12 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 
 export default function MyPage() {
   const { isLoggedIn, isLoading, user, profile, openAuthSheet, refreshProfile } = useAuth();
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingTimedOut(true), 2500);
+    return () => clearTimeout(timer);
+  }, []);
   const [tab, setTab] = useState<Tab>('saved');
 
   // 비로그인 상태
@@ -64,7 +70,7 @@ export default function MyPage() {
   }
 
   // 로딩
-  if (isLoading) {
+  if (isLoading && !loadingTimedOut) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center">
         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />

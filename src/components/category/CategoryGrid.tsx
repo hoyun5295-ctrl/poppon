@@ -10,7 +10,7 @@ export function CategoryGrid() {
 
   return (
     <section className="border-b border-surface-100">
-      <div className="flex justify-center overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center">
         {MAIN_CATEGORIES.map((cat) => {
           const isActive = pathname === `/c/${cat.slug}`;
           return (

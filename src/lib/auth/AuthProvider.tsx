@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { setTrackingUserId } from '@/lib/tracking';
 import type { Profile } from '@/types';
@@ -47,6 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const supabase = createClient();
 
+  // ✅ 핵심: 프로필을 이미 로드한 userId를 추적 — 중복 호출 방지
+  const profileLoadedForRef = useRef<string | null>(null);
+
   // ── Toast 함수 ──
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ message, type, visible: true });
@@ -63,7 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (pending) {
         sessionStorage.removeItem(TOAST_STORAGE_KEY);
         const { message, type } = JSON.parse(pending);
-        // 약간의 딜레이로 페이지 렌더 후 표시
         setTimeout(() => showToast(message, type), 300);
       }
     } catch { /* ignore */ }
@@ -84,10 +86,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setProfile(null);
         setSession(null);
+        profileLoadedForRef.current = null;
         return;
       }
 
       setProfile(data);
+      profileLoadedForRef.current = userId;
     } catch {
       // 프로필 조회 실패 시 무시
     }
@@ -95,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
+      profileLoadedForRef.current = null; // 강제 리프레시 허용
       await fetchProfile(user.id);
     }
   }, [user?.id, fetchProfile]);
@@ -107,7 +112,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setTrackingUserId(currentSession?.user?.id ?? null);
-        // 세션 확인 즉시 로딩 해제 — 프로필은 백그라운드 로드
         setIsLoading(false);
 
         if (currentSession?.user) {
@@ -122,20 +126,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        // ✅ 핵심 수정: TOKEN_REFRESHED는 세션 갱신만, 프로필 재조회 안 함
         setSession(newSession);
         setUser(newSession?.user ?? null);
         setTrackingUserId(newSession?.user?.id ?? null);
 
         if (newSession?.user) {
-          await fetchProfile(newSession.user.id);
+          // SIGNED_IN 또는 INITIAL_SESSION일 때만, 그리고 아직 이 유저 프로필을 안 불렀을 때만
+          if (event !== 'TOKEN_REFRESHED' && profileLoadedForRef.current !== newSession.user.id) {
+            await fetchProfile(newSession.user.id);
+          }
         } else {
           setProfile(null);
+          profileLoadedForRef.current = null;
         }
 
         // ※ SIGNED_IN 시 자동으로 AuthSheet을 닫지 않음
-        // → 회원가입 온보딩 플로우(본인인증 → 카테고리 → 마케팅)를
-        //   AuthSheet 내부에서 제어하기 위함
-        // → AuthSheet.handleLogin()에서 로그인 성공 시 직접 closeAuthSheet() 호출
+        // → 회원가입 온보딩 플로우를 AuthSheet 내부에서 제어하기 위함
       }
     );
 
@@ -150,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setSession(null);
     setTrackingUserId(null);
+    profileLoadedForRef.current = null;
   };
 
   const openAuthSheet = () => setIsAuthSheetOpen(true);

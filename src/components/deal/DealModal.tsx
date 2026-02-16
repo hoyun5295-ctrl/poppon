@@ -15,8 +15,24 @@ export function DealModal({ children }: DealModalProps) {
   const [dragY, setDragY] = useState(0);
   const startYRef = useRef(0);
 
+  // ✅ 마운트 애니메이션 상태
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // 다음 프레임에서 visible로 전환 → CSS transition 트리거
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+    });
+  }, []);
+
   const handleClose = useCallback(() => {
-    router.back();
+    // 닫힘 애니메이션 후 router.back
+    setIsVisible(false);
+    setTimeout(() => {
+      router.back();
+    }, 200);
   }, [router]);
 
   useEffect(() => {
@@ -35,7 +51,6 @@ export function DealModal({ children }: DealModalProps) {
   // 모바일 스와이프 다운 to close
   const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    // 스와이프 핸들 영역에서만 드래그 시작
     if (target.closest('[data-drag-handle]')) {
       startYRef.current = e.touches[0].clientY;
       setIsDragging(true);
@@ -54,7 +69,6 @@ export function DealModal({ children }: DealModalProps) {
   const handleTouchEnd = () => {
     if (!isDragging) return;
     setIsDragging(false);
-    // 100px 이상 드래그하면 닫기
     if (dragY > 100) {
       handleClose();
     } else {
@@ -64,16 +78,22 @@ export function DealModal({ children }: DealModalProps) {
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* 오버레이 */}
+      {/* ✅ 오버레이 — fade in/out */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-overlay-in"
+        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ease-out ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={handleClose}
       />
 
-      {/* ===== 데스크탑: 센터 모달 ===== */}
+      {/* ===== 데스크톱: 센터 모달 ===== */}
       <div className="hidden md:flex absolute inset-0 items-center justify-center px-4">
         <div
-          className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto"
+          className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto transition-all duration-200 ease-out ${
+            isVisible
+              ? 'opacity-100 scale-100 translate-y-0'
+              : 'opacity-0 scale-95 translate-y-4'
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* 닫기 버튼 */}
@@ -97,10 +117,16 @@ export function DealModal({ children }: DealModalProps) {
       >
         <div
           ref={sheetRef}
-          className="bg-white rounded-t-2xl shadow-2xl w-full animate-bottom-sheet-up"
+          className={`bg-white rounded-t-2xl shadow-2xl w-full transition-transform duration-300 ease-out ${
+            isVisible && dragY === 0 ? 'translate-y-0' : ''
+          }`}
           style={{
             maxHeight: '92vh',
-            transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+            transform: dragY > 0
+              ? `translateY(${dragY}px)`
+              : isVisible
+                ? 'translateY(0)'
+                : 'translateY(100%)',
             transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
           }}
           onTouchStart={handleTouchStart}

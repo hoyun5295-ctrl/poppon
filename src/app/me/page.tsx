@@ -28,8 +28,10 @@ export default function MyPage() {
 
   const handleSignOut = async () => {
     const { setPendingToast } = await import('@/lib/auth/AuthProvider');
-    await signOut();
     setPendingToast('로그아웃되었습니다', 'success');
+    try {
+      await signOut();
+    } catch { /* ignore */ }
     window.location.href = '/';
   };
 

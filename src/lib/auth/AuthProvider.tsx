@@ -107,13 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setTrackingUserId(currentSession?.user?.id ?? null);
+        // 세션 확인 즉시 로딩 해제 — 프로필은 백그라운드 로드
+        setIsLoading(false);
 
         if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
+          fetchProfile(currentSession.user.id);
         }
       } catch {
-        // 세션 조회 실패 시에도 로딩 해제
-      } finally {
         setIsLoading(false);
       }
     };

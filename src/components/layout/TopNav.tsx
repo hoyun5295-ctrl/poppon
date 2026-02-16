@@ -58,14 +58,15 @@ export function TopNav() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileMenuOpen]);
 
-  const handleSignOut = (e?: React.MouseEvent) => {
+  const handleSignOut = async (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    // 동기적으로 즉시 이동 — signOut은 백그라운드
     setPendingToast('로그아웃되었습니다', 'success');
-    signOut().catch(() => {});
+    try {
+      await signOut();
+    } catch { /* ignore */ }
     window.location.href = '/';
   };
 

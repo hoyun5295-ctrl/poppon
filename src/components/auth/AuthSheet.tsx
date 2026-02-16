@@ -28,6 +28,8 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   culture: <LayoutGrid className="w-5 h-5" />,
 };
 
+const REMEMBER_EMAIL_KEY = 'poppon_remember_email';
+
 /**
  * AuthSheet — 가입/로그인 바텀시트
  *
@@ -35,7 +37,7 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
  * 로그인:   main → login → 완료
  */
 export function AuthSheet() {
-  const { isAuthSheetOpen, closeAuthSheet, refreshProfile } = useAuth();
+  const { isAuthSheetOpen, closeAuthSheet, refreshProfile, showToast } = useAuth();
   const [step, setStep] = useState<AuthStep>('main');
 
   // 회원가입 폼
@@ -43,6 +45,9 @@ export function AuthSheet() {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // 아이디 저장
+  const [rememberEmail, setRememberEmail] = useState(false);
 
   // 카테고리 선택
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -59,6 +64,19 @@ export function AuthSheet() {
   const [error, setError] = useState('');
 
   const supabase = createClient();
+
+  // 저장된 이메일 불러오기
+  useEffect(() => {
+    if (isAuthSheetOpen) {
+      try {
+        const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
+        if (saved) {
+          setEmail(saved);
+          setRememberEmail(true);
+        }
+      } catch { /* ignore */ }
+    }
+  }, [isAuthSheetOpen]);
 
   // 카테고리 목록 로드
   useEffect(() => {
@@ -168,7 +186,16 @@ export function AuthSheet() {
           setError(loginError.message);
         }
       } else {
-        // 로그인 성공 → 바로 닫기
+        // 아이디 저장 처리
+        try {
+          if (rememberEmail) {
+            localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+          } else {
+            localStorage.removeItem(REMEMBER_EMAIL_KEY);
+          }
+        } catch { /* ignore */ }
+
+        showToast('로그인되었습니다', 'success');
         handleComplete();
       }
     } catch {
@@ -225,13 +252,12 @@ export function AuthSheet() {
             marketing_opt_in_at: hasConsent ? new Date().toISOString() : null,
           })
           .eq('id', user.id);
-
-        // notification_preferences 테이블도 업데이트 (있으면)
-        // 추후 확장
       }
       await refreshProfile();
+      showToast('회원가입이 완료되었습니다', 'success');
       handleComplete();
     } catch {
+      showToast('회원가입이 완료되었습니다', 'success');
       handleComplete();
     } finally {
       setLoading(false);
@@ -258,7 +284,6 @@ export function AuthSheet() {
 
   const resetForm = () => {
     setStep('main');
-    setEmail('');
     setPassword('');
     setPasswordConfirm('');
     setShowPassword(false);
@@ -268,6 +293,13 @@ export function AuthSheet() {
     setMarketingKakao(false);
     setMarketingPush(false);
     setMarketingEmail(false);
+    // 저장된 이메일이 있으면 유지, 없으면 초기화
+    try {
+      const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
+      if (!saved) setEmail('');
+    } catch {
+      setEmail('');
+    }
   };
 
   return createPortal(
@@ -544,6 +576,19 @@ export function AuthSheet() {
                   </div>
                 </div>
 
+                {/* 아이디 저장 체크박스 */}
+                <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                  <div
+                    className={`w-4.5 h-4.5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+                      rememberEmail ? 'bg-red-500' : 'border border-gray-300'
+                    }`}
+                    style={{ width: 18, height: 18 }}
+                  >
+                    {rememberEmail && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <span className="text-sm text-gray-500">아이디 저장</span>
+                </label>
+
                 {error && (
                   <p className="text-sm text-red-500 mt-3">{error}</p>
                 )}
@@ -597,7 +642,7 @@ export function AuthSheet() {
                 {/* 임시 스킵 버튼 (개발용) */}
                 <div className="mt-6 pt-4 border-t border-dashed border-gray-200">
                   <p className="text-xs text-orange-500 text-center mb-2">
-                    ⚠️ 개발 모드: 본인인증 없이 진행
+                    개발 모드: 본인인증 없이 진행
                   </p>
                   <button
                     onClick={() => setStep('categories')}
@@ -658,7 +703,7 @@ export function AuthSheet() {
 
                 {selectedCategories.length > 0 && (
                   <p className="text-xs text-gray-400 text-center mt-3">
-                    {selectedCategories.length}개 카테고리 선택됨 · 놓치기 아까운 딜을 먼저 받아보세요
+                    {selectedCategories.length}개 카테고리 선택됨
                   </p>
                 )}
 
@@ -696,7 +741,10 @@ export function AuthSheet() {
 
                 <div className="space-y-2">
                   {/* 전체 동의 */}
-                  <label className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 cursor-pointer">
+                  <label
+                    className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 cursor-pointer"
+                    onClick={(e) => { e.preventDefault(); setMarketingAll(!marketingAll); }}
+                  >
                     <div
                       className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
                         marketingAll ? 'bg-red-500' : 'border-2 border-gray-300'
@@ -749,7 +797,7 @@ export function AuthSheet() {
                 </button>
 
                 <button
-                  onClick={handleComplete}
+                  onClick={() => { showToast('회원가입이 완료되었습니다', 'success'); handleComplete(); }}
                   className="w-full mt-2 py-2 text-sm text-gray-400 hover:text-gray-600"
                 >
                   건너뛰기

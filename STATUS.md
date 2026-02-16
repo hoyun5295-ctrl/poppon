@@ -88,6 +88,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | TopNav.tsx | `src/components/layout/TopNav.tsx` |
 | Footer.tsx | `src/components/layout/Footer.tsx` |
 | SourceProtection.tsx | `src/components/layout/SourceProtection.tsx` |
+| **TopProgressBar.tsx** | `src/components/layout/TopProgressBar.tsx` ✅ 신규 |
 | **AuthSheet.tsx** | `src/components/auth/AuthSheet.tsx` ✅ 신규 |
 | MobileFilterSheet.tsx | `src/components/search/MobileFilterSheet.tsx` |
 | SearchBar.tsx | `src/components/search/SearchBar.tsx` |
@@ -104,17 +105,22 @@ SELECT COUNT(*) FROM followed_merchants;
 #### 페이지
 | 파일 | 경로 |
 |------|------|
-| 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider 래핑) |
-| 글로벌 CSS | `src/app/globals.css` |
+| 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider + TopProgressBar 래핑) |
+| 글로벌 CSS | `src/app/globals.css` (fade-in 애니메이션 추가) |
 | 미들웨어 | `src/middleware.ts` |
 | 홈 | `src/app/page.tsx` |
+| **홈 로딩** | `src/app/loading.tsx` ✅ 신규 |
 | 검색 | `src/app/search/page.tsx` |
+| **검색 로딩** | `src/app/search/loading.tsx` ✅ 신규 |
 | 카테고리 | `src/app/c/[categorySlug]/page.tsx` |
+| **카테고리 로딩** | `src/app/c/[categorySlug]/loading.tsx` ✅ 신규 |
 | 브랜드관 | `src/app/m/[merchantSlug]/page.tsx` |
+| **브랜드관 로딩** | `src/app/m/[merchantSlug]/loading.tsx` ✅ 신규 |
 | 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
 | 마이페이지 | `src/app/me/page.tsx` ✅ 데이터 연동 |
+| **마이 로딩** | `src/app/me/loading.tsx` ✅ 신규 |
 | 로그인 | `src/app/auth/page.tsx` ✅ 바텀시트 연동 |
 | OAuth 콜백 | `src/app/auth/callback/route.ts` ✅ 신규 |
 
@@ -129,7 +135,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | constants.ts | `src/lib/constants.ts` |
 | **AuthProvider.tsx** | `src/lib/auth/AuthProvider.tsx` ✅ 신규 |
 | Supabase 서버 | `src/lib/supabase/server.ts` |
-| Supabase 브라우저 | `src/lib/supabase/client.ts` |
+| Supabase 브라우저 | `src/lib/supabase/client.ts` ✅ 싱글톤 패턴 적용 |
 
 #### API (메인 앱)
 | 파일 | 경로 |
@@ -238,7 +244,8 @@ SELECT COUNT(*) FROM followed_merchants;
 ### 메인 앱 (poppon)
 ```
 src/app/
-├── layout.tsx               — AuthProvider + AuthSheet 래핑
+├── layout.tsx               — AuthProvider + TopProgressBar + AuthSheet 래핑
+├── loading.tsx              — 홈 스켈레톤 ✅ 신규
 ├── @modal/
 │   ├── default.tsx          — 모달 없을 때 null
 │   └── (.)d/[slug]/
@@ -246,15 +253,19 @@ src/app/
 ├── d/[slug]/
 │   └── page.tsx             — SEO 풀 페이지
 ├── m/[merchantSlug]/
-│   └── page.tsx             — 브랜드관
+│   ├── page.tsx             — 브랜드관
+│   └── loading.tsx          — 브랜드관 스켈레톤 ✅ 신규
 ├── c/[categorySlug]/
-│   └── page.tsx             — 카테고리 허브
+│   ├── page.tsx             — 카테고리 허브
+│   └── loading.tsx          — 카테고리 스켈레톤 ✅ 신규
 ├── search/
-│   └── page.tsx             — 검색 결과
+│   ├── page.tsx             — 검색 결과
+│   └── loading.tsx          — 검색 스켈레톤 ✅ 신규
 ├── submit/
 │   └── page.tsx             — 유저 제보
 ├── me/
-│   └── page.tsx             — 마이페이지 (저장딜/구독/설정 탭)
+│   ├── page.tsx             — 마이페이지 (저장딜/구독/설정 탭)
+│   └── loading.tsx          — 마이 스켈레톤 ✅ 신규
 ├── auth/
 │   ├── page.tsx             — 로그인/가입 (바텀시트 연동)
 │   └── callback/
@@ -960,11 +971,21 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] 어드민 회원 API (GET/PATCH /api/members) — 목록+통계+상태변경
 - [x] 어드민 회원 상세 API (GET /api/members/[id]) — 프로필+이메일+행동로그+검색로그+요약
 
+### 성능 최적화 + UX 부드러움 개선 (2/17)
+- [x] Supabase client.ts 싱글톤 패턴 적용 — 매번 새 인스턴스 생성 → 단일 인스턴스 공유 (전체 성능 병목 근본 해결)
+- [x] Vercel Function Region 변경 — 북미(iad1) → 서울(icn1), 사용자↔서버 왕복 ~300ms→~10ms
+- [x] DealModal 부드러운 열림/닫힘 애니메이션 — 데스크톱: fade+scale(0.2s), 모바일: slide-up(0.3s), 닫힘 역애니메이션 후 router.back()
+- [x] DealDetailClient 메모리 캐시 — dealCache Map으로 같은 딜 재클릭 시 즉시 표시, fetchedRef 중복 fetch 방지, mounted 플래그
+- [x] TopProgressBar 신규 — 모든 내부 링크 클릭 시 상단 빨간 프로그레스 바 (네이버/쿠팡 스타일), Suspense 래핑
+- [x] loading.tsx 5개 신규 — 홈/카테고리/검색/브랜드관/마이페이지 스켈레톤 (서버 데이터 로딩 중 즉시 레이아웃 표시)
+- [x] 페이지 fade-in 트랜지션 — globals.css에 animate-fade-in 추가, layout.tsx main에 적용
+- [x] layout.tsx 수정 — TopProgressBar 추가 + main에 animate-fade-in 클래스
+
 ---
 
 ## 🔴 미해결 버그 / 즉시 처리 필요
 
-- 🚨 **Vercel 배포 후 로딩 스피너만 도는 현상** — /me 페이지, 딜 상세 모달 등 전반적. 로컬은 정상. Vercel 클린 빌드(캐시 해제 Redeploy) 필요. 500 에러 로그 확인 필요.
+- ⚠️ **Supabase 리전 us-east-1 (미국 동부)** — Free 플랜 기본값. Vercel 서울→Supabase 미국 왕복 ~150ms 잔존. Pro 플랜 전환 시 아시아 리전 이전 검토
 - ⚠️ 홈 서브카피 "283개 브랜드" → 머천트 수 동적 표시 또는 업데이트 필요
 - ⚠️ 일부 구글 이미지 로고 품질 낮음 → 수동 교체 검토
 - ⚠️ poppon-admin에 layout.tsx 수정 커밋 아직 미반영 (로컬 파일 교체 + git push 필요)
@@ -972,10 +993,6 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 ---
 
 ## 🔲 진행 예정 작업
-
-**Vercel 로딩 버그 수정 (최우선)**
-- [ ] Vercel 클린 빌드 (캐시 해제 Redeploy)
-- [ ] Vercel Logs에서 500 에러 확인 → 원인 파악
 
 **도메인 연결**
 - [ ] 가비아 DNS 설정 — poppon.kr: A: `@`→Vercel IP, CNAME: `www`→Vercel DNS
@@ -1004,6 +1021,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [ ] 홈 서브카피 머천트 수 반영
 
 **인프라**
+- [ ] Supabase Pro 전환 + 아시아 리전 이전 검토 (현재 us-east-1)
+- [ ] poppon-admin Vercel Function Region 서울 변경
 - [ ] NCP 이관 (s2-g3 4vCPU/16GB, 월 ~13만원)
 - [ ] Docker 구성 → 상용서버 이관 대비
 
@@ -1017,7 +1036,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 ---
 
 ## 🖥️ 인프라 설계 (합의, 미착수)
-- **현재**: Vercel Pro ($20/월 × 2) — 메인 + 어드민 각각
+- **현재**: Vercel Pro ($20/월 × 2) — 메인(서울 icn1) + 어드민 각각
+- **Supabase**: Free 플랜, us-east-1 (미국 동부) — Pro 전환 시 아시아 리전 이전 검토
 - **이관 계획**: NCP s2-g3 (4vCPU/16GB) ~8만 + Supabase Pro ~3.4만 + Haiku ~1.4만 = **월 ~13만원**
 - Docker 구성 → 상용서버 이관 대비
 
@@ -1039,7 +1059,9 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - **PowerShell Set-Content 인코딩 주의**: 한글 파일 치환 시 UTF-8 BOM 없이 저장 → node 스크립트 사용 권장
 - **어드민 앱 tsconfig.json**: `"exclude": ["node_modules", "scripts"]` (빌드에서 스크립트 제외)
 - **Supabase API Keys**: 레거시(eyJhbGci...) Disabled → 신규 sb_publishable_ / sb_secret_ 사용 중. 양쪽 .env.local + Vercel 환경변수 모두 신규 키로 설정 필수
-- **Vercel 배포 로딩 문제**: 로컬 정상, Vercel만 스피너 도는 경우 → 캐시 해제 클린 빌드 Redeploy 필요. Vercel Logs에서 500 에러 확인.
+- **Supabase client.ts 싱글톤**: 반드시 `createClient()` 함수를 사용할 것. 직접 `createBrowserClient()` 호출 금지 — 새 인스턴스 생성 시 인증 세션 분리로 전체 성능 저하+깜빡임 발생
+- **Vercel Function Region**: 메인 앱 서울(icn1) 설정 완료. 어드민도 서울 설정 권장. 리전 변경 후 Redeploy 필요
+- **DealDetailClient 캐시**: dealCache는 메모리(클라이언트) 한정. 새로고침 시 초기화됨. 문제 시 캐시 무효화 로직 추가 필요
 - **PowerShell [id] 폴더**: `Remove-Item`/`ls` 시 `-LiteralPath` 사용 필수 (대괄호를 특수문자로 인식)
 
 ---
@@ -1068,7 +1090,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | 팝폰-인증시스템+어드민분리 | 2/16 | 회원 DB 6개 테이블 마이그레이션, AuthProvider+AuthSheet+OAuth콜백, 딜저장/브랜드구독 API, 마이페이지 데이터연동, 어드민 별도 프로젝트(poppon-admin) 분리, 크롤러/Cron 이동, 양쪽 빌드 성공 |
 | **팝폰-키로테이션+어드민배포** | **2/16** | **Supabase 신규 키 전환(sb_publishable/sb_secret) + 레거시 Disable, Anthropic 키 재발급, ADMIN_SECRET 변경, 어드민 사이드바 경로 수정, poppon-admin GitHub 생성 + Vercel 배포 완료** |
 | **팝폰-회원가입+행동추적+어드민회원관리** | **2/16** | **AuthSheet 6단계(이메일가입/로그인/본인인증placeholder/카테고리/마케팅동의), soft delete 탈퇴, tracking user_id 연동, search_logs, 어드민 회원목록/상세/행동로그, Vercel 로딩 버그 미해결** |
+| **팝폰-성능최적화+UX부드러움** | **2/17** | **Supabase client.ts 싱글톤, Vercel 리전 북미→서울, DealModal 애니메이션, DealDetailClient 캐시, TopProgressBar, loading.tsx 5개, fade-in 트랜지션** |
 
 ---
 
-*마지막 업데이트: 2026-02-16 (회원가입 6단계 + 행동추적 user_id + 어드민 회원관리 + Vercel 로딩 버그 미해결)*
+*마지막 업데이트: 2026-02-17 (성능 최적화: Supabase 싱글톤 + Vercel 서울 리전 + 프로그레스 바 + 스켈레톤 로딩 + 모달 애니메이션)*

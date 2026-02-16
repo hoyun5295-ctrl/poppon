@@ -6,6 +6,7 @@ import { SourceProtection } from '@/components/layout/SourceProtection';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { AuthSheet } from '@/components/auth/AuthSheet';
 import { TopProgressBar } from '@/components/layout/TopProgressBar';
+import { Toast } from '@/components/common/Toast';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default function RootLayout({
         <AuthProvider>
           <TopProgressBar />
           <SourceProtection />
+          <Toast />
           <TopNav />
           <main className="flex-1 animate-fade-in">
             {children}

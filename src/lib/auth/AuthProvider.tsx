@@ -6,6 +6,13 @@ import { setTrackingUserId } from '@/lib/tracking';
 import type { Profile } from '@/types';
 import type { User, Session } from '@supabase/supabase-js';
 
+// ── Toast ──
+interface ToastState {
+  message: string;
+  type: 'success' | 'error' | 'info';
+  visible: boolean;
+}
+
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
@@ -20,9 +27,15 @@ interface AuthContextType {
   isAuthSheetOpen: boolean;
   /** 인증이 필요한 액션 래퍼 - 비로그인 시 바텀시트 */
   requireAuth: (callback: () => void) => void;
+  /** 토스트 */
+  toast: ToastState;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  hideToast: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const TOAST_STORAGE_KEY = 'poppon_pending_toast';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -30,8 +43,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthSheetOpen, setIsAuthSheetOpen] = useState(false);
+  const [toast, setToast] = useState<ToastState>({ message: '', type: 'success', visible: false });
 
   const supabase = createClient();
+
+  // ── Toast 함수 ──
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type, visible: true });
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToast(prev => ({ ...prev, visible: false }));
+  }, []);
+
+  // 페이지 리로드 후 sessionStorage 토스트 복원 (로그아웃 등)
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem(TOAST_STORAGE_KEY);
+      if (pending) {
+        sessionStorage.removeItem(TOAST_STORAGE_KEY);
+        const { message, type } = JSON.parse(pending);
+        // 약간의 딜레이로 페이지 렌더 후 표시
+        setTimeout(() => showToast(message, type), 300);
+      }
+    } catch { /* ignore */ }
+  }, [showToast]);
 
   // 프로필 조회
   const fetchProfile = useCallback(async (userId: string) => {
@@ -130,11 +166,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         closeAuthSheet,
         isAuthSheetOpen,
         requireAuth,
+        toast,
+        showToast,
+        hideToast,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
+}
+
+/** sessionStorage에 토스트 저장 (페이지 리로드 후 표시용) */
+export function setPendingToast(message: string, type: 'success' | 'error' | 'info' = 'success') {
+  try {
+    sessionStorage.setItem(TOAST_STORAGE_KEY, JSON.stringify({ message, type }));
+  } catch { /* ignore */ }
 }
 
 export function useAuth() {

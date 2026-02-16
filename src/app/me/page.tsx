@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
-  Bookmark, Shield, Smartphone, ExternalLink, AlertTriangle, KeyRound
+  Bookmark, Shield, Smartphone, ExternalLink, AlertTriangle, KeyRound,
+  Check, Shirt, Sparkles, UtensilsCrossed, Home, Plane, LayoutGrid, Plus
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
@@ -12,12 +13,23 @@ import { formatTimeRemaining } from '@/lib/utils/format';
 
 type Tab = 'saved' | 'follows' | 'settings';
 
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  fashion: <Shirt className="w-4 h-4" />,
+  beauty: <Sparkles className="w-4 h-4" />,
+  food: <UtensilsCrossed className="w-4 h-4" />,
+  living: <Home className="w-4 h-4" />,
+  travel: <Plane className="w-4 h-4" />,
+  culture: <LayoutGrid className="w-4 h-4" />,
+};
+
 export default function MyPage() {
-  const { isLoggedIn, isLoading, user, profile, signOut, openAuthSheet } = useAuth();
+  const { isLoggedIn, isLoading, user, profile, signOut, openAuthSheet, refreshProfile } = useAuth();
   const [tab, setTab] = useState<Tab>('saved');
 
   const handleSignOut = async () => {
+    const { setPendingToast } = await import('@/lib/auth/AuthProvider');
     await signOut();
+    setPendingToast('로그아웃되었습니다', 'success');
     window.location.href = '/';
   };
 
@@ -104,7 +116,7 @@ export default function MyPage() {
 
       {tab === 'saved' && <SavedDealsTab />}
       {tab === 'follows' && <FollowsTab />}
-      {tab === 'settings' && <SettingsTab profile={profile} user={user} onSignOut={handleSignOut} />}
+      {tab === 'settings' && <SettingsTab profile={profile} user={user} onSignOut={handleSignOut} onRefresh={refreshProfile} />}
     </div>
   );
 }
@@ -241,7 +253,9 @@ function FollowsTab() {
 }
 
 // --- 설정 탭 ---
-function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; onSignOut: () => void }) {
+function SettingsTab({ profile, user, onSignOut, onRefresh }: {
+  profile: any; user: any; onSignOut: () => void; onRefresh: () => Promise<void>;
+}) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [passwordResetSent, setPasswordResetSent] = useState(false);
@@ -290,6 +304,12 @@ function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; on
 
   return (
     <div className="space-y-5">
+      {/* 관심 카테고리 */}
+      <InterestCategoriesSection profile={profile} onRefresh={onRefresh} />
+
+      {/* 추천 브랜드 구독 */}
+      <RecommendedBrandsSection />
+
       {/* 비밀번호 변경 */}
       <div className="bg-white rounded-xl border border-surface-200 p-5">
         <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
@@ -432,6 +452,220 @@ function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; on
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// --- 관심 카테고리 편집 ---
+function InterestCategoriesSection({ profile, onRefresh }: { profile: any; onRefresh: () => Promise<void> }) {
+  const { showToast } = useAuth();
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [selected, setSelected] = useState<string[]>(profile?.interested_categories || []);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    supabase
+      .from('categories')
+      .select('id, name, slug')
+      .eq('depth', 0)
+      .eq('is_active', true)
+      .order('sort_order')
+      .then(({ data }) => {
+        if (data) setCategories(data);
+      });
+  }, []);
+
+  useEffect(() => {
+    const original = profile?.interested_categories || [];
+    const changed = selected.length !== original.length || selected.some((id: string) => !original.includes(id));
+    setHasChanges(changed);
+  }, [selected, profile?.interested_categories]);
+
+  const toggle = (id: string) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('profiles').update({ interested_categories: selected }).eq('id', user.id);
+      await onRefresh();
+      showToast('관심 카테고리가 저장되었습니다', 'success');
+      setHasChanges(false);
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-surface-200 p-5">
+      <h3 className="font-semibold text-surface-900 mb-1 flex items-center gap-2">
+        <Tag className="w-4 h-4" />
+        관심 카테고리
+      </h3>
+      <p className="text-xs text-surface-400 mb-4">
+        선택한 카테고리의 새로운 딜 알림을 받을 수 있어요
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {categories.map((cat) => {
+          const isSelected = selected.includes(cat.id);
+          return (
+            <button
+              key={cat.id}
+              onClick={() => toggle(cat.id)}
+              className={`
+                inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all
+                ${isSelected
+                  ? 'bg-primary-50 text-primary-600 border border-primary-200'
+                  : 'bg-surface-50 text-surface-500 border border-surface-200 hover:border-surface-300'
+                }
+              `}
+            >
+              <span className={isSelected ? 'text-primary-500' : 'text-surface-400'}>
+                {CATEGORY_ICONS[cat.slug] || <LayoutGrid className="w-4 h-4" />}
+              </span>
+              {cat.name}
+              {isSelected && <Check className="w-3.5 h-3.5 text-primary-500" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {hasChanges && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="mt-4 px-4 py-2 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 transition-colors"
+        >
+          {saving ? '저장 중...' : '변경사항 저장'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// --- 추천 브랜드 구독 ---
+function RecommendedBrandsSection() {
+  const { showToast } = useAuth();
+  const [merchants, setMerchants] = useState<any[]>([]);
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const load = async () => {
+      // 인기 머천트 12개
+      const { data: merchantData } = await supabase
+        .from('merchants')
+        .select('id, name, slug, logo_url, active_deal_count, brand_color')
+        .gt('active_deal_count', 0)
+        .order('active_deal_count', { ascending: false })
+        .limit(12);
+
+      if (merchantData) setMerchants(merchantData);
+
+      // 구독 목록
+      try {
+        const res = await fetch('/api/me/follows/merchants');
+        const data = await res.json();
+        const ids = new Set<string>(
+          (data.followedMerchants || [])
+            .map((f: any) => f.merchants?.id)
+            .filter(Boolean)
+        );
+        setFollowedIds(ids);
+      } catch { /* ignore */ }
+
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const toggleFollow = async (merchantId: string, merchantName: string) => {
+    if (followedIds.has(merchantId)) {
+      await fetch(`/api/me/follows/merchants?merchant_id=${merchantId}`, { method: 'DELETE' });
+      setFollowedIds(prev => { const n = new Set(prev); n.delete(merchantId); return n; });
+    } else {
+      await fetch('/api/me/follows/merchants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ merchant_id: merchantId }),
+      });
+      setFollowedIds(prev => new Set([...prev, merchantId]));
+      showToast(`${merchantName} 구독 완료`, 'success');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-surface-200 p-5">
+        <div className="h-5 w-32 bg-surface-100 rounded animate-pulse mb-4" />
+        <div className="grid grid-cols-2 gap-2">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-14 bg-surface-50 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-surface-200 p-5">
+      <h3 className="font-semibold text-surface-900 mb-1 flex items-center gap-2">
+        <Store className="w-4 h-4" />
+        인기 브랜드 구독
+      </h3>
+      <p className="text-xs text-surface-400 mb-4">
+        브랜드를 구독하면 새로운 할인이 올라올 때 알려드려요
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {merchants.map((m) => {
+          const isFollowed = followedIds.has(m.id);
+          return (
+            <div key={m.id} className="flex items-center gap-2.5 p-2.5 rounded-lg border border-surface-100 hover:border-surface-200 transition-colors">
+              {m.logo_url ? (
+                <img
+                  src={m.logo_url}
+                  alt={m.name}
+                  className="w-9 h-9 rounded-lg object-contain border border-surface-100 p-0.5 bg-white flex-shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                  style={{ backgroundColor: m.brand_color || '#94a3b8' }}
+                >
+                  {m.name?.charAt(0)}
+                </div>
+              )}
+              <Link href={`/m/${m.slug}`} className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-surface-800 truncate">{m.name}</p>
+                <p className="text-[11px] text-surface-400">딜 {m.active_deal_count}개</p>
+              </Link>
+              <button
+                onClick={() => toggleFollow(m.id, m.name)}
+                className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                  isFollowed
+                    ? 'bg-primary-50 text-primary-500'
+                    : 'bg-surface-50 text-surface-400 hover:bg-surface-100'
+                }`}
+              >
+                {isFollowed ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <Link
+        href="/search"
+        className="flex items-center justify-center gap-1 mt-3 py-2 text-xs text-surface-400 hover:text-surface-600 transition-colors"
+      >
+        더 많은 브랜드 보기 <ChevronRight className="w-3.5 h-3.5" />
+      </Link>
     </div>
   );
 }

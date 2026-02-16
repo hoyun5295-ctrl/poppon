@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight, LogOut, Settings } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
-import { useAuth } from '@/lib/auth/AuthProvider';
+import { useAuth, setPendingToast } from '@/lib/auth/AuthProvider';
 
 const MOBILE_MENU_LINKS = [
   { href: '/me', icon: Heart, label: '저장한 딜', authRequired: true },
@@ -62,6 +62,8 @@ export function TopNav() {
     await signOut();
     setIsMobileMenuOpen(false);
     setIsProfileMenuOpen(false);
+    // 페이지 리로드 후 토스트 표시 (sessionStorage 경유)
+    setPendingToast('로그아웃되었습니다', 'success');
     window.location.href = '/';
   };
 
@@ -84,12 +86,12 @@ export function TopNav() {
             </span>
           </Link>
 
-          {/* 데스크탑 검색바 */}
+          {/* 데스크톱 검색바 */}
           <div className="hidden md:flex flex-1 max-w-xl mx-8">
             <SearchBar />
           </div>
 
-          {/* 데스크탑 네비게이션 */}
+          {/* 데스크톱 네비게이션 */}
           <nav className="hidden md:flex items-center gap-1">
             <Link
               href="/me"

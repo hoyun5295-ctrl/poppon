@@ -3,5 +3,30 @@
     "hash": "3be69b67cb02f552613b3c6f9e8378b9",
     "lastCrawled": "2026-02-14T12:36:43.111Z",
     "dealCount": 39
+  },
+  "https://clubclio.co.kr/event/eventList": {
+    "hash": "aba44b643da8c046004c8f4ee4447e6e",
+    "lastCrawled": "2026-02-16T00:23:25.746Z",
+    "dealCount": 13
+  },
+  "https://www.starbucks.co.kr/whats_new/campaign_list.do": {
+    "hash": "98135090ea7557941ae692e69ec0b348",
+    "lastCrawled": "2026-02-16T00:23:56.624Z",
+    "dealCount": 30
+  },
+  "https://www.innisfree.com/kr/ko/event/list.do": {
+    "hash": "a2581e1736c6abbbc22adac2fb32b9c5",
+    "lastCrawled": "2026-02-16T03:08:53.695Z",
+    "dealCount": 9
+  },
+  "https://www.oliveyoung.co.kr/store/exhibition/exhibition.do": {
+    "hash": "5577215cd10e47833340013f02f57e4b",
+    "lastCrawled": "2026-02-16T00:24:27.879Z",
+    "dealCount": 0
+  },
+  "https://www.cgv.co.kr/culture-event/event/": {
+    "hash": "555b8b4f37cee5bc2709f91c71efe905",
+    "lastCrawled": "2026-02-16T00:24:36.936Z",
+    "dealCount": 0
   }
 }

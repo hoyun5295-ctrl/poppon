@@ -1,0 +1,189 @@
+[
+  {
+    "name": "클리오",
+    "url": "https://clubclio.co.kr/event/eventList",
+    "status": "변경없음(스킵)",
+    "dealCount": 13,
+    "tokens": 0,
+    "duration": 7634,
+    "deals": [],
+    "skipped": true
+  },
+  {
+    "name": "스타벅스",
+    "url": "https://www.starbucks.co.kr/whats_new/campaign_list.do",
+    "status": "변경없음(스킵)",
+    "dealCount": 30,
+    "tokens": 0,
+    "duration": 7183,
+    "deals": [],
+    "skipped": true
+  },
+  {
+    "name": "이니스프리",
+    "url": "https://www.innisfree.com/kr/ko/event/list.do",
+    "status": "성공",
+    "dealCount": 9,
+    "tokens": 12146,
+    "duration": 17824,
+    "deals": [
+      {
+        "title": "BC카드 7천원 결제일 할인",
+        "description": "BC카드 결제 시 할인",
+        "landingUrl": "https://www.innisfree.com/kr/ko/ca/event/103295",
+        "thumbnailUrl": "https://inm-cdn.innisfree.com/origin-image/display/banner/fb173ed9-c560-47e1-9a9a-24611f2f6316.webp",
+        "benefitSummary": "7천원 할인",
+        "couponCode": null,
+        "discountValue": 7000,
+        "discountType": "amount",
+        "startsAt": null,
+        "endsAt": null,
+        "badges": [
+          "카드사"
+        ]
+      },
+      {
+        "title": "삼성카드 5천원 결제 혜택",
+        "description": "삼성카드 결제 시 할인",
+        "landingUrl": "https://www.innisfree.com/kr/ko/ca/event/103500",
+        "thumbnailUrl": null,
+        "benefitSummary": "5천원 할인",
+        "couponCode": null,
+        "discountValue": 5000,
+        "discountType": "amount",
+        "startsAt": null,
+        "endsAt": null,
+        "badges": [
+          "카드사"
+        ]
+      },
+      {
+        "title": "무료배송 이벤트",
+        "description": "5천원 이상 구매 시 무료배송",
+        "landingUrl": "https://www.innisfree.com/kr/ko/ca/event/103242",
+        "thumbnailUrl": null,
+        "benefitSummary": "무료배송",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2025-02-12",
+        "endsAt": "2025-02-18",
+        "badges": [
+          "배송"
+        ]
+      },
+      {
+        "title": "3만원 이상 결제 시 3천원 할인 쿠폰",
+        "description": "3만원 이상 구매 시 쿠폰",
+        "landingUrl": "https://www.innisfree.com/kr/ko/ca/event/103242",
+        "thumbnailUrl": null,
+        "benefitSummary": "3천원 할인 쿠폰",
+        "couponCode": null,
+        "discountValue": 3000,
+        "discountType": "amount",
+        "startsAt": "2025-02-12",
+        "endsAt": "2025-02-18",
+        "badges": [
+          "쿠폰"
+        ]
+      },
+      {
+        "title": "4만원 이상 구매 시 겔마스크 2매 증정",
+        "description": "선착순 겔마스크 증정 이벤트",
+        "landingUrl": "https://www.innisfree.com/kr/ko/ca/event/103242",
+        "thumbnailUrl": "https://inm-cdn.innisfree.com/origin-image/display/banner/380371ed-923a-4bad-a258-85749f1e5522.webp",
+        "benefitSummary": "겔마스크 2매 증정",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2025-02-12",
+        "endsAt": "2025-02-18",
+        "badges": [
+          "선착순",
+          "증정품"
+        ]
+      },
+      {
+        "title": "파우치 속 필수템 핸드크림 특가",
+        "description": "핸드크림 특가 이벤트",
+        "landingUrl": "https://www.innisfree.com/kr/ko/ca/event/103275",
+        "thumbnailUrl": "https://inm-cdn.innisfree.com/origin-image/display/banner/74991295-f4a4-4c95-9825-60e68789f54f.webp",
+        "benefitSummary": "핸드크림 특가",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": null,
+        "endsAt": null,
+        "badges": [
+          "특가"
+        ]
+      },
+      {
+        "title": "2월 특가 UP TO 50% SALE",
+        "description": "이니슾 2월 특가",
+        "landingUrl": "https://www.innisfree.com/kr/ko/ca/event/103242",
+        "thumbnailUrl": null,
+        "benefitSummary": "최대 50% 할인",
+        "couponCode": null,
+        "discountValue": 50,
+        "discountType": "percent",
+        "startsAt": "2025-02-12",
+        "endsAt": "2025-02-28",
+        "badges": [
+          "세일"
+        ]
+      },
+      {
+        "title": "신규가입 & 첫구매 혜택",
+        "description": "1천원딜부터 세트반값까지",
+        "landingUrl": null,
+        "thumbnailUrl": "https://inm-cdn.innisfree.com/origin-image/display/banner/face140e-c60d-423d-a9f7-ca8c7172968c.webp",
+        "benefitSummary": "첫구매 최대 50% 할인",
+        "couponCode": null,
+        "discountValue": 50,
+        "discountType": "percent",
+        "startsAt": "2024-09-01",
+        "endsAt": "2024-12-31",
+        "badges": [
+          "첫구매"
+        ]
+      },
+      {
+        "title": "PDRN 앰플 그린티클럽 회원 혜택",
+        "description": "그린티클럽 회원 대상 PDRN 앰플 특가",
+        "landingUrl": null,
+        "thumbnailUrl": "https://inm-cdn.innisfree.com/origin-image/display/banner/a99e8051-2876-42e0-967c-7fcb5bf8d370.webp",
+        "benefitSummary": "PDRN 앰플 특가",
+        "couponCode": null,
+        "discountValue": null,
+        "discountType": null,
+        "startsAt": "2025-02-12",
+        "endsAt": "2025-02-28",
+        "badges": [
+          "회원"
+        ]
+      }
+    ],
+    "skipped": false
+  },
+  {
+    "name": "올리브영",
+    "url": "https://www.oliveyoung.co.kr/store/exhibition/exhibition.do",
+    "status": "변경없음(스킵)",
+    "dealCount": 0,
+    "tokens": 0,
+    "duration": 4313,
+    "deals": [],
+    "skipped": true
+  },
+  {
+    "name": "CGV",
+    "url": "https://www.cgv.co.kr/culture-event/event/",
+    "status": "변경없음(스킵)",
+    "dealCount": 0,
+    "tokens": 0,
+    "duration": 5238,
+    "deals": [],
+    "skipped": true
+  }
+]

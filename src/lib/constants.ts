@@ -6,21 +6,15 @@ export const APP_NAME = 'POPPON';
 export const APP_DESCRIPTION = '한국의 모든 할인/쿠폰/프로모션을 한 곳에서';
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-// --- 12 대카테고리 ---
+// --- 6 대카테고리 (활성) ---
 // lucideIcon: lucide-react 컴포넌트명 (CategoryTabBar에서 매핑)
 export const MAIN_CATEGORIES = [
   { slug: 'fashion', name: '패션', icon: '👗', lucideIcon: 'Shirt', color: '#7C3AED' },
   { slug: 'beauty', name: '뷰티', icon: '💄', lucideIcon: 'Sparkles', color: '#E11D48' },
   { slug: 'food', name: '식품/배달', icon: '🍔', lucideIcon: 'UtensilsCrossed', color: '#EA580C' },
   { slug: 'living', name: '생활/리빙', icon: '🏠', lucideIcon: 'Home', color: '#059669' },
-  { slug: 'digital', name: '디지털/가전', icon: '📱', lucideIcon: 'Smartphone', color: '#2563EB' },
   { slug: 'travel', name: '여행/레저', icon: '✈️', lucideIcon: 'Plane', color: '#0284C7' },
-  { slug: 'culture', name: '문화/콘텐츠', icon: '🎬', lucideIcon: 'Film', color: '#7C3AED' },
-  { slug: 'kids', name: '키즈/교육', icon: '👶', lucideIcon: 'BookOpen', color: '#D97706' },
-  { slug: 'health', name: '건강/헬스', icon: '💪', lucideIcon: 'HeartPulse', color: '#0D9488' },
-  { slug: 'pets', name: '반려동물', icon: '🐾', lucideIcon: 'PawPrint', color: '#DB2777' },
-  { slug: 'auto', name: '자동차/주유', icon: '🚗', lucideIcon: 'Car', color: '#475569' },
-  { slug: 'finance', name: '금융/통신', icon: '💳', lucideIcon: 'CreditCard', color: '#0EA5E9' },
+  { slug: 'culture', name: '문화/콘텐츠', icon: '🎬', lucideIcon: 'Film', color: '#8B5CF6' },
 ] as const;
 
 // --- 혜택 태그 ---

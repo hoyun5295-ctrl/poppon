@@ -58,14 +58,14 @@ export function TopNav() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isProfileMenuOpen]);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch { /* ignore */ }
-    setIsMobileMenuOpen(false);
-    setIsProfileMenuOpen(false);
-    // 페이지 리로드 후 토스트 표시 (sessionStorage 경유)
+  const handleSignOut = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // 동기적으로 즉시 이동 — signOut은 백그라운드
     setPendingToast('로그아웃되었습니다', 'success');
+    signOut().catch(() => {});
     window.location.href = '/';
   };
 
@@ -147,7 +147,7 @@ export function TopNav() {
                     </Link>
                     <div className="h-px bg-surface-100 my-1" />
                     <button
-                      onClick={handleSignOut}
+                      onClick={(e) => handleSignOut(e)}
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full text-left"
                     >
                       <LogOut className="w-4 h-4" />
@@ -280,7 +280,7 @@ export function TopNav() {
               <div className="mt-4 pt-4 border-t border-surface-100">
                 {isLoggedIn ? (
                   <button
-                    onClick={handleSignOut}
+                    onClick={(e) => handleSignOut(e)}
                     className="flex items-center justify-center gap-2 w-full py-3 text-sm text-surface-500 hover:text-surface-700 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />

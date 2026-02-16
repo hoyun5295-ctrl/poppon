@@ -71,22 +71,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 프로필 조회
   const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-    // 탈퇴한 계정이면 강제 로그아웃
-    if (data?.status === 'withdrawn' || data?.status === 'banned') {
-      await supabase.auth.signOut();
-      setUser(null);
-      setProfile(null);
-      setSession(null);
-      return;
+      // 탈퇴한 계정이면 강제 로그아웃
+      if (data?.status === 'withdrawn' || data?.status === 'banned') {
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        setSession(null);
+        return;
+      }
+
+      setProfile(data);
+    } catch {
+      // 프로필 조회 실패 시 무시
     }
-
-    setProfile(data);
   }, [supabase]);
 
   const refreshProfile = useCallback(async () => {
@@ -98,15 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 초기 세션 확인 + 리스너
   useEffect(() => {
     const initAuth = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      setTrackingUserId(currentSession?.user?.id ?? null);
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setTrackingUserId(currentSession?.user?.id ?? null);
 
-      if (currentSession?.user) {
-        await fetchProfile(currentSession.user.id);
+        if (currentSession?.user) {
+          await fetchProfile(currentSession.user.id);
+        }
+      } catch {
+        // 세션 조회 실패 시에도 로딩 해제
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initAuth();

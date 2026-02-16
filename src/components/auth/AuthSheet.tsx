@@ -485,6 +485,7 @@ export function AuthSheet() {
                       type={showPassword ? 'text' : 'password'}
                       value={passwordConfirm}
                       onChange={(e) => setPasswordConfirm(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && email && password && passwordConfirm) handleSignup(); }}
                       placeholder="비밀번호를 다시 입력해주세요"
                       className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
                                  focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
@@ -561,6 +562,7 @@ export function AuthSheet() {
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && email && password) handleLogin(); }}
                         placeholder="비밀번호"
                         className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm pr-12
                                    focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"

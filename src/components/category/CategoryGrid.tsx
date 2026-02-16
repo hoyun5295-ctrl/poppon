@@ -22,12 +22,14 @@ export function CategoryGrid() {
               <CategoryIcon
                 slug={cat.slug}
                 size={32}
-                color={isActive ? cat.color : undefined}
-                className="text-surface-400 group-hover:text-surface-600 transition-colors"
-                style={isActive ? { color: cat.color } : undefined}
+                color={isActive ? cat.color : '#9ca3af'}
               />
               <span
-                className="text-xs sm:text-sm font-medium text-surface-500 group-hover:text-surface-800 whitespace-nowrap transition-colors"
+                className={`text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                  isActive
+                    ? ''
+                    : 'text-surface-500 group-hover:text-surface-800'
+                }`}
                 style={isActive ? { color: cat.color } : undefined}
               >
                 {cat.name}

@@ -5,6 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { SourceProtection } from '@/components/layout/SourceProtection';
 import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { AuthSheet } from '@/components/auth/AuthSheet';
+import { TopProgressBar } from '@/components/layout/TopProgressBar';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -36,9 +37,10 @@ export default function RootLayout({
     <html lang="ko">
       <body className="font-sans antialiased min-h-screen flex flex-col">
         <AuthProvider>
+          <TopProgressBar />
           <SourceProtection />
           <TopNav />
-          <main className="flex-1">
+          <main className="flex-1 animate-fade-in">
             {children}
           </main>
           {modal}

@@ -1,31 +1,52 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { MAIN_CATEGORIES } from '@/lib/constants';
 import { CategoryIcon } from '@/components/category/CategoryIcon';
 
 export function CategoryGrid() {
+  const pathname = usePathname();
+
   return (
-    <section className="py-2 sm:py-4">
-      {/* 모바일: 가로 스크롤 1줄 / PC: 12열 그리드 */}
-      <div className="flex sm:grid sm:grid-cols-6 md:grid-cols-12 gap-1 sm:gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-        {MAIN_CATEGORIES.map((cat) => (
-          <Link
-            key={cat.slug}
-            href={`/c/${cat.slug}`}
-            className="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl 
-                       hover:bg-surface-50 active:bg-surface-100 transition-colors group shrink-0
-                       min-w-[60px] sm:min-w-0"
-          >
-            <div
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform"
-              style={{ backgroundColor: `${cat.color}15` }}
+    <section className="border-b border-surface-100">
+      <div className="flex justify-center overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
+        {MAIN_CATEGORIES.map((cat) => {
+          const isActive = pathname === `/c/${cat.slug}`;
+          return (
+            <Link
+              key={cat.slug}
+              href={`/c/${cat.slug}`}
+              className="group relative flex flex-col items-center gap-2 px-8 sm:px-10 pt-3 pb-4 shrink-0 transition-colors"
             >
-              <CategoryIcon slug={cat.slug} size={20} color={cat.color} />
-            </div>
-            <span className="text-[10px] sm:text-xs font-medium text-surface-600 group-hover:text-surface-900 text-center whitespace-nowrap">
-              {cat.name}
-            </span>
-          </Link>
-        ))}
+              <CategoryIcon
+                slug={cat.slug}
+                size={32}
+                color={isActive ? cat.color : undefined}
+                className="text-surface-400 group-hover:text-surface-600 transition-colors"
+                style={isActive ? { color: cat.color } : undefined}
+              />
+              <span
+                className="text-xs sm:text-sm font-medium text-surface-500 group-hover:text-surface-800 whitespace-nowrap transition-colors"
+                style={isActive ? { color: cat.color } : undefined}
+              >
+                {cat.name}
+              </span>
+              {/* 언더라인 */}
+              <span
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all duration-200
+                           w-0 group-hover:w-3/5"
+                style={{ backgroundColor: cat.color }}
+              />
+              {isActive && (
+                <span
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] w-3/5 rounded-full"
+                  style={{ backgroundColor: cat.color }}
+                />
+              )}
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

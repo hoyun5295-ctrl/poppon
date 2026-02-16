@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight, LogOut } from 'lucide-react';
+import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight, LogOut, Settings } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
 import { useAuth } from '@/lib/auth/AuthProvider';
 
@@ -25,12 +25,15 @@ const QUICK_CATEGORIES = [
 export function TopNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { isLoggedIn, profile, signOut, openAuthSheet } = useAuth();
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsSearchOpen(false);
+    setIsProfileMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -42,9 +45,28 @@ export function TopNav() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
+  // 프로필 드롭다운 바깥 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+    if (isProfileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileMenuOpen]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMobileMenuOpen(false);
+    setIsProfileMenuOpen(false);
+    window.location.href = '/';
+  };
+
   const handleAuthAction = () => {
     if (isLoggedIn) {
-      // 로그인 상태 → 마이페이지
       window.location.href = '/me';
     } else {
       openAuthSheet();
@@ -85,9 +107,9 @@ export function TopNav() {
             </Link>
 
             {isLoggedIn ? (
-              <div className="flex items-center gap-2 ml-2">
-                <Link
-                  href="/me"
+              <div className="relative ml-2" ref={profileMenuRef}>
+                <button
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-100 transition-colors"
                 >
                   <div className="w-7 h-7 bg-primary-500 rounded-full flex items-center justify-center">
@@ -98,7 +120,37 @@ export function TopNav() {
                   <span className="text-sm font-medium text-surface-700">
                     {profile?.nickname || profile?.name || '마이'}
                   </span>
-                </Link>
+                </button>
+
+                {/* 데스크톱 프로필 드롭다운 */}
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-surface-200 py-1 z-50">
+                    <Link
+                      href="/me"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      <User className="w-4 h-4 text-surface-400" />
+                      마이페이지
+                    </Link>
+                    <Link
+                      href="/me"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+                      onClick={() => setIsProfileMenuOpen(false)}
+                    >
+                      <Settings className="w-4 h-4 text-surface-400" />
+                      설정
+                    </Link>
+                    <div className="h-px bg-surface-100 my-1" />
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      로그아웃
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <button
@@ -224,7 +276,7 @@ export function TopNav() {
               <div className="mt-4 pt-4 border-t border-surface-100">
                 {isLoggedIn ? (
                   <button
-                    onClick={() => { signOut(); setIsMobileMenuOpen(false); }}
+                    onClick={handleSignOut}
                     className="flex items-center justify-center gap-2 w-full py-3 text-sm text-surface-500 hover:text-surface-700 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />

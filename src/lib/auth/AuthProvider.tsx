@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { setTrackingUserId } from '@/lib/tracking';
 import type { Profile } from '@/types';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -39,6 +40,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('*')
       .eq('id', userId)
       .single();
+
+    // 탈퇴한 계정이면 강제 로그아웃
+    if (data?.status === 'withdrawn' || data?.status === 'banned') {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      return;
+    }
+
     setProfile(data);
   }, [supabase]);
 
@@ -54,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      setTrackingUserId(currentSession?.user?.id ?? null);
 
       if (currentSession?.user) {
         await fetchProfile(currentSession.user.id);
@@ -67,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
+        setTrackingUserId(newSession?.user?.id ?? null);
 
         if (newSession?.user) {
           await fetchProfile(newSession.user.id);
@@ -89,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setSession(null);
+    setTrackingUserId(null);
   };
 
   const openAuthSheet = () => setIsAuthSheetOpen(true);

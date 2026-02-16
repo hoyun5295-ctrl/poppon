@@ -10,7 +10,7 @@ const DEDUP_MINUTES = 5;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { deal_id, action_type, session_id, metadata } = body;
+    const { deal_id, action_type, session_id, user_id, metadata } = body;
 
     // 유효성 검증
     if (!deal_id || !action_type || !session_id) {
@@ -55,12 +55,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // deal_actions INSERT
+    // deal_actions INSERT (user_id 포함)
     const { error } = await supabase.from('deal_actions').insert({
       deal_id,
       action_type,
       session_id,
-      user_id: null, // 추후 인증 구현 시 auth.uid() 연동
+      user_id: user_id || null,
+      metadata: metadata || null,
     });
 
     if (error) {
@@ -71,10 +72,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // view 액션이면 view_count도 증가 (fire-and-forget)
+    // 카운트 증가 (fire-and-forget)
     if (action_type === 'view') {
       supabase
         .rpc('increment_view_count', { deal_id_input: deal_id })
+        .then(() => {}, () => {});
+    } else if (action_type === 'click_out') {
+      supabase
+        .rpc('increment_click_out_count', { deal_id_input: deal_id })
         .then(() => {}, () => {});
     }
 

@@ -4,16 +4,22 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
-  Bookmark, Shield, Smartphone, ExternalLink
+  Bookmark, Shield, Smartphone, ExternalLink, AlertTriangle, KeyRound
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { createClient } from '@/lib/supabase/client';
 import { formatTimeRemaining } from '@/lib/utils/format';
 
 type Tab = 'saved' | 'follows' | 'settings';
 
 export default function MyPage() {
-  const { isLoggedIn, isLoading, profile, signOut, openAuthSheet } = useAuth();
+  const { isLoggedIn, isLoading, user, profile, signOut, openAuthSheet } = useAuth();
   const [tab, setTab] = useState<Tab>('saved');
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = '/';
+  };
 
   // 비로그인 상태
   if (!isLoading && !isLoggedIn) {
@@ -76,12 +82,12 @@ export default function MyPage() {
               {profile?.nickname || profile?.name || '사용자'}
             </h1>
             <p className="text-sm text-surface-400">
-              {profile?.phone?.replace(/(\d{3})(\d{4})(\d{4})/, '$1-****-$3') || ''}
+              {user?.email || ''}
             </p>
           </div>
         </div>
         <button
-          onClick={signOut}
+          onClick={handleSignOut}
           className="flex items-center gap-1 text-sm text-surface-400 hover:text-surface-600 transition-colors"
         >
           <LogOut className="w-4 h-4" />
@@ -98,7 +104,7 @@ export default function MyPage() {
 
       {tab === 'saved' && <SavedDealsTab />}
       {tab === 'follows' && <FollowsTab />}
-      {tab === 'settings' && <SettingsTab profile={profile} />}
+      {tab === 'settings' && <SettingsTab profile={profile} user={user} onSignOut={handleSignOut} />}
     </div>
   );
 }
@@ -235,9 +241,82 @@ function FollowsTab() {
 }
 
 // --- 설정 탭 ---
-function SettingsTab({ profile }: { profile: any }) {
+function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; onSignOut: () => void }) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [passwordResetSent, setPasswordResetSent] = useState(false);
+  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+
+  const supabase = createClient();
+
+  // 비밀번호 재설정 이메일 발송
+  const handlePasswordReset = async () => {
+    if (!user?.email) return;
+    setPasswordResetLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/me`,
+      });
+      if (!error) {
+        setPasswordResetSent(true);
+      }
+    } catch { /* ignore */ }
+    finally { setPasswordResetLoading(false); }
+  };
+
+  // 계정 탈퇴
+  const [withdrawReason, setWithdrawReason] = useState('');
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      const res = await fetch('/api/me/delete-account', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: withdrawReason }),
+      });
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        alert('계정 삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
+    } catch {
+      alert('계정 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
+      {/* 비밀번호 변경 */}
+      <div className="bg-white rounded-xl border border-surface-200 p-5">
+        <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
+          <KeyRound className="w-4 h-4" />
+          비밀번호 변경
+        </h3>
+        {passwordResetSent ? (
+          <p className="text-sm text-green-600">
+            비밀번호 재설정 이메일을 발송했습니다. 메일함을 확인해주세요.
+          </p>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-surface-700">{user?.email}</p>
+              <p className="text-xs text-surface-400">이메일로 재설정 링크를 보내드립니다</p>
+            </div>
+            <button
+              onClick={handlePasswordReset}
+              disabled={passwordResetLoading}
+              className="px-3 py-1.5 text-xs text-primary-500 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50"
+            >
+              {passwordResetLoading ? '발송 중...' : '변경하기'}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* SNS 연동 */}
       <div className="bg-white rounded-xl border border-surface-200 p-5">
         <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
@@ -249,19 +328,19 @@ function SettingsTab({ profile }: { profile: any }) {
             name="카카오"
             color="#FEE500"
             textColor="#191919"
-            linked={profile?.linked_providers?.includes('kakao')}
+            linked={false}
           />
           <SNSLinkItem
             name="네이버"
             color="#03C75A"
             textColor="#fff"
-            linked={profile?.linked_providers?.includes('naver')}
+            linked={false}
           />
           <SNSLinkItem
             name="Apple"
             color="#000"
             textColor="#fff"
-            linked={profile?.linked_providers?.includes('apple')}
+            linked={false}
           />
         </div>
       </div>
@@ -289,7 +368,7 @@ function SettingsTab({ profile }: { profile: any }) {
         <ToggleSetting
           label="마케팅 정보 수신 동의"
           desc="할인/프로모션 관련 마케팅 정보를 받습니다"
-          defaultOn={profile?.marketing_agreed || false}
+          defaultOn={profile?.marketing_opt_in || false}
         />
         <p className="text-xs text-surface-400 mt-3">
           동의를 철회하면 마케팅 관련 알림이 즉시 중단됩니다.
@@ -299,9 +378,59 @@ function SettingsTab({ profile }: { profile: any }) {
       {/* 계정 */}
       <div className="bg-white rounded-xl border border-surface-200 p-5">
         <h3 className="font-semibold text-surface-900 mb-4">계정</h3>
-        <button className="text-sm text-red-500 hover:text-red-600 font-medium">
-          회원 탈퇴
-        </button>
+
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-sm text-red-500 hover:text-red-600 font-medium"
+          >
+            회원 탈퇴
+          </button>
+        ) : (
+          <div className="p-4 bg-red-50 rounded-xl border border-red-200">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-red-700">
+                  정말 탈퇴하시겠습니까?
+                </p>
+                <p className="text-xs text-red-600 mt-1 leading-relaxed">
+                  탈퇴 시 30일간 데이터가 보관된 후 영구 삭제됩니다.
+                  30일 이내 재로그인하면 복구 가능합니다.
+                </p>
+
+                <select
+                  value={withdrawReason}
+                  onChange={(e) => setWithdrawReason(e.target.value)}
+                  className="w-full mt-3 px-3 py-2 text-xs border border-red-200 rounded-lg bg-white text-surface-700 focus:outline-none"
+                >
+                  <option value="">탈퇴 사유를 선택해주세요 (선택)</option>
+                  <option value="no_use">더 이상 사용하지 않아서</option>
+                  <option value="no_deals">원하는 딜이 없어서</option>
+                  <option value="too_many_notifications">알림이 너무 많아서</option>
+                  <option value="privacy">개인정보 우려</option>
+                  <option value="other">기타</option>
+                </select>
+
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                    className="px-4 py-2 text-xs font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+                  >
+                    {deleteLoading ? '처리 중...' : '탈퇴하기'}
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 text-xs font-medium text-surface-600 bg-white border border-surface-200 rounded-lg hover:bg-surface-50 transition-colors"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -352,8 +481,8 @@ function SNSLinkItem({ name, color, textColor, linked }: {
       {linked ? (
         <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full font-medium">연동됨</span>
       ) : (
-        <button className="text-xs text-primary-500 hover:text-primary-600 font-medium">
-          연동하기
+        <button className="text-xs text-surface-400 font-medium">
+          준비 중
         </button>
       )}
     </div>

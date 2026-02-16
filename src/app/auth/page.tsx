@@ -6,16 +6,16 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { Mail } from 'lucide-react';
 
 function AuthContent() {
-  const { isLoggedIn, isLoading, openAuthSheet } = useAuth();
+  const { isLoggedIn, isLoading, openAuthSheet, isAuthSheetOpen } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '/';
 
   useEffect(() => {
-    if (!isLoading && isLoggedIn) {
+    if (!isLoading && isLoggedIn && !isAuthSheetOpen) {
       router.replace(redirect);
     }
-  }, [isLoading, isLoggedIn, redirect, router]);
+  }, [isLoading, isLoggedIn, isAuthSheetOpen, redirect, router]);
 
   // 비로그인 시 자동으로 AuthSheet 열기
   useEffect(() => {

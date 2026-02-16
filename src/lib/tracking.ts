@@ -1,7 +1,7 @@
 // ===========================================
 // POPPON 행동 추적 유틸
 // 비로그인: session_id (쿠키 30일)
-// 로그인: user_id (추후 연동)
+// 로그인: session_id + user_id
 // ===========================================
 
 import type { DealActionType } from '@/types';
@@ -9,11 +9,9 @@ import type { DealActionType } from '@/types';
 // --- Session ID 관리 (쿠키 기반) ---
 
 function generateSessionId(): string {
-  // 랜덤 UUID v4 생성
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  // fallback
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
@@ -45,6 +43,22 @@ export function getSessionId(): string {
   return sid;
 }
 
+// --- User ID 관리 (AuthProvider에서 주입) ---
+
+let _userId: string | null = null;
+
+/**
+ * AuthProvider에서 로그인/로그아웃 시 호출
+ * → 이후 모든 trackAction에 user_id가 자동 포함됨
+ */
+export function setTrackingUserId(userId: string | null): void {
+  _userId = userId;
+}
+
+export function getTrackingUserId(): string | null {
+  return _userId;
+}
+
 // --- 행동 추적 API 호출 ---
 
 interface TrackActionParams {
@@ -56,15 +70,16 @@ interface TrackActionParams {
 /**
  * 딜 액션을 서버에 기록 (fire-and-forget)
  * UI를 절대 블로킹하지 않음
+ * 로그인 상태면 user_id 자동 포함
  */
 export function trackAction({ dealId, actionType, metadata }: TrackActionParams): void {
   const sessionId = getSessionId();
 
-  // navigator.sendBeacon 우선 사용 (페이지 이탈 시에도 전송 보장)
   const payload = JSON.stringify({
     deal_id: dealId,
     action_type: actionType,
     session_id: sessionId,
+    user_id: _userId,
     metadata,
   });
 
@@ -74,15 +89,44 @@ export function trackAction({ dealId, actionType, metadata }: TrackActionParams)
     if (sent) return;
   }
 
-  // fallback: fetch (fire-and-forget)
   fetch('/api/actions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: payload,
     keepalive: true,
   }).catch(() => {
-    // 실패해도 무시 — 사용자 경험에 영향 없음
+    // 실패해도 무시
   });
+}
+
+// --- 검색 추적 ---
+
+/**
+ * 검색 로그 기록 (fire-and-forget)
+ */
+export function trackSearch(query: string, categorySlug?: string, resultCount?: number): void {
+  const sessionId = getSessionId();
+
+  const payload = JSON.stringify({
+    query,
+    session_id: sessionId,
+    user_id: _userId,
+    category_slug: categorySlug,
+    result_count: resultCount,
+  });
+
+  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    const blob = new Blob([payload], { type: 'application/json' });
+    const sent = navigator.sendBeacon('/api/actions/search', blob);
+    if (sent) return;
+  }
+
+  fetch('/api/actions/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: payload,
+    keepalive: true,
+  }).catch(() => {});
 }
 
 // --- 편의 함수 ---

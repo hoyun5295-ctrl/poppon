@@ -448,15 +448,13 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-  const supabase = createClient();
-    supabase
-      .from('categories')
-      .select('id, name, slug')
-      .eq('depth', 0)
-      .eq('is_active', true)
-      .order('sort_order')
-      .then(({ data }) => { if (data) setCategories(data); }, () => {});
-  }, [userId]);
+    fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/categories?depth=eq.0&is_active=eq.true&order=sort_order&select=id,name,slug`, {
+      headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '' }
+    })
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setCategories(data); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const original = profile?.interested_categories || [];
@@ -542,16 +540,11 @@ function RecommendedBrandsSection({ userId }: { userId?: string }) {
   useEffect(() => {
   const load = async () => {
       try {
-        const supabase = createClient();
-        // 인기 머천트 12개
-        const { data: merchantData } = await supabase
-          .from('merchants')
-          .select('id, name, slug, logo_url, active_deal_count, brand_color')
-          .gt('active_deal_count', 0)
-          .order('active_deal_count', { ascending: false })
-          .limit(12);
-
-        if (merchantData) setMerchants(merchantData);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/merchants?active_deal_count=gt.0&order=active_deal_count.desc&limit=12&select=id,name,slug,logo_url,active_deal_count,brand_color`, {
+          headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '' }
+        });
+        const merchantData = await res.json();
+        if (Array.isArray(merchantData)) setMerchants(merchantData);
       } catch { /* ignore */ }
 
       try {
@@ -571,7 +564,7 @@ function RecommendedBrandsSection({ userId }: { userId?: string }) {
       setLoading(false);
     };
     load();
-  }, [userId]);
+  }, []);
 
   const toggleFollow = async (merchantId: string, merchantName: string) => {
     try {

@@ -303,10 +303,10 @@ function SettingsTab({ profile, user, onRefresh }: {
   return (
     <div className="space-y-5">
       {/* 관심 카테고리 */}
-      <InterestCategoriesSection profile={profile} onRefresh={onRefresh} />
+      <InterestCategoriesSection profile={profile} onRefresh={onRefresh} userId={user?.id} />
 
       {/* 추천 브랜드 구독 */}
-      <RecommendedBrandsSection />
+      <RecommendedBrandsSection userId={user?.id} />
 
       {/* 비밀번호 변경 */}
       <div className="bg-white rounded-xl border border-surface-200 p-5">
@@ -440,14 +440,16 @@ function SettingsTab({ profile, user, onRefresh }: {
 }
 
 // --- 관심 카테고리 편집 ---
-function InterestCategoriesSection({ profile, onRefresh }: { profile: any; onRefresh: () => Promise<void> }) {
+function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: any; onRefresh: () => Promise<void>; userId?: string }) {
   const { showToast } = useAuth();
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [selected, setSelected] = useState<string[]>(profile?.interested_categories || []);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
   useEffect(() => {
-    const supabase = createClient();
+  if (!userId) return;
+  const supabase = createClient();
     supabase
       .from('categories')
       .select('id, name, slug')
@@ -455,7 +457,7 @@ function InterestCategoriesSection({ profile, onRefresh }: { profile: any; onRef
       .eq('is_active', true)
       .order('sort_order')
       .then(({ data }) => { if (data) setCategories(data); }, () => {});
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const original = profile?.interested_categories || [];
@@ -532,13 +534,15 @@ function InterestCategoriesSection({ profile, onRefresh }: { profile: any; onRef
 }
 
 // --- 추천 브랜드 구독 ---
-function RecommendedBrandsSection() {
+function RecommendedBrandsSection({ userId }: { userId?: string }) {
   const { showToast } = useAuth();
   const [merchants, setMerchants] = useState<any[]>([]);
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const load = async () => {
+  if (!userId) return;
+  const load = async () => {
       try {
         const supabase = createClient();
         // 인기 머천트 12개
@@ -569,7 +573,7 @@ function RecommendedBrandsSection() {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [userId]);
 
   const toggleFollow = async (merchantId: string, merchantName: string) => {
     try {

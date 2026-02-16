@@ -59,7 +59,9 @@ export function TopNav() {
   }, [isProfileMenuOpen]);
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      await signOut();
+    } catch { /* ignore */ }
     setIsMobileMenuOpen(false);
     setIsProfileMenuOpen(false);
     // 페이지 리로드 후 토스트 표시 (sessionStorage 경유)

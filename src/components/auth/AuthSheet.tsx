@@ -577,9 +577,13 @@ export function AuthSheet() {
                 </div>
 
                 {/* 아이디 저장 체크박스 */}
-                <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                <button
+                  type="button"
+                  onClick={() => setRememberEmail(!rememberEmail)}
+                  className="flex items-center gap-2 mt-3 cursor-pointer select-none"
+                >
                   <div
-                    className={`w-4.5 h-4.5 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+                    className={`rounded flex items-center justify-center flex-shrink-0 transition-colors ${
                       rememberEmail ? 'bg-red-500' : 'border border-gray-300'
                     }`}
                     style={{ width: 18, height: 18 }}
@@ -587,7 +591,7 @@ export function AuthSheet() {
                     {rememberEmail && <Check className="w-3 h-3 text-white" />}
                   </div>
                   <span className="text-sm text-gray-500">아이디 저장</span>
-                </label>
+                </button>
 
                 {error && (
                   <p className="text-sm text-red-500 mt-3">{error}</p>

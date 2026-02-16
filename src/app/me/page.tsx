@@ -29,10 +29,9 @@ export default function MyPage() {
   const handleSignOut = async () => {
     const { setPendingToast } = await import('@/lib/auth/AuthProvider');
     setPendingToast('로그아웃되었습니다', 'success');
-    await Promise.race([
-      signOut(),
-      new Promise(r => setTimeout(r, 3000)),
-    ]);
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' });
+    } catch { /* ignore */ }
     window.location.href = '/';
   };
 

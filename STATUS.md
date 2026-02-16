@@ -89,6 +89,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | Footer.tsx | `src/components/layout/Footer.tsx` |
 | SourceProtection.tsx | `src/components/layout/SourceProtection.tsx` |
 | **TopProgressBar.tsx** | `src/components/layout/TopProgressBar.tsx` ✅ 신규 |
+| **Toast.tsx** | `src/components/common/Toast.tsx` ✅ 신규 |
 | **AuthSheet.tsx** | `src/components/auth/AuthSheet.tsx` ✅ 신규 |
 | MobileFilterSheet.tsx | `src/components/search/MobileFilterSheet.tsx` |
 | SearchBar.tsx | `src/components/search/SearchBar.tsx` |
@@ -105,8 +106,8 @@ SELECT COUNT(*) FROM followed_merchants;
 #### 페이지
 | 파일 | 경로 |
 |------|------|
-| 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider + TopProgressBar 래핑) |
-| 글로벌 CSS | `src/app/globals.css` (fade-in 애니메이션 추가) |
+| 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider + TopProgressBar + Toast 래핑) |
+| 글로벌 CSS | `src/app/globals.css` (fade-in + toast 애니메이션 추가) |
 | 미들웨어 | `src/middleware.ts` |
 | 홈 | `src/app/page.tsx` |
 | **홈 로딩** | `src/app/loading.tsx` ✅ 신규 |
@@ -119,7 +120,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
-| 마이페이지 | `src/app/me/page.tsx` ✅ 데이터 연동 |
+| 마이페이지 | `src/app/me/page.tsx` ✅ 데이터 연동 + 관심카테고리/추천브랜드 설정 |
 | **마이 로딩** | `src/app/me/loading.tsx` ✅ 신규 |
 | 로그인 | `src/app/auth/page.tsx` ✅ 바텀시트 연동 |
 | OAuth 콜백 | `src/app/auth/callback/route.ts` ✅ 신규 |
@@ -244,7 +245,7 @@ SELECT COUNT(*) FROM followed_merchants;
 ### 메인 앱 (poppon)
 ```
 src/app/
-├── layout.tsx               — AuthProvider + TopProgressBar + AuthSheet 래핑
+├── layout.tsx               — AuthProvider + TopProgressBar + Toast + AuthSheet 래핑
 ├── loading.tsx              — 홈 스켈레톤 ✅ 신규
 ├── @modal/
 │   ├── default.tsx          — 모달 없을 때 null
@@ -264,7 +265,7 @@ src/app/
 ├── submit/
 │   └── page.tsx             — 유저 제보
 ├── me/
-│   ├── page.tsx             — 마이페이지 (저장딜/구독/설정 탭)
+│   ├── page.tsx             — 마이페이지 (저장딜/구독/설정 탭 + 관심카테고리/추천브랜드)
 │   └── loading.tsx          — 마이 스켈레톤 ✅ 신규
 ├── auth/
 │   ├── page.tsx             — 로그인/가입 (바텀시트 연동)
@@ -628,6 +629,9 @@ categories!deals_category_id_fkey (name)
 - ✅ follows/merchants API (GET/POST/DELETE)
 - ✅ delete-account API (soft delete → status: withdrawn)
 - ✅ TopNav 프로필 드롭다운 (데스크톱) + 로그아웃 리다이렉트
+- ✅ Toast 알림 시스템 (가입/로그인/로그아웃 피드백)
+- ✅ 로그인 이메일 기억하기 (localStorage)
+- ✅ 로그인/회원가입 Enter 키 submit 지원
 - ✅ tracking.ts user_id 연동 (로그인 시 자동 포함)
 - ✅ actions API user_id 저장 + metadata 저장
 - ✅ search_logs API (검색어 기록)
@@ -981,6 +985,22 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] 페이지 fade-in 트랜지션 — globals.css에 animate-fade-in 추가, layout.tsx main에 적용
 - [x] layout.tsx 수정 — TopProgressBar 추가 + main에 animate-fade-in 클래스
 
+### 인증 UX 개선 + 토스트 + 로그아웃 수정 (2/17)
+- [x] Toast 알림 시스템 신규 — Toast.tsx 글로벌 컴포넌트 (다크 배경, 컬러 아이콘, 2.7s 자동 닫힘, slide-down 애니메이션)
+- [x] AuthProvider에 showToast/hideToast 컨텍스트 추가, sessionStorage 기반 setPendingToast (리다이렉트 후 토스트 표시)
+- [x] 회원가입 완료 "회원가입이 완료되었습니다" / 로그인 "로그인되었습니다" / 로그아웃 "로그아웃되었습니다" 토스트
+- [x] globals.css에 toast-slide-down 키프레임 + toast-container 스타일 추가
+- [x] layout.tsx에 Toast 컴포넌트 래핑 추가
+- [x] AuthSheet 로그인 폼 "이메일 기억하기" 체크박스 — localStorage(poppon_remember_email) 저장, 재방문 시 자동 입력
+- [x] 홈 CTA 모던화 — 이모지 제거 → Lucide 아이콘(Lightbulb, BellRing), 화살표 hover 애니메이션, 깔끔한 그라디언트
+- [x] 마이페이지 설정 탭 — 관심 카테고리 수정 섹션 (6개 카테고리 토글 칩, profiles.interested_categories DB 저장)
+- [x] 마이페이지 설정 탭 — 추천 브랜드 구독 섹션 (인기 12개 머천트, 팔로우/언팔로우 토글, 검색 링크)
+- [x] TopNav 로그아웃 버그 수정 — document.addEventListener 충돌 제거, 투명 오버레이(z-59) 패턴으로 바깥클릭 감지, 드롭다운 z-60
+- [x] handleSignOut 개선 — `await Promise.race([signOut(), timeout(3s)])` 패턴, 쿠키/localStorage 강제삭제 코드 제거 (Supabase SSR 쿠키 방식 존중)
+- [x] AuthProvider signOut 정리 — 불필요한 localStorage/쿠키 강제삭제 제거, 순수 supabase.auth.signOut() + 상태 초기화만 유지
+- [x] AuthProvider initAuth 안정화 — try-finally로 setIsLoading(false) 보장, fetchProfile try-catch 래핑
+- [x] AuthSheet 로그인/회원가입 Enter 키 submit 지원 — 비밀번호 입력 후 Enter 시 바로 제출 (onKeyDown 핸들러)
+
 ---
 
 ## 🔴 미해결 버그 / 즉시 처리 필요
@@ -1063,6 +1083,9 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - **Vercel Function Region**: 메인 앱 서울(icn1) 설정 완료. 어드민도 서울 설정 권장. 리전 변경 후 Redeploy 필요
 - **DealDetailClient 캐시**: dealCache는 메모리(클라이언트) 한정. 새로고침 시 초기화됨. 문제 시 캐시 무효화 로직 추가 필요
 - **PowerShell [id] 폴더**: `Remove-Item`/`ls` 시 `-LiteralPath` 사용 필수 (대괄호를 특수문자로 인식)
+- **TopNav 드롭다운 클릭 감지**: document.addEventListener('click') 패턴은 이벤트 버블링으로 버튼 onClick보다 먼저 실행되어 드롭다운이 닫힘 → 투명 오버레이(z-59) + 드롭다운(z-60) 패턴 사용 필수
+- **Supabase SSR 로그아웃**: Supabase SSR(@supabase/ssr)은 쿠키 기반 세션 관리 → localStorage/쿠키 강제삭제 불필요, supabase.auth.signOut()만 호출하면 됨. 강제삭제 시 오히려 세션 꼬임 발생
+- **Toast 시스템**: AuthProvider의 showToast/setPendingToast 사용. 리다이렉트 후 토스트는 sessionStorage('poppon_pending_toast')에 저장 → layout mount 시 표시
 
 ---
 
@@ -1091,7 +1114,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | **팝폰-키로테이션+어드민배포** | **2/16** | **Supabase 신규 키 전환(sb_publishable/sb_secret) + 레거시 Disable, Anthropic 키 재발급, ADMIN_SECRET 변경, 어드민 사이드바 경로 수정, poppon-admin GitHub 생성 + Vercel 배포 완료** |
 | **팝폰-회원가입+행동추적+어드민회원관리** | **2/16** | **AuthSheet 6단계(이메일가입/로그인/본인인증placeholder/카테고리/마케팅동의), soft delete 탈퇴, tracking user_id 연동, search_logs, 어드민 회원목록/상세/행동로그, Vercel 로딩 버그 미해결** |
 | **팝폰-성능최적화+UX부드러움** | **2/17** | **Supabase client.ts 싱글톤, Vercel 리전 북미→서울, DealModal 애니메이션, DealDetailClient 캐시, TopProgressBar, loading.tsx 5개, fade-in 트랜지션** |
+| **팝폰-인증UX+토스트+로그아웃수정** | **2/17** | **Toast 알림 시스템, 이메일 기억하기, 홈 CTA Lucide 아이콘, 마이페이지 관심카테고리/추천브랜드, TopNav 로그아웃 오버레이 패턴 수정, signOut await+타임아웃, Enter키 submit** |
 
 ---
 
-*마지막 업데이트: 2026-02-17 (성능 최적화: Supabase 싱글톤 + Vercel 서울 리전 + 프로그레스 바 + 스켈레톤 로딩 + 모달 애니메이션)*
+*마지막 업데이트: 2026-02-17 (인증 UX: Toast 알림 + 이메일 기억하기 + 홈 CTA 모던화 + 마이페이지 관심카테고리/추천브랜드 + TopNav 로그아웃 오버레이 패턴 + Enter키 submit)*

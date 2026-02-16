@@ -29,7 +29,14 @@ export default function MyPage() {
   const handleSignOut = async () => {
     const { setPendingToast } = await import('@/lib/auth/AuthProvider');
     setPendingToast('로그아웃되었습니다', 'success');
-    // localStorage 즉시 클리어
+    // Supabase 세션 쿠키 강제 삭제
+    document.cookie.split(';').forEach(c => {
+      const name = c.trim().split('=')[0];
+      if (name.startsWith('sb-')) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+      }
+    });
     try {
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-')) localStorage.removeItem(key);

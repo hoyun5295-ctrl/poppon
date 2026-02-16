@@ -44,9 +44,18 @@ export function TopNav() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
-  // 로그아웃 — localStorage 즉시 삭제 + 즉시 리다이렉트
+  // 로그아웃 — localStorage 즉시 삭제 + 쿠키 삭제 + 즉시 리다이렉트
   const handleSignOut = () => {
     setPendingToast('로그아웃되었습니다', 'success');
+    // Supabase 세션 쿠키 강제 삭제
+    document.cookie.split(';').forEach(c => {
+      const name = c.trim().split('=')[0];
+      if (name.startsWith('sb-')) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${window.location.hostname}`;
+      }
+    });
+    // localStorage도 정리
     try {
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-')) localStorage.removeItem(key);

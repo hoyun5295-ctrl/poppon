@@ -29,9 +29,13 @@ export default function MyPage() {
   const handleSignOut = async () => {
     const { setPendingToast } = await import('@/lib/auth/AuthProvider');
     setPendingToast('로그아웃되었습니다', 'success');
+    // localStorage 즉시 클리어
     try {
-      await signOut();
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) localStorage.removeItem(key);
+      });
     } catch { /* ignore */ }
+    signOut().catch(() => {});
     window.location.href = '/';
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight, LogOut, Settings } from 'lucide-react';
@@ -26,7 +26,6 @@ export function TopNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const { isLoggedIn, profile, signOut, openAuthSheet } = useAuth();
 
@@ -45,29 +44,16 @@ export function TopNav() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
-  // 프로필 드롭다운 바깥 클릭 감지 — click + setTimeout
-  useEffect(() => {
-    if (!isProfileMenuOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
-        setIsProfileMenuOpen(false);
-      }
-    };
-    const timer = setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-    }, 0);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, [isProfileMenuOpen]);
-
-  // 로그아웃 — 단순하게, stopPropagation/preventDefault 없음
+  // 로그아웃 — localStorage 즉시 삭제 + 즉시 리다이렉트
   const handleSignOut = () => {
     setPendingToast('로그아웃되었습니다', 'success');
-    signOut()
-      .then(() => { window.location.href = '/'; })
-      .catch(() => { window.location.href = '/'; });
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) localStorage.removeItem(key);
+      });
+    } catch { /* ignore */ }
+    signOut().catch(() => {});
+    window.location.href = '/';
   };
 
   const handleAuthAction = () => {
@@ -112,7 +98,7 @@ export function TopNav() {
             </Link>
 
             {isLoggedIn ? (
-              <div className="relative ml-2" ref={profileMenuRef}>
+              <div className="relative ml-2">
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-surface-100 transition-colors"
@@ -127,35 +113,43 @@ export function TopNav() {
                   </span>
                 </button>
 
-                {/* 데스크톱 프로필 드롭다운 */}
+                {/* 데스크톱 프로필 드롭다운 — 투명 오버레이로 바깥 클릭 감지 */}
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-surface-200 py-1 z-[60]">
-                    <Link
-                      href="/me"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+                  <>
+                    {/* 투명 오버레이: 바깥 클릭 시 닫기 */}
+                    <div
+                      className="fixed inset-0 z-[59]"
                       onClick={() => setIsProfileMenuOpen(false)}
-                    >
-                      <User className="w-4 h-4 text-surface-400" />
-                      마이페이지
-                    </Link>
-                    <Link
-                      href="/me"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                    >
-                      <Settings className="w-4 h-4 text-surface-400" />
-                      설정
-                    </Link>
-                    <div className="h-px bg-surface-100 my-1" />
-                    <button
-                      type="button"
-                      onClick={handleSignOut}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      로그아웃
-                    </button>
-                  </div>
+                    />
+                    {/* 드롭다운 메뉴 */}
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-surface-200 py-1 z-[60]">
+                      <Link
+                        href="/me"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <User className="w-4 h-4 text-surface-400" />
+                        마이페이지
+                      </Link>
+                      <Link
+                        href="/me"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      >
+                        <Settings className="w-4 h-4 text-surface-400" />
+                        설정
+                      </Link>
+                      <div className="h-px bg-surface-100 my-1" />
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        로그아웃
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             ) : (

@@ -448,7 +448,6 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
   const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
-  if (!userId) return;
   const supabase = createClient();
     supabase
       .from('categories')
@@ -541,7 +540,6 @@ function RecommendedBrandsSection({ userId }: { userId?: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  if (!userId) return;
   const load = async () => {
       try {
         const supabase = createClient();

@@ -27,7 +27,7 @@ export function TopNav() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { isLoggedIn, profile, signOut, openAuthSheet } = useAuth();
+  const { isLoggedIn, profile, openAuthSheet } = useAuth();
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -43,15 +43,6 @@ export function TopNav() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
-
-  // 로그아웃 — signOut await + 3초 타임아웃 보장
-  const handleSignOut = async () => {
-    setPendingToast('로그아웃되었습니다', 'success');
-    try {
-      await fetch('/api/auth/signout', { method: 'POST' });
-    } catch { /* ignore */ }
-    window.location.href = '/';
-  };
 
   const handleAuthAction = () => {
     if (isLoggedIn) {
@@ -110,15 +101,12 @@ export function TopNav() {
                   </span>
                 </button>
 
-                {/* 데스크톱 프로필 드롭다운 — 투명 오버레이로 바깥 클릭 감지 */}
                 {isProfileMenuOpen && (
                   <>
-                    {/* 투명 오버레이: 바깥 클릭 시 닫기 */}
                     <div
                       className="fixed inset-0 z-[59]"
                       onClick={() => setIsProfileMenuOpen(false)}
                     />
-                    {/* 드롭다운 메뉴 */}
                     <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-surface-200 py-1 z-[60]">
                       <Link
                         href="/me"
@@ -137,14 +125,15 @@ export function TopNav() {
                         설정
                       </Link>
                       <div className="h-px bg-surface-100 my-1" />
-                      <button
-                        type="button"
-                        onClick={handleSignOut}
+                      {/* ✅ <a> 태그 — JS 상태 무관하게 서버에서 쿠키 삭제 후 리다이렉트 */}
+                      <a
+                        href="/api/auth/signout"
+                        onClick={() => setPendingToast('로그아웃되었습니다', 'success')}
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full text-left"
                       >
                         <LogOut className="w-4 h-4" />
                         로그아웃
-                      </button>
+                      </a>
                     </div>
                   </>
                 )}
@@ -219,7 +208,6 @@ export function TopNav() {
 
           <div className="relative bg-white border-t border-surface-200 animate-slide-up max-h-[calc(100vh-3.5rem)] overflow-y-auto pb-safe">
             <nav className="max-w-7xl mx-auto px-4 py-3">
-              {/* 로그인 상태 헤더 */}
               {isLoggedIn && (
                 <div className="flex items-center gap-3 px-3 py-3 mb-2 bg-surface-50 rounded-xl">
                   <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center">
@@ -236,7 +224,6 @@ export function TopNav() {
                 </div>
               )}
 
-              {/* 메뉴 링크 */}
               <div className="space-y-0.5">
                 {MOBILE_MENU_LINKS.map(({ href, icon: Icon, label }) => (
                   <Link
@@ -250,7 +237,6 @@ export function TopNav() {
                 ))}
               </div>
 
-              {/* 카테고리 바로가기 */}
               <div className="mt-4 pt-4 border-t border-surface-100">
                 <p className="px-3 mb-2 text-xs font-semibold text-surface-400 uppercase tracking-wider">
                   카테고리
@@ -269,17 +255,17 @@ export function TopNav() {
                 </div>
               </div>
 
-              {/* 로그인/로그아웃 CTA */}
               <div className="mt-4 pt-4 border-t border-surface-100">
                 {isLoggedIn ? (
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
+                  /* ✅ <a> 태그 — JS 상태 무관하게 서버에서 쿠키 삭제 후 리다이렉트 */
+                  <a
+                    href="/api/auth/signout"
+                    onClick={() => setPendingToast('로그아웃되었습니다', 'success')}
                     className="flex items-center justify-center gap-2 w-full py-3 text-sm text-surface-500 hover:text-surface-700 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     로그아웃
-                  </button>
+                  </a>
                 ) : (
                   <button
                     onClick={() => { setIsMobileMenuOpen(false); openAuthSheet(); }}

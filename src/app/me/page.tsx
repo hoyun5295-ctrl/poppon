@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
@@ -8,6 +8,7 @@ import {
   Check, Shirt, Sparkles, UtensilsCrossed, Home, Plane, LayoutGrid, Plus
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { setPendingToast } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
 import { formatTimeRemaining } from '@/lib/utils/format';
 
@@ -23,17 +24,8 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function MyPage() {
-  const { isLoggedIn, isLoading, user, profile, signOut, openAuthSheet, refreshProfile } = useAuth();
+  const { isLoggedIn, isLoading, user, profile, openAuthSheet, refreshProfile } = useAuth();
   const [tab, setTab] = useState<Tab>('saved');
-
-  const handleSignOut = async () => {
-    const { setPendingToast } = await import('@/lib/auth/AuthProvider');
-    setPendingToast('로그아웃되었습니다', 'success');
-    try {
-      await fetch('/api/auth/signout', { method: 'POST' });
-    } catch { /* ignore */ }
-    window.location.href = '/';
-  };
 
   // 비로그인 상태
   if (!isLoading && !isLoggedIn) {
@@ -100,13 +92,15 @@ export default function MyPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={handleSignOut}
+        {/* ✅ 핵심 수정: <a> 태그 — JS 상태와 무관하게 무조건 작동 */}
+        <a
+          href="/api/auth/signout"
+          onClick={() => setPendingToast('로그아웃되었습니다', 'success')}
           className="flex items-center gap-1 text-sm text-surface-400 hover:text-surface-600 transition-colors"
         >
           <LogOut className="w-4 h-4" />
           로그아웃
-        </button>
+        </a>
       </div>
 
       {/* 탭 */}
@@ -118,7 +112,7 @@ export default function MyPage() {
 
       {tab === 'saved' && <SavedDealsTab />}
       {tab === 'follows' && <FollowsTab />}
-      {tab === 'settings' && <SettingsTab profile={profile} user={user} onSignOut={handleSignOut} onRefresh={refreshProfile} />}
+      {tab === 'settings' && <SettingsTab profile={profile} user={user} onRefresh={refreshProfile} />}
     </div>
   );
 }
@@ -127,10 +121,14 @@ export default function MyPage() {
 function SavedDealsTab() {
   const [savedDeals, setSavedDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadedRef = useRef(false);
 
   const fetchSaved = useCallback(async () => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     try {
       const res = await fetch('/api/me/saved-deals');
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setSavedDeals(data.savedDeals || []);
     } catch { /* ignore */ }
@@ -191,10 +189,14 @@ function SavedDealsTab() {
 function FollowsTab() {
   const [follows, setFollows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const loadedRef = useRef(false);
 
   const fetchFollows = useCallback(async () => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
     try {
       const res = await fetch('/api/me/follows/merchants');
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setFollows(data.followedMerchants || []);
     } catch { /* ignore */ }
@@ -255,8 +257,8 @@ function FollowsTab() {
 }
 
 // --- 설정 탭 ---
-function SettingsTab({ profile, user, onSignOut, onRefresh }: {
-  profile: any; user: any; onSignOut: () => void; onRefresh: () => Promise<void>;
+function SettingsTab({ profile, user, onRefresh }: {
+  profile: any; user: any; onRefresh: () => Promise<void>;
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -346,24 +348,9 @@ function SettingsTab({ profile, user, onSignOut, onRefresh }: {
           소셜 계정 연동
         </h3>
         <div className="space-y-3">
-          <SNSLinkItem
-            name="카카오"
-            color="#FEE500"
-            textColor="#191919"
-            linked={false}
-          />
-          <SNSLinkItem
-            name="네이버"
-            color="#03C75A"
-            textColor="#fff"
-            linked={false}
-          />
-          <SNSLinkItem
-            name="Apple"
-            color="#000"
-            textColor="#fff"
-            linked={false}
-          />
+          <SNSLinkItem name="카카오" color="#FEE500" textColor="#191919" linked={false} />
+          <SNSLinkItem name="네이버" color="#03C75A" textColor="#fff" linked={false} />
+          <SNSLinkItem name="Apple" color="#000" textColor="#fff" linked={false} />
         </div>
       </div>
 
@@ -465,18 +452,20 @@ function InterestCategoriesSection({ profile, onRefresh }: { profile: any; onRef
   const [selected, setSelected] = useState<string[]>(profile?.interested_categories || []);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const supabase = createClient();
+  const loadedRef = useRef(false);
 
+  // ✅ 수정: useRef로 1회만 실행, try-catch로 에러 격리
   useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    const supabase = createClient();
     supabase
       .from('categories')
       .select('id, name, slug')
       .eq('depth', 0)
       .eq('is_active', true)
       .order('sort_order')
-      .then(({ data }) => {
-        if (data) setCategories(data);
-      });
+      .then(({ data }) => { if (data) setCategories(data); }, () => {});
   }, []);
 
   useEffect(() => {
@@ -489,15 +478,19 @@ function InterestCategoriesSection({ profile, onRefresh }: { profile: any; onRef
     setSelected(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
   };
 
+  // ✅ 수정: supabase.auth.getUser() 제거 — user.id는 이미 AuthProvider에서 제공
   const handleSave = async () => {
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('profiles').update({ interested_categories: selected }).eq('id', user.id);
-      await onRefresh();
-      showToast('관심 카테고리가 저장되었습니다', 'success');
-      setHasChanges(false);
-    }
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase.from('profiles').update({ interested_categories: selected }).eq('id', session.user.id);
+        await onRefresh();
+        showToast('관심 카테고리가 저장되었습니다', 'success');
+        setHasChanges(false);
+      }
+    } catch { /* ignore */ }
     setSaving(false);
   };
 
@@ -555,30 +548,39 @@ function RecommendedBrandsSection() {
   const [merchants, setMerchants] = useState<any[]>([]);
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const loadedRef = useRef(false);
 
+  // ✅ 수정: useRef로 1회만 실행, try-catch로 에러 격리
   useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+
     const load = async () => {
-      // 인기 머천트 12개
-      const { data: merchantData } = await supabase
-        .from('merchants')
-        .select('id, name, slug, logo_url, active_deal_count, brand_color')
-        .gt('active_deal_count', 0)
-        .order('active_deal_count', { ascending: false })
-        .limit(12);
-
-      if (merchantData) setMerchants(merchantData);
-
-      // 구독 목록
       try {
+        const supabase = createClient();
+        // 인기 머천트 12개
+        const { data: merchantData } = await supabase
+          .from('merchants')
+          .select('id, name, slug, logo_url, active_deal_count, brand_color')
+          .gt('active_deal_count', 0)
+          .order('active_deal_count', { ascending: false })
+          .limit(12);
+
+        if (merchantData) setMerchants(merchantData);
+      } catch { /* ignore */ }
+
+      try {
+        // 구독 목록
         const res = await fetch('/api/me/follows/merchants');
-        const data = await res.json();
-        const ids = new Set<string>(
-          (data.followedMerchants || [])
-            .map((f: any) => f.merchants?.id)
-            .filter(Boolean)
-        );
-        setFollowedIds(ids);
+        if (res.ok) {
+          const data = await res.json();
+          const ids = new Set<string>(
+            (data.followedMerchants || [])
+              .map((f: any) => f.merchants?.id)
+              .filter(Boolean)
+          );
+          setFollowedIds(ids);
+        }
       } catch { /* ignore */ }
 
       setLoading(false);
@@ -587,18 +589,20 @@ function RecommendedBrandsSection() {
   }, []);
 
   const toggleFollow = async (merchantId: string, merchantName: string) => {
-    if (followedIds.has(merchantId)) {
-      await fetch(`/api/me/follows/merchants?merchant_id=${merchantId}`, { method: 'DELETE' });
-      setFollowedIds(prev => { const n = new Set(prev); n.delete(merchantId); return n; });
-    } else {
-      await fetch('/api/me/follows/merchants', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ merchant_id: merchantId }),
-      });
-      setFollowedIds(prev => new Set([...prev, merchantId]));
-      showToast(`${merchantName} 구독 완료`, 'success');
-    }
+    try {
+      if (followedIds.has(merchantId)) {
+        await fetch(`/api/me/follows/merchants?merchant_id=${merchantId}`, { method: 'DELETE' });
+        setFollowedIds(prev => { const n = new Set(prev); n.delete(merchantId); return n; });
+      } else {
+        await fetch('/api/me/follows/merchants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ merchant_id: merchantId }),
+        });
+        setFollowedIds(prev => new Set([...prev, merchantId]));
+        showToast(`${merchantName} 구독 완료`, 'success');
+      }
+    } catch { /* ignore */ }
   };
 
   if (loading) {

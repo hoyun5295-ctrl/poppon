@@ -45,29 +45,29 @@ export function TopNav() {
     return () => { document.body.style.overflow = ''; };
   }, [isMobileMenuOpen]);
 
-  // 프로필 드롭다운 바깥 클릭 감지
+  // 프로필 드롭다운 바깥 클릭 감지 — click + setTimeout
   useEffect(() => {
+    if (!isProfileMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
         setIsProfileMenuOpen(false);
       }
     };
-    if (isProfileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [isProfileMenuOpen]);
 
-  const handleSignOut = async (e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
+  // 로그아웃 — 단순하게, stopPropagation/preventDefault 없음
+  const handleSignOut = () => {
     setPendingToast('로그아웃되었습니다', 'success');
-    try {
-      await signOut();
-    } catch { /* ignore */ }
-    window.location.href = '/';
+    signOut()
+      .then(() => { window.location.href = '/'; })
+      .catch(() => { window.location.href = '/'; });
   };
 
   const handleAuthAction = () => {
@@ -129,7 +129,7 @@ export function TopNav() {
 
                 {/* 데스크톱 프로필 드롭다운 */}
                 {isProfileMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-surface-200 py-1 z-50">
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-surface-200 py-1 z-[60]">
                     <Link
                       href="/me"
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
@@ -148,7 +148,8 @@ export function TopNav() {
                     </Link>
                     <div className="h-px bg-surface-100 my-1" />
                     <button
-                      onClick={(e) => handleSignOut(e)}
+                      type="button"
+                      onClick={handleSignOut}
                       className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full text-left"
                     >
                       <LogOut className="w-4 h-4" />
@@ -281,7 +282,8 @@ export function TopNav() {
               <div className="mt-4 pt-4 border-t border-surface-100">
                 {isLoggedIn ? (
                   <button
-                    onClick={(e) => handleSignOut(e)}
+                    type="button"
+                    onClick={handleSignOut}
                     className="flex items-center justify-center gap-2 w-full py-3 text-sm text-surface-500 hover:text-surface-700 transition-colors"
                   >
                     <LogOut className="w-4 h-4" />

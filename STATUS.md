@@ -139,6 +139,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | 클릭 트래킹 | `src/app/out/[dealId]/route.ts` |
 | **딜 저장 API** | `src/app/api/me/saved-deals/route.ts` ✅ 신규 |
 | **브랜드 구독 API** | `src/app/api/me/follows/merchants/route.ts` ✅ 신규 |
+| **계정 탈퇴 API** | `src/app/api/me/delete-account/route.ts` ✅ 신규 |
+| **검색 로그 API** | `src/app/api/actions/search/route.ts` ✅ 신규 |
 
 ### 🔴 poppon-admin (어드민 앱)
 
@@ -158,6 +160,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | 머천트 생성 | `src/app/(dashboard)/merchants/new/page.tsx` |
 | 머천트 수정 | `src/app/(dashboard)/merchants/[id]/edit/page.tsx` |
 | 크롤 모니터링 | `src/app/(dashboard)/crawls/page.tsx` |
+| **회원 목록** | `src/app/(dashboard)/members/page.tsx` ✅ 신규 |
+| **회원 상세** | `src/app/(dashboard)/members/[id]/page.tsx` ✅ 신규 |
 
 #### API (어드민 앱)
 | 파일 | 경로 |
@@ -171,6 +175,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | AI 크롤 (단일) | `src/app/api/ai-crawl/[connectorId]/route.ts` |
 | Cron 크롤 | `src/app/api/cron/crawl/route.ts` |
 | Cron 만료 | `src/app/api/cron/expire/route.ts` |
+| **회원 목록 API** | `src/app/api/members/route.ts` ✅ 신규 |
+| **회원 상세 API** | `src/app/api/members/[id]/route.ts` ✅ 신규 |
 
 #### 크롤러 / 스크립트 (어드민에만 존재)
 | 파일 | 경로 | 설명 |
@@ -256,9 +262,11 @@ src/app/
 ├── api/
 │   ├── submit/route.ts
 │   ├── actions/route.ts
+│   ├── actions/search/route.ts  — 검색 로그 ✅ 신규
 │   └── me/
 │       ├── saved-deals/route.ts
-│       └── follows/merchants/route.ts
+│       ├── follows/merchants/route.ts
+│       └── delete-account/route.ts  — 계정 탈퇴 ✅ 신규
 └── out/[dealId]/route.ts    — 클릭 트래킹
 ```
 
@@ -273,11 +281,17 @@ src/app/
 │   ├── page.tsx             — 대시보드
 │   ├── deals/               — 딜 CRUD
 │   ├── merchants/           — 머천트 CRUD
+│   ├── members/             — 회원 관리 ✅ 신규
+│   │   ├── page.tsx         — 회원 목록
+│   │   └── [id]/page.tsx    — 회원 상세
 │   └── crawls/              — 크롤 모니터링
 ├── api/
 │   ├── auth/route.ts
 │   ├── deals/route.ts
 │   ├── merchants/route.ts
+│   ├── members/             — 회원 관리 API ✅ 신규
+│   │   ├── route.ts         — 목록 GET + 상태변경 PATCH
+│   │   └── [id]/route.ts   — 상세 GET
 │   ├── ai-crawl/route.ts
 │   └── cron/
 │       ├── crawl/route.ts
@@ -304,6 +318,8 @@ src/app/
 - `GET /auth/callback` — SNS OAuth 콜백 ✅
 - `GET|POST|DELETE /api/me/saved-deals` — 딜 저장/해제 ✅
 - `GET|POST|DELETE /api/me/follows/merchants` — 브랜드 구독/해제 ✅
+- `DELETE /api/me/delete-account` — 계정 탈퇴 (soft delete) ✅ 신규
+- `POST /api/actions/search` — 검색 로그 기록 ✅ 신규
 - 알림: `PUT /me/notification-preferences` (kakao/sms/email/push)
 - 동의: `PUT /me/consents`
 - 액션: `POST /deals/:id/actions` (view, click_out, copy_code, save, share)
@@ -313,6 +329,8 @@ src/app/
 - `POST /api/auth` — 비밀번호 인증 ✅
 - `GET|POST /api/deals` + `GET|PUT|DELETE /api/deals/:id` ✅
 - `GET|POST /api/merchants` + `GET|PUT|DELETE /api/merchants/:id` ✅
+- `GET|PATCH /api/members` — 회원 목록+통계+상태변경 ✅ 신규
+- `GET /api/members/:id` — 회원 상세+행동로그+검색로그 ✅ 신규
 - `GET|POST /api/ai-crawl` — AI 크롤 현황/실행 ✅
 - `POST /api/ai-crawl/:connectorId` — 단일 AI 크롤 ✅
 - `GET /api/cron/crawl` — 일일 자동 크롤 배치 ✅
@@ -384,6 +402,7 @@ src/app/
 | **followed_merchants** | ✅ | 0 (신규 테이블) |
 | **followed_categories** | ✅ | 0 (신규 테이블) |
 | **notification_preferences** | ✅ | 0 (신규 테이블) |
+| **search_logs** | ✅ | 0 (신규 테이블 — 검색어/user_id/session_id/결과수) |
 
 ### 카테고리별 머천트/딜 현황 (2/16 풀크롤 후 — SQL 재조회 필요)
 | 카테고리 | 머천트 | active 딜 (추정) |
@@ -488,6 +507,9 @@ src/app/
 | marketing_opt_in | boolean | 마케팅 동의 |
 | marketing_opt_in_at | timestamptz | |
 | role | varchar | user/admin/super_admin |
+| **status** | varchar | ✅ active/withdrawn/banned (신규) |
+| **withdrawn_at** | timestamptz | ✅ 탈퇴 요청 시각 (신규) |
+| **withdraw_reason** | text | ✅ 탈퇴 사유 (신규) |
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
 
@@ -519,6 +541,17 @@ hash_updated_at TIMESTAMPTZ     -- ✅ v3 추가: 해시 저장 시점
 
 ### deal_actions 테이블
 id, deal_id, user_id(nullable), session_id(ppn_sid), action_type(view/click_out/copy_code/save/share), metadata(jsonb), created_at
+
+### search_logs 테이블 ✅ 신규
+| 컬럼 | 타입 | 비고 |
+|------|------|------|
+| id | uuid | PK |
+| user_id | uuid | nullable, FK → auth.users |
+| session_id | varchar | 비로그인 세션 |
+| query | text | 검색어 |
+| category_slug | varchar | 카테고리 필터 |
+| result_count | integer | 검색 결과 수 |
+| created_at | timestamptz | |
 
 ### 조인 관계
 ```
@@ -556,25 +589,39 @@ categories!deals_category_id_fkey (name)
 
 ### 아키텍처
 ```
-가입 트리거 (딜 저장/브랜드 구독/쿠폰 3회/피드백)
-  → AuthSheet 바텀시트 노출
-    → SNS 간편 로그인 (카카오/네이버/애플) 또는 전화번호 OTP
+가입 트리거 (로그인 버튼, 딜 저장, 브랜드 구독 등)
+  → AuthSheet 바텀시트(모바일)/센터모달(데스크톱) 노출
+    → 이메일 회원가입 또는 SNS 로그인 (카카오/네이버/애플 — 준비 중)
       → Supabase Auth → profiles 자동 생성 (트리거)
-        → 관심 카테고리 선택 (선택)
-          → 마케팅 동의
+        → 본인인증 KMC/PASS (placeholder, 연휴 후 연동)
+          → 관심 카테고리 선택 (혜택 강조형, 선택)
+            → 마케팅 동의 (알림톡/푸시/이메일)
+
+탈퇴 플로우:
+  마이페이지 → 설정 탭 → 회원 탈퇴 (사유 선택)
+    → profiles.status = 'withdrawn' (soft delete)
+      → 30일 후 어드민 Cron에서 완전 삭제
+      → 어드민에서 복구 가능
 ```
 
 ### 구현 현황
 - ✅ DB 마이그레이션 완료 (profiles, user_consents, saved_deals, followed_merchants, followed_categories, notification_preferences + RLS + 트리거)
-- ✅ AuthProvider (전역 인증 상태 관리)
-- ✅ AuthSheet (가입/로그인 바텀시트 UI)
-- ✅ auth/page.tsx (로그인 페이지)
+- ✅ profiles에 status/withdrawn_at/withdraw_reason/role 컬럼 추가
+- ✅ search_logs 테이블 생성
+- ✅ AuthProvider (전역 인증 상태 관리 + withdrawn/banned 체크 + tracking userId 연동)
+- ✅ AuthSheet 6단계 가입 플로우 (main→signup→login→identity→categories→marketing)
+- ✅ auth/page.tsx (비로그인 시 AuthSheet 자동 열기)
 - ✅ auth/callback/route.ts (OAuth 콜백)
-- ✅ me/page.tsx (데이터 연동 마이페이지)
+- ✅ me/page.tsx (데이터 연동 + 비밀번호 변경 + 계정 탈퇴 soft delete)
 - ✅ saved-deals API (GET/POST/DELETE)
 - ✅ follows/merchants API (GET/POST/DELETE)
+- ✅ delete-account API (soft delete → status: withdrawn)
+- ✅ TopNav 프로필 드롭다운 (데스크톱) + 로그아웃 리다이렉트
+- ✅ tracking.ts user_id 연동 (로그인 시 자동 포함)
+- ✅ actions API user_id 저장 + metadata 저장
+- ✅ search_logs API (검색어 기록)
 - ⬜ Supabase Auth Provider 설정 (카카오/네이버/애플)
-- ⬜ KMC 본인인증 연동
+- ⬜ KMC 본인인증 연동 (placeholder 상태, 연휴 후)
 - ⬜ 카카오 알림톡 (채널 개설 필요)
 
 ### 환경변수
@@ -886,36 +933,68 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] poppon-admin GitHub 레포 생성 (private) + push
 - [x] poppon-admin Vercel 배포 성공 (`poppon-admin.vercel.app`, 환경변수 9개)
 
+### 회원가입 시스템 + 행동추적 고도화 + 어드민 회원관리 (2/16)
+- [x] AuthSheet 전면 재작성 — 6단계 플로우 (main→signup→login→identity→categories→marketing)
+- [x] 이메일/비밀번호 회원가입+로그인 (Supabase Auth, Confirm email OFF)
+- [x] 본인인증 KMC placeholder + 테스트용 스킵 버튼
+- [x] 관심 카테고리 선택 — DB에서 6개 로드, 혜택 강조 UX ("알림 받기")
+- [x] 마케팅 동의 — 전체동의 + 개별(알림톡/푸시/이메일)
+- [x] AuthSheet Portal (createPortal → body 직접 렌더링, fixed 포지셔닝 문제 해결)
+- [x] AuthSheet 반응형 (모바일: 바텀시트, 데스크톱: 센터 모달)
+- [x] AuthProvider 수정 — SIGNED_IN 자동닫힘 제거 (온보딩 유지), withdrawn/banned 체크, setTrackingUserId 연동
+- [x] auth/page.tsx 인코딩 수정 + AuthSheet 자동 열기 + isAuthSheetOpen 리다이렉트 방지
+- [x] TopNav 데스크톱 프로필 드롭다운 (마이페이지/설정/로그아웃) + 바깥 클릭 감지
+- [x] TopNav/마이페이지 signOut 후 window.location.href='/' 강제 리다이렉트
+- [x] 마이페이지 설정 탭 — 비밀번호 변경(이메일 재설정), 계정 탈퇴(확인 다이얼로그+사유 선택)
+- [x] delete-account API — soft delete (status→withdrawn, withdrawn_at, withdraw_reason)
+- [x] profiles 테이블 컬럼 추가 (status, withdrawn_at, withdraw_reason, role)
+- [x] search_logs 테이블 생성 (검색어/user_id/session_id/카테고리/결과수 + RLS + 인덱스)
+- [x] tracking.ts — setTrackingUserId/getTrackingUserId 추가, trackAction에 user_id 자동 포함, trackSearch 함수 신규
+- [x] actions API — user_id body에서 수신+저장, metadata 저장, click_out count 증가
+- [x] search_logs API — 검색 로그 기록 (POST /api/actions/search)
+- [x] deal_actions 인덱스 추가 (user_id, session_id)
+- [x] 어드민 사이드바 — "👥 회원 관리" 메뉴 추가
+- [x] 어드민 대시보드 — 회원 현황 카드 (전체/오늘가입/마케팅동의/탈퇴요청) + 인코딩 수정
+- [x] 어드민 회원 목록 페이지 (/members) — 검색/필터/페이지네이션 + 상태뱃지 + 행동요약 + 복구/차단
+- [x] 어드민 회원 상세 페이지 (/members/[id]) — 프로필 + 행동요약 6카드 + 4탭(행동로그/저장딜/구독/검색)
+- [x] 어드민 회원 API (GET/PATCH /api/members) — 목록+통계+상태변경
+- [x] 어드민 회원 상세 API (GET /api/members/[id]) — 프로필+이메일+행동로그+검색로그+요약
+
 ---
 
 ## 🔴 미해결 버그 / 즉시 처리 필요
 
+- 🚨 **Vercel 배포 후 로딩 스피너만 도는 현상** — /me 페이지, 딜 상세 모달 등 전반적. 로컬은 정상. Vercel 클린 빌드(캐시 해제 Redeploy) 필요. 500 에러 로그 확인 필요.
 - ⚠️ 홈 서브카피 "283개 브랜드" → 머천트 수 동적 표시 또는 업데이트 필요
 - ⚠️ 일부 구글 이미지 로고 품질 낮음 → 수동 교체 검토
-- ⚠️ 푸터 빈 카테고리 컬럼 정리 필요 (12→6 변경 잔재)
 - ⚠️ poppon-admin에 layout.tsx 수정 커밋 아직 미반영 (로컬 파일 교체 + git push 필요)
 
 ---
 
 ## 🔲 진행 예정 작업
 
-**도메인 연결 (최우선)**
+**Vercel 로딩 버그 수정 (최우선)**
+- [ ] Vercel 클린 빌드 (캐시 해제 Redeploy)
+- [ ] Vercel Logs에서 500 에러 확인 → 원인 파악
+
+**도메인 연결**
 - [ ] 가비아 DNS 설정 — poppon.kr: A: `@`→Vercel IP, CNAME: `www`→Vercel DNS
 - [ ] Vercel poppon 프로젝트에 poppon.kr 도메인 추가
 - [ ] admin.poppon.kr CNAME 추가 → poppon-admin Vercel 도메인 연결
 - [ ] HTTPS/SSL 자동 발급 확인
 
-**회원 기능 연동 (최우선)**
+**회원 기능 연동**
 - [ ] Supabase Auth Provider 설정 (카카오 OAuth)
 - [ ] Supabase Auth Provider 설정 (네이버 — 커스텀 OIDC)
 - [ ] Supabase Auth Provider 설정 (애플 — 앱 출시 전)
-- [ ] KMC 본인인증 연동
+- [ ] KMC 본인인증 연동 (연휴 후)
 - [ ] 가입 플로우 E2E 테스트
 - [ ] 카카오 알림톡 (채널 개설 필요)
+- [ ] 검색 페이지에서 trackSearch 호출 연동
 
 **어드민 마무리**
-- [ ] layout.tsx 수정 커밋 + push (사이드바 경로 수정분)
-- [ ] poppon에서 어드민 관련 잔재 정리 확인
+- [ ] 어드민 대시보드 인코딩 수정 커밋 확인
+- [ ] 탈퇴 30일 경과 자동 삭제 Cron 추가
 
 **크롤러 운영 안정화**
 - [ ] 리셋한 24개 커넥터 재크롤 결과 확인
@@ -923,7 +1002,6 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 
 **UI 반영**
 - [ ] 홈 서브카피 머천트 수 반영
-- [ ] 푸터 카테고리 컬럼 정리
 
 **인프라**
 - [ ] NCP 이관 (s2-g3 4vCPU/16GB, 월 ~13만원)
@@ -961,6 +1039,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - **PowerShell Set-Content 인코딩 주의**: 한글 파일 치환 시 UTF-8 BOM 없이 저장 → node 스크립트 사용 권장
 - **어드민 앱 tsconfig.json**: `"exclude": ["node_modules", "scripts"]` (빌드에서 스크립트 제외)
 - **Supabase API Keys**: 레거시(eyJhbGci...) Disabled → 신규 sb_publishable_ / sb_secret_ 사용 중. 양쪽 .env.local + Vercel 환경변수 모두 신규 키로 설정 필수
+- **Vercel 배포 로딩 문제**: 로컬 정상, Vercel만 스피너 도는 경우 → 캐시 해제 클린 빌드 Redeploy 필요. Vercel Logs에서 500 에러 확인.
+- **PowerShell [id] 폴더**: `Remove-Item`/`ls` 시 `-LiteralPath` 사용 필수 (대괄호를 특수문자로 인식)
 
 ---
 
@@ -987,7 +1067,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | 팝폰-카테고리언더라인+소스보호+커넥터정리 | 2/16 | 카테고리 언더라인 탭 통일(Style D), 아이콘 1.5배+간격 2배, 로고 여백 크롭 4종, 신라면→농심, 소스보호 강화(선택/드래그/복사/소스맵), 커넥터 대정리(error 35→0, 256 active) |
 | 팝폰-인증시스템+어드민분리 | 2/16 | 회원 DB 6개 테이블 마이그레이션, AuthProvider+AuthSheet+OAuth콜백, 딜저장/브랜드구독 API, 마이페이지 데이터연동, 어드민 별도 프로젝트(poppon-admin) 분리, 크롤러/Cron 이동, 양쪽 빌드 성공 |
 | **팝폰-키로테이션+어드민배포** | **2/16** | **Supabase 신규 키 전환(sb_publishable/sb_secret) + 레거시 Disable, Anthropic 키 재발급, ADMIN_SECRET 변경, 어드민 사이드바 경로 수정, poppon-admin GitHub 생성 + Vercel 배포 완료** |
+| **팝폰-회원가입+행동추적+어드민회원관리** | **2/16** | **AuthSheet 6단계(이메일가입/로그인/본인인증placeholder/카테고리/마케팅동의), soft delete 탈퇴, tracking user_id 연동, search_logs, 어드민 회원목록/상세/행동로그, Vercel 로딩 버그 미해결** |
 
 ---
 
-*마지막 업데이트: 2026-02-16 (키 로테이션 완료 + poppon-admin Vercel 배포 완료, poppon.vercel.app ✅ + poppon-admin.vercel.app ✅)*
+*마지막 업데이트: 2026-02-16 (회원가입 6단계 + 행동추적 user_id + 어드민 회원관리 + Vercel 로딩 버그 미해결)*

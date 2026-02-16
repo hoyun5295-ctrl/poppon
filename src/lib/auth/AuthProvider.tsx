@@ -29,15 +29,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthSheetOpen, setIsAuthSheetOpen] = useState(false);
 
-  // ✅ 핵심 수정: supabase 클라이언트를 ref로 한 번만 생성
+  // ✅ 싱글톤 클라이언트 (client.ts + ref 이중 보장)
   const supabaseRef = useRef(createClient());
   const supabase = supabaseRef.current;
 
-  // ✅ signOut 중복 방지 플래그
+  // signOut 중복 방지
   const isSigningOutRef = useRef(false);
+  // 프로필 fetch 중복 방지
+  const fetchingProfileRef = useRef<string | null>(null);
 
-  // 프로필 조회 — supabase를 의존성에서 제거 (ref이므로 불변)
+  // 프로필 조회 (중복 호출 방지)
   const fetchProfile = useCallback(async (userId: string) => {
+    if (fetchingProfileRef.current === userId) return;
+    fetchingProfileRef.current = userId;
+
     try {
       const { data } = await supabase
         .from('profiles')
@@ -57,7 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setProfile(data);
     } catch {
-      // 프로필 조회 실패 시 무시 (신규 가입 직후 등)
+      // 프로필 조회 실패 무시
+    } finally {
+      fetchingProfileRef.current = null;
     }
   }, [supabase]);
 
@@ -67,36 +74,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id, fetchProfile]);
 
-  // 초기 세션 확인 + 리스너
+  // ✅ 핵심 수정: onAuthStateChange 하나만 사용
+  // 이전: getSession() + onAuthStateChange = 이중 초기화 → 전체 리렌더 2번 → 느림+깜빡임
+  // 수정: onAuthStateChange의 INITIAL_SESSION이 초기 세션 자동 전달
   useEffect(() => {
     let mounted = true;
-
-    const initAuth = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (!mounted) return;
-
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        setTrackingUserId(currentSession?.user?.id ?? null);
-
-        if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
-        }
-      } catch {
-        // 세션 조회 실패 시 비로그인 처리
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
-
-    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!mounted) return;
-
-        // ✅ signOut 진행 중이면 무시 (무한루프 방지)
         if (isSigningOutRef.current) return;
 
         setSession(newSession);
@@ -108,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
         }
+
+        setIsLoading(false);
       }
     );
 
@@ -120,11 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     isSigningOutRef.current = true;
     try {
-      await supabase.auth.signOut();
+      // 상태 먼저 초기화 (UI 즉시 반영)
       setUser(null);
       setProfile(null);
       setSession(null);
       setTrackingUserId(null);
+      await supabase.auth.signOut();
     } finally {
       isSigningOutRef.current = false;
     }

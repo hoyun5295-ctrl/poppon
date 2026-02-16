@@ -143,11 +143,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, fetchProfile]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // 1. Supabase signOut 시도
+    try {
+      await supabase.auth.signOut();
+    } catch { /* 서버 요청 실패해도 무시 */ }
+
+    // 2. React 상태 초기화
     setUser(null);
     setProfile(null);
     setSession(null);
     setTrackingUserId(null);
+
+    // 3. localStorage에서 Supabase 세션 토큰 강제 삭제
+    try {
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) localStorage.removeItem(key);
+      });
+    } catch { /* ignore */ }
   };
 
   const openAuthSheet = () => setIsAuthSheetOpen(true);

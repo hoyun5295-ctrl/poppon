@@ -15,11 +15,10 @@ export function DealModal({ children }: DealModalProps) {
   const [dragY, setDragY] = useState(0);
   const startYRef = useRef(0);
 
-  // ✅ 마운트 애니메이션 상태
+  // 열림 애니메이션 상태
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // 다음 프레임에서 visible로 전환 → CSS transition 트리거
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setIsVisible(true);
@@ -28,7 +27,6 @@ export function DealModal({ children }: DealModalProps) {
   }, []);
 
   const handleClose = useCallback(() => {
-    // 닫힘 애니메이션 후 router.back
     setIsVisible(false);
     setTimeout(() => {
       router.back();
@@ -78,7 +76,7 @@ export function DealModal({ children }: DealModalProps) {
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* ✅ 오버레이 — fade in/out */}
+      {/* 오버레이 */}
       <div
         className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ease-out ${
           isVisible ? 'opacity-100' : 'opacity-0'
@@ -86,7 +84,7 @@ export function DealModal({ children }: DealModalProps) {
         onClick={handleClose}
       />
 
-      {/* ===== 데스크톱: 센터 모달 ===== */}
+      {/* 데스크톱: 센터 모달 */}
       <div className="hidden md:flex absolute inset-0 items-center justify-center px-4">
         <div
           className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto transition-all duration-200 ease-out ${
@@ -96,7 +94,6 @@ export function DealModal({ children }: DealModalProps) {
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 닫기 버튼 */}
           <button
             onClick={handleClose}
             className="absolute top-3 right-3 z-10 p-2 rounded-full bg-surface-100 hover:bg-surface-200 transition-colors"
@@ -110,16 +107,14 @@ export function DealModal({ children }: DealModalProps) {
         </div>
       </div>
 
-      {/* ===== 모바일: 바텀시트 ===== */}
+      {/* 모바일: 바텀시트 */}
       <div
         className="md:hidden absolute inset-x-0 bottom-0"
         onClick={(e) => e.stopPropagation()}
       >
         <div
           ref={sheetRef}
-          className={`bg-white rounded-t-2xl shadow-2xl w-full transition-transform duration-300 ease-out ${
-            isVisible && dragY === 0 ? 'translate-y-0' : ''
-          }`}
+          className="bg-white rounded-t-2xl shadow-2xl w-full"
           style={{
             maxHeight: '92vh',
             transform: dragY > 0
@@ -133,7 +128,6 @@ export function DealModal({ children }: DealModalProps) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* 스와이프 핸들 */}
           <div
             data-drag-handle
             className="flex items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing"
@@ -141,7 +135,6 @@ export function DealModal({ children }: DealModalProps) {
             <div className="w-10 h-1 rounded-full bg-surface-300" />
           </div>
 
-          {/* 닫기 버튼 */}
           <button
             onClick={handleClose}
             className="absolute top-3 right-3 z-10 p-2 rounded-full bg-surface-100 active:bg-surface-200 transition-colors"
@@ -150,7 +143,6 @@ export function DealModal({ children }: DealModalProps) {
             <X className="w-4 h-4 text-surface-500" />
           </button>
 
-          {/* 내용 — 스크롤 가능 */}
           <div
             className="overflow-y-auto overscroll-contain px-4 pb-6 pb-safe"
             style={{ maxHeight: 'calc(92vh - 2.5rem)' }}

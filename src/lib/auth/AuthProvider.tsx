@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { setTrackingUserId } from '@/lib/tracking';
 import type { Profile } from '@/types';
@@ -14,9 +14,11 @@ interface AuthContextType {
   isLoggedIn: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  /** 가입/로그인 필요 시 바텀시트 열기 */
   openAuthSheet: () => void;
   closeAuthSheet: () => void;
   isAuthSheetOpen: boolean;
+  /** 인증이 필요한 액션 래퍼 - 비로그인 시 바텀시트 */
   requireAuth: (callback: () => void) => void;
 }
 
@@ -29,43 +31,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthSheetOpen, setIsAuthSheetOpen] = useState(false);
 
-  // ✅ 싱글톤 클라이언트 (client.ts + ref 이중 보장)
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
+  const supabase = createClient();
 
-  // signOut 중복 방지
-  const isSigningOutRef = useRef(false);
-  // 프로필 fetch 중복 방지
-  const fetchingProfileRef = useRef<string | null>(null);
-
-  // 프로필 조회 (중복 호출 방지)
+  // 프로필 조회
   const fetchProfile = useCallback(async (userId: string) => {
-    if (fetchingProfileRef.current === userId) return;
-    fetchingProfileRef.current = userId;
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (data?.status === 'withdrawn' || data?.status === 'banned') {
-        isSigningOutRef.current = true;
-        await supabase.auth.signOut();
-        setUser(null);
-        setProfile(null);
-        setSession(null);
-        isSigningOutRef.current = false;
-        return;
-      }
-
-      setProfile(data);
-    } catch {
-      // 프로필 조회 실패 무시
-    } finally {
-      fetchingProfileRef.current = null;
+    // 탈퇴한 계정이면 강제 로그아웃
+    if (data?.status === 'withdrawn' || data?.status === 'banned') {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      return;
     }
+
+    setProfile(data);
   }, [supabase]);
 
   const refreshProfile = useCallback(async () => {
@@ -74,17 +59,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.id, fetchProfile]);
 
-  // ✅ 핵심 수정: onAuthStateChange 하나만 사용
-  // 이전: getSession() + onAuthStateChange = 이중 초기화 → 전체 리렌더 2번 → 느림+깜빡임
-  // 수정: onAuthStateChange의 INITIAL_SESSION이 초기 세션 자동 전달
+  // 초기 세션 확인 + 리스너
   useEffect(() => {
-    let mounted = true;
+    const initAuth = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+      setTrackingUserId(currentSession?.user?.id ?? null);
+
+      if (currentSession?.user) {
+        await fetchProfile(currentSession.user.id);
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        if (!mounted) return;
-        if (isSigningOutRef.current) return;
-
         setSession(newSession);
         setUser(newSession?.user ?? null);
         setTrackingUserId(newSession?.user?.id ?? null);
@@ -95,40 +87,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         }
 
-        setIsLoading(false);
+        // ※ SIGNED_IN 시 자동으로 AuthSheet을 닫지 않음
+        // → 회원가입 온보딩 플로우(본인인증 → 카테고리 → 마케팅)를
+        //   AuthSheet 내부에서 제어하기 위함
+        // → AuthSheet.handleLogin()에서 로그인 성공 시 직접 closeAuthSheet() 호출
       }
     );
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, [supabase, fetchProfile]);
 
-  const signOut = useCallback(async () => {
-    isSigningOutRef.current = true;
-    try {
-      // 상태 먼저 초기화 (UI 즉시 반영)
-      setUser(null);
-      setProfile(null);
-      setSession(null);
-      setTrackingUserId(null);
-      await supabase.auth.signOut();
-    } finally {
-      isSigningOutRef.current = false;
-    }
-  }, [supabase]);
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+    setTrackingUserId(null);
+  };
 
-  const openAuthSheet = useCallback(() => setIsAuthSheetOpen(true), []);
-  const closeAuthSheet = useCallback(() => setIsAuthSheetOpen(false), []);
+  const openAuthSheet = () => setIsAuthSheetOpen(true);
+  const closeAuthSheet = () => setIsAuthSheetOpen(false);
 
-  const requireAuth = useCallback((callback: () => void) => {
+  const requireAuth = (callback: () => void) => {
     if (user) {
       callback();
     } else {
       openAuthSheet();
     }
-  }, [user, openAuthSheet]);
+  };
 
   return (
     <AuthContext.Provider

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
@@ -18,20 +18,11 @@ export default function MyPage() {
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.replace('/');
+    window.location.href = '/';
   };
 
-  // ✅ 로딩을 맨 위에서 체크 (비로그인보다 먼저)
-  if (isLoading) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
-      </div>
-    );
-  }
-
   // 비로그인 상태
-  if (!isLoggedIn) {
+  if (!isLoading && !isLoggedIn) {
     return (
       <div className="max-w-lg mx-auto px-4 py-16 text-center">
         <div className="w-16 h-16 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-5">
@@ -49,6 +40,7 @@ export default function MyPage() {
           시작하기
         </button>
 
+        {/* 미리보기 */}
         <div className="mt-12 text-left">
           <h2 className="text-sm font-semibold text-surface-400 uppercase tracking-wider mb-3">
             로그인 후 이용 가능
@@ -61,6 +53,15 @@ export default function MyPage() {
             <MenuPreview icon={<Shield className="w-5 h-5" />} label="마케팅 동의" desc="마케팅 수신 동의 관리" />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // 로딩
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
       </div>
     );
   }
@@ -246,9 +247,9 @@ function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; on
   const [passwordResetSent, setPasswordResetSent] = useState(false);
   const [passwordResetLoading, setPasswordResetLoading] = useState(false);
 
-  const supabaseRef = useRef(createClient());
-  const supabase = supabaseRef.current;
+  const supabase = createClient();
 
+  // 비밀번호 재설정 이메일 발송
   const handlePasswordReset = async () => {
     if (!user?.email) return;
     setPasswordResetLoading(true);
@@ -263,6 +264,7 @@ function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; on
     finally { setPasswordResetLoading(false); }
   };
 
+  // 계정 탈퇴
   const [withdrawReason, setWithdrawReason] = useState('');
 
   const handleDeleteAccount = async () => {
@@ -274,7 +276,7 @@ function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; on
         body: JSON.stringify({ reason: withdrawReason }),
       });
       if (res.ok) {
-        window.location.replace('/');
+        window.location.href = '/';
       } else {
         alert('계정 삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
       }
@@ -322,9 +324,24 @@ function SettingsTab({ profile, user, onSignOut }: { profile: any; user: any; on
           소셜 계정 연동
         </h3>
         <div className="space-y-3">
-          <SNSLinkItem name="카카오" color="#FEE500" textColor="#191919" linked={false} />
-          <SNSLinkItem name="네이버" color="#03C75A" textColor="#fff" linked={false} />
-          <SNSLinkItem name="Apple" color="#000" textColor="#fff" linked={false} />
+          <SNSLinkItem
+            name="카카오"
+            color="#FEE500"
+            textColor="#191919"
+            linked={false}
+          />
+          <SNSLinkItem
+            name="네이버"
+            color="#03C75A"
+            textColor="#fff"
+            linked={false}
+          />
+          <SNSLinkItem
+            name="Apple"
+            color="#000"
+            textColor="#fff"
+            linked={false}
+          />
         </div>
       </div>
 

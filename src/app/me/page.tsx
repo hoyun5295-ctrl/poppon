@@ -121,11 +121,8 @@ export default function MyPage() {
 function SavedDealsTab() {
   const [savedDeals, setSavedDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const loadedRef = useRef(false);
-
+  
   const fetchSaved = useCallback(async () => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
     try {
       const res = await fetch('/api/me/saved-deals');
       if (!res.ok) throw new Error();
@@ -189,11 +186,8 @@ function SavedDealsTab() {
 function FollowsTab() {
   const [follows, setFollows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const loadedRef = useRef(false);
-
+  
   const fetchFollows = useCallback(async () => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
     try {
       const res = await fetch('/api/me/follows/merchants');
       if (!res.ok) throw new Error();
@@ -452,12 +446,7 @@ function InterestCategoriesSection({ profile, onRefresh }: { profile: any; onRef
   const [selected, setSelected] = useState<string[]>(profile?.interested_categories || []);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const loadedRef = useRef(false);
-
-  // ✅ 수정: useRef로 1회만 실행, try-catch로 에러 격리
   useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
     const supabase = createClient();
     supabase
       .from('categories')
@@ -548,13 +537,7 @@ function RecommendedBrandsSection() {
   const [merchants, setMerchants] = useState<any[]>([]);
   const [followedIds, setFollowedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const loadedRef = useRef(false);
-
-  // ✅ 수정: useRef로 1회만 실행, try-catch로 에러 격리
   useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
-
     const load = async () => {
       try {
         const supabase = createClient();

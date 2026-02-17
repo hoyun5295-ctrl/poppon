@@ -754,11 +754,11 @@ NEXT_PUBLIC_MAIN_URL=https://poppon.kr
 | v3.1 | Puppeteer 사이트 접속 + DOM 파싱 | 59개 교체 (SVG 13 + apple-touch 37 + header-logo 9) |
 | 구글 이미지 검색 | Puppeteer `"[브랜드명] CI"` 검색 | 테스트 10/10 성공, 전체 ~102개 실행 |
 
-### 수동 교체 로고 (public/logos/)
+### 수동 교체 로고 (public/logos/) — 34개
 | 파일명 | 머천트 |
 |--------|--------|
-| samsung.svg | 삼성닷컴 |
-| oliveyoung.png | 올리브영 (여백 크롭) |
+| samsung.png | 삼성닷컴 (svg→png 변경) |
+| oliveyoung.png | 올리브영 |
 | kyobobook.png | 교보문고 |
 | lottecinema.jpg | 롯데시네마 |
 | baskinrobbins.png | 배스킨라빈스 |
@@ -766,9 +766,31 @@ NEXT_PUBLIC_MAIN_URL=https://poppon.kr
 | nintendo.jpg | 닌텐도 |
 | doubleheart.png | 더블하트 |
 | upang.jpg | 유팡 |
-| coupang.png | 쿠팡 (여백 크롭) |
-| nongshim.jpg | 농심 (여백 크롭, 신라면→농심 이름변경) |
-| 29cm.png | 29CM (여백 크롭) |
+| coupang.png | 쿠팡 |
+| nongshim.jpg | 농심 |
+| 29cm.png | 29CM |
+| emart.webp | 이마트 |
+| krispykreme.png | 크리스피크림 |
+| kyochon.jpg | 교촌치킨 |
+| andar.jpg | 안다르 |
+| ediya.jpg | 이디야커피 |
+| todayhouse.jpg | 오늘의집 |
+| twosome.png | 투썸플레이스 |
+| wconcept.png | W컨셉 |
+| wells.png | 교원웰스 |
+| bobbibrown.jpg | 바비브라운 |
+| drg.jpg | 닥터지 |
+| giordano.png | 지오다노 |
+| gmarket.jpg | G마켓 |
+| goongjoong.jpg | 궁중비책 |
+| ikea.png | 이케아코리아 |
+| kurly.png | 컬리 (마켓컬리+뷰티컬리) |
+| lgelec.jpg | LG전자 |
+| mongdies.jpg | 몽디에스 |
+| oasis.png | 오아시스마켓 |
+| ruhens.png | 루헨스 |
+| sikmoonala.png | 식물나라 |
+| starbucks.webp | 스타벅스코리아 |
 
 ### ⚠️ 로고 미해결
 - 기존 저품질 ~100개: 교체 필요
@@ -1095,7 +1117,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - ⚠️ **카카오 로그인 후 온보딩 진행 테스트 필요** — 신규 유저 판단 + categories/marketing 저장 동작 확인
 - ~~⚠️ Supabase 리전 us-east-1~~ → ✅ 확인 결과 **서울(ap-northeast-2)** 정상 (2/17)
 - ~~⚠️ 홈 서브카피 "283개 브랜드"~~ → ✅ 동적 표시 완료 — DB에서 merchants/deals count 쿼리 + 볼드+컬러(primary/amber) (2/17)
-- ⚠️ 일부 구글 이미지 로고 품질 낮음 → 5개 교체 완료(이마트/크리스피크림/교촌/안다르/이디야), 나머지 진행 중
+- ⚠️ 일부 구글 이미지 로고 품질 낮음 → 22개 교체 완료(이마트/크리스피크림/교촌/안다르/이디야 + 오늘의집/투썸/W컨셉/웰스/바비브라운/닥터지/지오다노/G마켓/궁중비책/이케아/컬리/LG전자/몽디에스/오아시스/루헨스/식물나라/스타벅스), 나머지 진행 중
 - ~~⚠️ poppon-admin layout.tsx 커밋 미반영~~ → ✅ 적용 완료 (2/17)
 
 ---
@@ -1115,7 +1137,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] SNS 온보딩 플로우 (callback → 신규판단 → categories → marketing) ✅ 2/17
 - [x] profiles.phone UNIQUE 해제 + 트리거 수정 ✅ 2/17
 - [x] **코드↔DB 컬럼명 불일치 수정 (interest_categories/marketing_agreed)** ✅ 2/17 — 4파일 12곳
-- - [x] **네이버 OAuth 연동 (수동 OAuth 플로우 — admin.createUser+generateLink+verifyOtp)** ✅ 2/17
+- [x] **네이버 OAuth 연동 (수동 OAuth 플로우 — admin.createUser+generateLink+verifyOtp)** ✅ 2/17
 - [ ] Supabase Auth Provider 설정 (애플 — 앱 출시 전)
 - [ ] KMC 본인인증 연동 (연휴 후)
 - [x] 가입 플로우 E2E 테스트 → 수동 테스트 통과 ✅ 2/17
@@ -1123,7 +1145,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [ ] 검색 페이지에서 trackSearch 호출 연동
 
 **어드민 마무리**
-- [ ] 어드민 대시보드 인코딩 수정 커밋 확인
+- [x] 어드민 대시보드 인코딩 수정 커밋 확인
 - [ ] 탈퇴 30일 경과 자동 삭제 Cron 추가
 
 **크롤러 운영 안정화**
@@ -1229,6 +1251,18 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | **팝폰-컬럼수정+크롤러서버리스+인프라논의** | **2/17** | **DB 컬럼명 불일치 전수 수정(4파일 12곳), Vercel Puppeteer 호환(puppeteer-core+@sparticuz/chromium), 크롤 배치 프론트 순차 호출+실시간 진행률 UI, 인프라 방향 합의(가비아→IDC), 최초 풀크롤 실행** |
 | **팝폰-네이버OAuth+인프라확정** | **2/17** | **인프라 현 구성 유지 확정(Vercel+Supabase Pro $65/월), Supabase Pro 업그레이드, 네이버 OAuth 수동 플로우(api/auth/naver+callback/naver, admin.createUser+generateLink+verifyOtp), AuthSheet 네이버 버튼 연결, updateUserById 타입 수정** |
 | **팝폰-STATUS+검색개선+로고교체** | **2/17** | **Supabase 리전 서울 확인, 홈 서브카피 브랜드+딜 수 동적 표시(볼드+컬러), 풀크롤 256개 완료(208성공/$2.92), 로고 5종 교체(이마트/크리스피크림/교촌/안다르/이디야), 검색 개선(중복검색창 제거+머천트명 검색+브랜드 바로가기), E2E 수동 테스트 통과** |
+| **팝폰-로고교체+푸터+홈그리드** | **2/18** | **로고 34종 교체/복구(삼성svg→png), 푸터 사업자 정보 추가(13px+볼드), 홈 딜 섹션 limit 48(4열×2줄 꽉 참)** | **Supabase 리전 서울 확인, 홈 서브카피 브랜드+딜 수 동적 표시(볼드+컬러), 풀크롤 256개 완료(208성공/$2.92), 로고 5종 교체(이마트/크리스피크림/교촌/안다르/이디야), 검색 개선(중복검색창 제거+머천트명 검색+브랜드 바로가기), E2E 수동 테스트 통과** |
 ---
 
-*마지막 업데이트: 2026-02-17 (검색 개선 + 홈 서브카피 동적 표시 + 로고 교체 + 풀크롤 완료 + Supabase 서울 확인)*
+### 로고 대량 교체 + 푸터 사업자 정보 + 홈 딜 그리드 (2/18)
+- [x] 로고 신규 17종 교체 (오늘의집/투썸/W컨셉/웰스/바비브라운/닥터지/지오다노/G마켓/궁중비책/이케아/컬리/LG전자/몽디에스/오아시스/루헨스/식물나라/스타벅스)
+- [x] 기존 로고 17종 복구 (삼성 svg→png 변경 포함)
+- [x] 삼성 로고 DB 업데이트 (samsung.svg → samsung.png)
+- [x] 컬리 로고 마켓컬리+뷰티컬리 양쪽 적용
+- [x] 푸터 사업자 정보 추가 (인비토/대표/사업자번호/통신판매업/주소/고객센터/이메일)
+- [x] 푸터 사업자 정보 POPPON 브랜드 영역 하단 배치 (13px + 정보값 볼드)
+- [x] 홈 딜 섹션 limit 24→48 (dedupeByMerchant 후 8개 확보, 4열×2줄 꽉 참)
+
+---
+
+*마지막 업데이트: 2026-02-17 (로고 34종 교체/복구 + 푸터 사업자 정보 + 홈 딜 그리드 꽉 참)*

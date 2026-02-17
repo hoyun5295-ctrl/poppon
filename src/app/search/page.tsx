@@ -6,9 +6,9 @@ import { DealGrid } from '@/components/deal/DealGrid';
 import { SearchFilters } from '@/components/search/SearchFilters';
 import { SortDropdown } from '@/components/common/SortDropdown';
 import { Pagination } from '@/components/common/Pagination';
-import { SearchInput } from '@/components/search/SearchInput';
 import { MobileFilterSheet } from '@/components/search/MobileFilterSheet';
 import { APP_NAME } from '@/lib/constants';
+import { ChevronRight } from 'lucide-react';
 
 const DEALS_PER_PAGE = 24;
 
@@ -48,9 +48,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const currentPage = Math.max(1, parseInt(page) || 1);
   const offset = (currentPage - 1) * DEALS_PER_PAGE;
   const now = new Date().toISOString();
+  const trimmedQ = q.trim();
 
-  // 1. 카테고리 목록 + 실제 active 딜 수 집계
-  const [categoriesRes, dealCountsRes] = await Promise.all([
+  // 1. 카테고리 목록 + 딜 카운트 + 매칭 브랜드 병렬 조회
+  const [categoriesRes, dealCountsRes, matchedMerchantsRes] = await Promise.all([
     supabase
       .from('categories')
       .select('id, name, slug')
@@ -62,9 +63,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       .from('deals')
       .select('category_id')
       .eq('status', 'active'),
+
+    // 검색어로 브랜드명 매칭
+    trimmedQ
+      ? supabase
+          .from('merchants')
+          .select('id, name, slug, logo_url, brand_color, active_deal_count')
+          .ilike('name', `%${trimmedQ}%`)
+          .limit(5)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const categoriesRaw = categoriesRes.data || [];
+  const matchedMerchants = matchedMerchantsRes.data || [];
+  const matchedMerchantIds = matchedMerchants.map((m: any) => m.id);
 
   // category_id별 실제 딜 수 집계
   const countMap: Record<string, number> = {};
@@ -97,9 +109,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     now
   );
 
-  // 텍스트 검색
-  if (q.trim()) {
-    query = query.or(`title.ilike.%${q.trim()}%,benefit_summary.ilike.%${q.trim()}%`);
+  // 텍스트 검색 — 딜 title + benefit_summary + 매칭 머천트의 딜 포함
+  if (trimmedQ) {
+    if (matchedMerchantIds.length > 0) {
+      query = query.or(
+        `title.ilike.%${trimmedQ}%,benefit_summary.ilike.%${trimmedQ}%,merchant_id.in.(${matchedMerchantIds.join(',')})`
+      );
+    } else {
+      query = query.or(`title.ilike.%${trimmedQ}%,benefit_summary.ilike.%${trimmedQ}%`);
+    }
   }
 
   // 카테고리 필터
@@ -147,7 +165,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const deals = (dealsRaw || []).map(toDealCard);
   const totalPages = Math.ceil((totalCount || 0) / DEALS_PER_PAGE);
 
-  const hasQuery = !!q.trim();
+  const hasQuery = !!trimmedQ;
   const hasFilters = !!(category || benefit_tag || channel);
   const activeFilterCount = [category, benefit_tag, channel].filter(Boolean).length;
 
@@ -160,16 +178,41 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         <span className="text-surface-600">검색</span>
       </nav>
 
-      {/* 검색바 */}
+      {/* 검색 결과 헤더 */}
       <section className="pb-4 sm:pb-5 border-b border-surface-100">
-        <SearchInput defaultValue={q} />
         {hasQuery && (
-          <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm text-surface-500">
+          <p className="text-xs sm:text-sm text-surface-500">
             &ldquo;<span className="font-semibold text-surface-700">{q}</span>&rdquo; 검색 결과
             <span className="ml-1.5 text-surface-400">{totalCount || 0}건</span>
           </p>
         )}
       </section>
+
+      {/* 매칭 브랜드 바로가기 */}
+      {hasQuery && matchedMerchants.length > 0 && (
+        <section className="mt-4 sm:mt-5">
+          <p className="text-xs font-medium text-surface-400 mb-2">브랜드 바로가기</p>
+          <div className="flex flex-wrap gap-2">
+            {matchedMerchants.map((m: any) => (
+              <Link
+                key={m.slug}
+                href={`/m/${m.slug}`}
+                className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-surface-200 hover:border-primary-200 hover:bg-primary-50/30 transition-all"
+              >
+                {m.logo_url && (
+                  <img
+                    src={m.logo_url}
+                    alt={m.name}
+                    className="w-6 h-6 rounded object-contain bg-white"
+                  />
+                )}
+                <span className="text-sm font-medium text-surface-700 group-hover:text-primary-600">{m.name}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-surface-300 group-hover:text-primary-400" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 본문: 필터 + 딜 목록 */}
       <div className="mt-4 sm:mt-6 pb-8 sm:pb-12 lg:flex lg:gap-8">

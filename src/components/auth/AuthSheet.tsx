@@ -34,7 +34,7 @@ const REMEMBER_EMAIL_KEY = 'poppon_remember_email';
  * AuthSheet — 가입/로그인 바텀시트
  *
  * 이메일 신규가입: main → signup → identity → categories → marketing → 완료
- * SNS 신규가입:   카카오 OAuth → callback → /?onboarding=sns → categories → marketing → 완료
+ * SNS 신규가입:   카카오/네이버 OAuth → callback → /?onboarding=sns → categories → marketing → 완료
  * 로그인:         main → login → 완료
  */
 export function AuthSheet() {
@@ -225,7 +225,7 @@ export function AuthSheet() {
     }
   };
 
-  // ── SNS 로그인 ──
+  // ── SNS 로그인 (카카오 등 Supabase 빌트인) ──
   const handleSNSLogin = async (provider: 'kakao' | 'google') => {
     setLoading(true);
     setError('');
@@ -242,6 +242,12 @@ export function AuthSheet() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ── 네이버 로그인 (수동 OAuth 플로우) ──
+  const handleNaverLogin = () => {
+    setLoading(true);
+    window.location.href = '/api/auth/naver';
   };
 
   // ── 관심 카테고리 저장 ──
@@ -285,10 +291,10 @@ export function AuthSheet() {
       }
 
       await refreshProfile();
-      showToast(isSNSOnboarding ? '카카오 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
+      showToast(isSNSOnboarding ? 'SNS 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
       handleComplete();
     } catch {
-      showToast(isSNSOnboarding ? '카카오 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
+      showToast(isSNSOnboarding ? 'SNS 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
       handleComplete();
     } finally {
       setLoading(false);
@@ -403,7 +409,7 @@ export function AuthSheet() {
 
                   {/* 네이버 */}
                   <button
-                    onClick={() => setError('네이버 로그인은 준비 중입니다')}
+                    onClick={handleNaverLogin}
                     disabled={loading}
                     className="flex items-center justify-center gap-3 w-full h-12 rounded-xl font-semibold text-sm text-white transition-colors"
                     style={{ backgroundColor: '#03C75A' }}
@@ -857,7 +863,7 @@ export function AuthSheet() {
                 <button
                   onClick={() => {
                     showToast(
-                      isSNSOnboarding ? '카카오 로그인이 완료되었습니다' : '회원가입이 완료되었습니다',
+                      isSNSOnboarding ? 'SNS 로그인이 완료되었습니다' : '회원가입이 완료되었습니다',
                       'success'
                     );
                     handleComplete();

@@ -1106,7 +1106,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] AuthSheet 카카오 버튼 → signInWithOAuth 연결 ✅ 2/17
 - [x] SNS 온보딩 플로우 (callback → 신규판단 → categories → marketing) ✅ 2/17
 - [x] profiles.phone UNIQUE 해제 + 트리거 수정 ✅ 2/17
-- [ ] **코드↔DB 컬럼명 불일치 수정 (interest_categories/marketing_agreed)** ← 다음 즉시
+- [x] **코드↔DB 컬럼명 불일치 수정 (interest_categories/marketing_agreed)** ✅ 2/17 — 4파일 12곳
 - [ ] Supabase Auth Provider 설정 (네이버 — 커스텀 OIDC)
 - [ ] Supabase Auth Provider 설정 (애플 — 앱 출시 전)
 - [ ] KMC 본인인증 연동 (연휴 후)
@@ -1119,17 +1119,20 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [ ] 탈퇴 30일 경과 자동 삭제 Cron 추가
 
 **크롤러 운영 안정화**
-- [ ] 리셋한 24개 커넥터 재크롤 결과 확인
+- [x] Vercel 서버리스 Puppeteer 호환 (puppeteer-core + @sparticuz/chromium) ✅ 2/17
+- [x] 크롤 배치 프론트 순차 호출 + 실시간 진행률 UI ✅ 2/17
+- [ ] 최초 풀크롤 256개 실행 (진행 중 2/17)
 - [ ] 일부 머천트 official_url 추가 수정 (까사미아→guud.com 등)
 
 **UI 반영**
 - [ ] 홈 서브카피 머천트 수 반영
 
 **인프라**
-- [ ] Supabase Pro 전환 + 아시아 리전 이전 검토 (현재 us-east-1)
-- [ ] poppon-admin Vercel Function Region 서울 변경
-- [ ] NCP 이관 (s2-g3 4vCPU/16GB, 월 ~13만원)
-- [ ] Docker 구성 → 상용서버 이관 대비
+- [ ] 가비아 클라우드 Standard 4vCore/16GB 신청 + Docker 세팅
+- [ ] Supabase → 자체 PostgreSQL 마이그레이션 (pg_dump)
+- [ ] poppon-admin + 크롤러 가비아 서버 이관
+- [ ] Docker Compose 구성 (PostgreSQL + Next.js + Puppeteer)
+- [ ] Cron 자동 크롤 설정 (하루 2회)
 
 ---
 
@@ -1140,11 +1143,14 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 
 ---
 
-## 🖥️ 인프라 설계 (합의, 미착수)
+## 🖥️ 인프라 설계 (합의 2/17)
 - **현재**: Vercel Pro ($20/월 × 2) — 메인(서울 icn1) + 어드민 각각
-- **Supabase**: Free 플랜, us-east-1 (미국 동부) — Pro 전환 시 아시아 리전 이전 검토
-- **이관 계획**: NCP s2-g3 (4vCPU/16GB) ~8만 + Supabase Pro ~3.4만 + Haiku ~1.4만 = **월 ~13만원**
-- Docker 구성 → 상용서버 이관 대비
+- **이관 로드맵**:
+  - **1단계**: 가비아 클라우드 Standard 4vCore/16GB (월 15만원) — 어드민+크롤러+PostgreSQL
+  - **2단계**: 트래픽 증가 시 업그레이드 또는 IDC 상용서버 전환
+  - **최종**: IDC 상용서버 (HPE DL20 Gen11 등) — 전체 서비스 Docker 통합
+- **최종 구조**: poppon(사용자웹) → Vercel 유지(CDN) / poppon-admin+크롤러+DB → 자체 서버
+- **DB 방향**: Supabase → 자체 PostgreSQL (Docker) — 한줄로AI와 동일 패턴
 
 ---
 
@@ -1172,7 +1178,9 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - **로그아웃**: 클라이언트 `supabase.auth.signOut()` + `window.location.href` 조합은 구조적으로 불안정 — 반드시 서버 사이드 API(`/api/auth/signout`)에서 쿠키 삭제 후 리다이렉트. `<a>` 태그 사용 필수
 - **설정 탭 public 데이터**: categories/merchants 등 public 테이블 조회 시 Supabase 클라이언트 대신 REST API 직접 호출 (`fetch + apikey 헤더`) — 클라이언트 인증 상태와 무관하게 작동
 - **Toast 시스템**: AuthProvider의 showToast/setPendingToast 사용. 리다이렉트 후 토스트는 sessionStorage('poppon_pending_toast')에 저장 → layout mount 시 표시
-- **🚨 DB 컬럼명 불일치**: STATUS.md/코드에서 `interested_categories`/`marketing_opt_in`/`marketing_opt_in_at` 사용 → 실제 DB는 `interest_categories`/`marketing_agreed`/`marketing_agreed_at`. 코드 전수 수정 필요
+- **~~DB 컬럼명 불일치~~**: ✅ 해결 (2/17) — 4개 파일 12곳 수정 완료
+- **Puppeteer 서버리스**: Vercel에서는 `puppeteer-core` + `@sparticuz/chromium` 필수. 로컬 개발 시 `CHROME_PATH` 환경변수 설정
+- **Vercel 배치 크롤 타임아웃**: 300초 제한으로 전체 배치 불가 → 프론트 순차 호출 방식. 상용서버 이관 후 해소
 - **카카오 OAuth**: REST API Key `83c8e501803f831f075f7c955d91a000`, 앱 도메인 `poppon.vercel.app`. 도메인 변경 시 카카오 포털에서도 업데이트 필요
 - **openAuthSheet 타입**: `(initialStepOrEvent?: AuthSheetStep | unknown) => void` — onClick에 직접 전달 가능 + `openAuthSheet('categories')` 호출도 가능
 - **profiles.phone**: NOT NULL + UNIQUE 제약 해제됨. KMC 본인인증 연동 시 UNIQUE 재적용 검토
@@ -1207,7 +1215,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | **팝폰-인증UX+토스트+로그아웃수정** | **2/17** | **Toast 알림 시스템, 이메일 기억하기, 홈 CTA Lucide 아이콘, 마이페이지 관심카테고리/추천브랜드, TopNav 로그아웃 오버레이 패턴 수정, signOut await+타임아웃, Enter키 submit** |
 | **팝폰-로그아웃+무한루프디버깅** | **2/17** | **TOKEN_REFRESHED 무한루프 근본 차단(profileLoadedForRef), 서버 사이드 로그아웃 API(/api/auth/signout), 설정 탭 public 데이터 REST API 직접 호출, initAuth 3초 타임아웃, loadingTimedOut 제거** |
 | **팝폰-카카오OAuth+SNS온보딩** | **2/17** | **카카오 개발자 포털 설정, Supabase Kakao Provider 연결, AuthSheet 카카오 버튼 연결, SNS 온보딩 플로우(callback→신규판단→categories→marketing), profiles.phone UNIQUE 해제, handle_new_user 트리거 수정, DB 컬럼명 불일치 발견(interest_categories/marketing_agreed)** |
+| **팝폰-컬럼수정+크롤러서버리스+인프라논의** | **2/17** | **DB 컬럼명 불일치 전수 수정(4파일 12곳), Vercel Puppeteer 호환(puppeteer-core+@sparticuz/chromium), 크롤 배치 프론트 순차 호출+실시간 진행률 UI, 인프라 방향 합의(가비아→IDC), 최초 풀크롤 실행** |
 
 ---
 
-*마지막 업데이트: 2026-02-17 (카카오 OAuth 연동 + SNS 온보딩 플로우 + profiles.phone UNIQUE 해제 + DB 컬럼명 불일치 발견)*
+*마지막 업데이트: 2026-02-17 (DB 컬럼명 수정 + Vercel Puppeteer 호환 + 크롤 배치 순차호출 UI + 인프라 방향 합의 + 최초 풀크롤 실행)*

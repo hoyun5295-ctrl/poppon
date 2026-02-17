@@ -120,7 +120,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
-| 마이페이지 | `src/app/me/page.tsx` ✅ 데이터 연동 + 관심카테고리/추천브랜드 설정 |
+| 마이페이지 | `src/app/me/page.tsx` ✅ 데이터 연동 |
 | **마이 로딩** | `src/app/me/loading.tsx` ✅ 신규 |
 | 로그인 | `src/app/auth/page.tsx` ✅ 바텀시트 연동 |
 | OAuth 콜백 | `src/app/auth/callback/route.ts` ✅ 신규 |
@@ -148,6 +148,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | **브랜드 구독 API** | `src/app/api/me/follows/merchants/route.ts` ✅ 신규 |
 | **계정 탈퇴 API** | `src/app/api/me/delete-account/route.ts` ✅ 신규 |
 | **검색 로그 API** | `src/app/api/actions/search/route.ts` ✅ 신규 |
+| **로그아웃 API** | `src/app/api/auth/signout/route.ts` ✅ 신규 |
 
 ### 🔴 poppon-admin (어드민 앱)
 
@@ -245,7 +246,7 @@ SELECT COUNT(*) FROM followed_merchants;
 ### 메인 앱 (poppon)
 ```
 src/app/
-├── layout.tsx               — AuthProvider + TopProgressBar + Toast + AuthSheet 래핑
+├── layout.tsx               — AuthProvider + TopProgressBar + AuthSheet 래핑
 ├── loading.tsx              — 홈 스켈레톤 ✅ 신규
 ├── @modal/
 │   ├── default.tsx          — 모달 없을 때 null
@@ -265,7 +266,7 @@ src/app/
 ├── submit/
 │   └── page.tsx             — 유저 제보
 ├── me/
-│   ├── page.tsx             — 마이페이지 (저장딜/구독/설정 탭 + 관심카테고리/추천브랜드)
+│   ├── page.tsx             — 마이페이지 (저장딜/구독/설정 탭)
 │   └── loading.tsx          — 마이 스켈레톤 ✅ 신규
 ├── auth/
 │   ├── page.tsx             — 로그인/가입 (바텀시트 연동)
@@ -275,6 +276,8 @@ src/app/
 │   ├── submit/route.ts
 │   ├── actions/route.ts
 │   ├── actions/search/route.ts  — 검색 로그 ✅ 신규
+│   ├── auth/
+│   │   └── signout/route.ts — 서버 사이드 로그아웃 (쿠키 삭제 + 302) ✅ 신규
 │   └── me/
 │       ├── saved-deals/route.ts
 │       ├── follows/merchants/route.ts
@@ -328,6 +331,7 @@ src/app/
 
 ### 메인 앱 — Member (로그인)
 - `GET /auth/callback` — SNS OAuth 콜백 ✅
+- `GET /api/auth/signout` — 서버 사이드 로그아웃 (sb- 쿠키 삭제 + 302 리다이렉트) ✅ 신규
 - `GET|POST|DELETE /api/me/saved-deals` — 딜 저장/해제 ✅
 - `GET|POST|DELETE /api/me/follows/merchants` — 브랜드 구독/해제 ✅
 - `DELETE /api/me/delete-account` — 계정 탈퇴 (soft delete) ✅ 신규
@@ -509,21 +513,35 @@ src/app/
 | 컬럼 | 타입 | 비고 |
 |------|------|------|
 | id | uuid | PK, FK → auth.users |
-| phone | varchar | 전화번호 |
+| phone | varchar | ~~NOT NULL~~ → ✅ nullable (UNIQUE 제약 해제됨) |
 | name | varchar | 이름 |
 | nickname | varchar | 닉네임 |
 | avatar_url | text | |
 | gender | varchar | |
-| birth_year | integer | |
-| interested_categories | uuid[] | 관심 카테고리 |
-| marketing_opt_in | boolean | 마케팅 동의 |
-| marketing_opt_in_at | timestamptz | |
-| role | varchar | user/admin/super_admin |
-| **status** | varchar | ✅ active/withdrawn/banned (신규) |
-| **withdrawn_at** | timestamptz | ✅ 탈퇴 요청 시각 (신규) |
-| **withdraw_reason** | text | ✅ 탈퇴 사유 (신규) |
+| birth_date | varchar | |
+| ci | varchar | 본인인증 CI |
+| di | varchar | 본인인증 DI |
+| interest_categories | uuid[] | 관심 카테고리 (DEFAULT '{}') |
+| marketing_agreed | boolean | 마케팅 동의 (DEFAULT false) |
+| marketing_agreed_at | timestamptz | |
+| marketing_channel | text[] | 마케팅 채널 (DEFAULT '{}') |
+| provider | varchar | 가입 경로 (DEFAULT 'kmc') |
+| linked_providers | text[] | 연결된 제공자 (DEFAULT '{}') |
+| role | varchar | user/admin/super_admin (DEFAULT 'user') |
+| status | varchar | active/withdrawn/banned (DEFAULT 'active') |
+| withdrawn_at | timestamptz | 탈퇴 요청 시각 |
+| withdraw_reason | text | 탈퇴 사유 |
+| last_login_at | timestamptz | |
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
+
+⚠️ **코드↔DB 컬럼명 매핑 (STATUS.md 기존 명칭 vs 실제 DB)**
+| STATUS.md/코드 기존 명칭 | 실제 DB 컬럼명 |
+|---|---|
+| `interested_categories` | `interest_categories` |
+| `marketing_opt_in` | `marketing_agreed` |
+| `marketing_opt_in_at` | `marketing_agreed_at` |
+| `birth_year` (integer) | `birth_date` (varchar) |
 
 ### saved_deals 테이블 ✅ 신규
 | 컬럼 | 타입 | 비고 |
@@ -601,19 +619,36 @@ categories!deals_category_id_fkey (name)
 
 ### 아키텍처
 ```
+[이메일 가입]
 가입 트리거 (로그인 버튼, 딜 저장, 브랜드 구독 등)
   → AuthSheet 바텀시트(모바일)/센터모달(데스크톱) 노출
-    → 이메일 회원가입 또는 SNS 로그인 (카카오/네이버/애플 — 준비 중)
+    → 이메일 회원가입
       → Supabase Auth → profiles 자동 생성 (트리거)
         → 본인인증 KMC/PASS (placeholder, 연휴 후 연동)
           → 관심 카테고리 선택 (혜택 강조형, 선택)
             → 마케팅 동의 (알림톡/푸시/이메일)
+
+[카카오 로그인] ✅ 신규
+AuthSheet → "카카오로 시작하기" 클릭
+  → signInWithOAuth({ provider: 'kakao' })
+    → 카카오 동의 화면 → Supabase 콜백 (/auth/v1/callback)
+      → auth/callback/route.ts 에서 code→session 교환
+        → profiles 조회 → 신규 유저? (interest_categories 비어있고 marketing_agreed null)
+          → 신규: /?onboarding=sns 리다이렉트 → AuthProvider가 감지 → AuthSheet(categories step) 자동 열기
+          → 기존: / 리다이렉트 (바로 로그인 완료)
 
 탈퇴 플로우:
   마이페이지 → 설정 탭 → 회원 탈퇴 (사유 선택)
     → profiles.status = 'withdrawn' (soft delete)
       → 30일 후 어드민 Cron에서 완전 삭제
       → 어드민에서 복구 가능
+
+로그아웃 플로우:
+  TopNav/마이페이지 "로그아웃" <a> 태그 클릭
+    → GET /api/auth/signout (서버 사이드)
+      → sb- 쿠키 전체 삭제 (maxAge: 0)
+      → 302 리다이렉트 → / (홈)
+      → sessionStorage에 토스트 메시지 저장 → layout mount 시 표시
 ```
 
 ### 구현 현황
@@ -629,13 +664,22 @@ categories!deals_category_id_fkey (name)
 - ✅ follows/merchants API (GET/POST/DELETE)
 - ✅ delete-account API (soft delete → status: withdrawn)
 - ✅ TopNav 프로필 드롭다운 (데스크톱) + 로그아웃 리다이렉트
-- ✅ Toast 알림 시스템 (가입/로그인/로그아웃 피드백)
-- ✅ 로그인 이메일 기억하기 (localStorage)
-- ✅ 로그인/회원가입 Enter 키 submit 지원
 - ✅ tracking.ts user_id 연동 (로그인 시 자동 포함)
 - ✅ actions API user_id 저장 + metadata 저장
 - ✅ search_logs API (검색어 기록)
-- ⬜ Supabase Auth Provider 설정 (카카오/네이버/애플)
+- ✅ 서버 사이드 로그아웃 API (`/api/auth/signout`) — sb- 쿠키 삭제 + 302 리다이렉트
+- ✅ AuthProvider TOKEN_REFRESHED 무한루프 방지 (profileLoadedForRef)
+- ✅ AuthProvider initAuth 3초 타임아웃 안전장치
+- ✅ Toast 알림 시스템 (회원가입/로그인/로그아웃 토스트)
+- ✅ 마이페이지 관심 카테고리 수정 + 추천 브랜드 구독 (REST API 직접 호출)
+- ✅ 카카오 OAuth 연동 (Supabase Provider + 카카오 개발자 포털 설정 완료)
+- ✅ SNS 온보딩 플로우 (카카오 신규가입 → callback → categories → marketing)
+- ✅ AuthProvider openAuthSheet 초기 step 파라미터 지원
+- ✅ auth/callback 신규 유저 판단 로직 (interest_categories + marketing_agreed 체크)
+- ✅ profiles.phone UNIQUE 제약 해제 + NOT NULL → NULL 허용 (가입 에러 해결)
+- ✅ handle_new_user 트리거 수정 (phone: NULLIF, provider: 'email' 기본값)
+- ⬜ Supabase Auth Provider 설정 (네이버 — 커스텀 OIDC)
+- ⬜ Supabase Auth Provider 설정 (애플 — 앱 출시 전)
 - ⬜ KMC 본인인증 연동 (placeholder 상태, 연휴 후)
 - ⬜ 카카오 알림톡 (채널 개설 필요)
 
@@ -646,6 +690,15 @@ categories!deals_category_id_fkey (name)
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_... (✅ 신규 키 시스템)
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_... (✅ 신규 키 시스템)
+```
+
+#### 카카오 OAuth (Supabase Provider에 설정, 코드에 환경변수 불필요)
+```
+카카오 REST API Key: 83c8e501803f831f075f7c955d91a000
+카카오 Client Secret: Supabase Provider에 저장됨
+카카오 앱 도메인: https://poppon.vercel.app
+카카오 Redirect URI: https://beniaypzlnygtoqmbvnx.supabase.co/auth/v1/callback
+동의항목: 닉네임(필수), 프로필사진(선택), 이메일(선택 — 비즈앱 전환 시 필수 가능)
 ```
 
 #### 어드민 앱 (.env.local)
@@ -761,7 +814,9 @@ SNS 간편 로그인 (카카오/네이버/애플) → 관심 카테고리(선택
 - ✅ 딜 저장/브랜드 구독 API
 - ✅ 마이페이지 데이터 연동
 - ✅ deal_actions 테이블 + tracking.ts + API 연동
-- ⬜ Supabase OAuth Provider 설정 (카카오/네이버/애플)
+- ✅ 카카오 OAuth 연동 (Supabase Provider + 카카오 개발자 포털 + SNS 온보딩 플로우)
+- ⬜ 네이버 OAuth (커스텀 OIDC)
+- ⬜ 애플 OAuth (앱 출시 후)
 - ⬜ KMC 본인인증
 - ⬜ 카카오 알림톡
 
@@ -985,7 +1040,7 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] 페이지 fade-in 트랜지션 — globals.css에 animate-fade-in 추가, layout.tsx main에 적용
 - [x] layout.tsx 수정 — TopProgressBar 추가 + main에 animate-fade-in 클래스
 
-### 인증 UX 개선 + 토스트 + 로그아웃 수정 (2/17)
+### 인증 UX 개선 + 토스트 시스템 (2/17)
 - [x] Toast 알림 시스템 신규 — Toast.tsx 글로벌 컴포넌트 (다크 배경, 컬러 아이콘, 2.7s 자동 닫힘, slide-down 애니메이션)
 - [x] AuthProvider에 showToast/hideToast 컨텍스트 추가, sessionStorage 기반 setPendingToast (리다이렉트 후 토스트 표시)
 - [x] 회원가입 완료 "회원가입이 완료되었습니다" / 로그인 "로그인되었습니다" / 로그아웃 "로그아웃되었습니다" 토스트
@@ -995,16 +1050,41 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] 홈 CTA 모던화 — 이모지 제거 → Lucide 아이콘(Lightbulb, BellRing), 화살표 hover 애니메이션, 깔끔한 그라디언트
 - [x] 마이페이지 설정 탭 — 관심 카테고리 수정 섹션 (6개 카테고리 토글 칩, profiles.interested_categories DB 저장)
 - [x] 마이페이지 설정 탭 — 추천 브랜드 구독 섹션 (인기 12개 머천트, 팔로우/언팔로우 토글, 검색 링크)
-- [x] TopNav 로그아웃 버그 수정 — document.addEventListener 충돌 제거, 투명 오버레이(z-59) 패턴으로 바깥클릭 감지, 드롭다운 z-60
-- [x] handleSignOut 개선 — `await Promise.race([signOut(), timeout(3s)])` 패턴, 쿠키/localStorage 강제삭제 코드 제거 (Supabase SSR 쿠키 방식 존중)
-- [x] AuthProvider signOut 정리 — 불필요한 localStorage/쿠키 강제삭제 제거, 순수 supabase.auth.signOut() + 상태 초기화만 유지
-- [x] AuthProvider initAuth 안정화 — try-finally로 setIsLoading(false) 보장, fetchProfile try-catch 래핑
 - [x] AuthSheet 로그인/회원가입 Enter 키 submit 지원 — 비밀번호 입력 후 Enter 시 바로 제출 (onKeyDown 핸들러)
+
+### 로그아웃 + 무한루프 근본 해결 (2/17)
+- [x] **근본 원인 1**: AuthProvider `onAuthStateChange`에서 `TOKEN_REFRESHED` 이벤트마다 `fetchProfile` 호출 → Supabase DB 쿼리 → 토큰 갱신 → 다시 `TOKEN_REFRESHED` → **무한루프** — `profileLoadedForRef` + `event !== 'TOKEN_REFRESHED'` 조건으로 차단
+- [x] **근본 원인 2**: 클라이언트 signOut이 `window.location.href` 즉시 실행으로 네트워크 요청 중단 → 쿠키 삭제 미완료 — **서버 사이드 로그아웃 API** (`/api/auth/signout/route.ts`) 신규 생성, sb- 쿠키 일괄 삭제 + 302 리다이렉트
+- [x] **근본 원인 3**: 새로고침 시 Supabase 클라이언트 세션 복원 전에 설정 탭 컴포넌트 쿼리 실행 → 실패 후 `loadedRef=true`로 재시도 차단 — InterestCategoriesSection/RecommendedBrandsSection **public 데이터를 Supabase REST API 직접 호출**로 변경 (인증 상태 무관하게 작동)
+- [x] TopNav/마이페이지 로그아웃 버튼 → `<a href="/api/auth/signout">` 태그로 변경 (JS 상태 무관하게 무조건 작동)
+- [x] AuthProvider initAuth 안전장치 — 3초 safetyTimeout으로 getSession 무한 대기 방지
+- [x] me/page.tsx `loadingTimedOut` 로직 제거 — AuthProvider의 3초 타임아웃으로 대체
+- [x] me/page.tsx 설정 탭 — `loadedRef` 제거, `userId` 의존성 제거 (public 데이터는 마운트 즉시 로드)
+
+### 카카오 OAuth 연동 + DB 수정 (2/17)
+- [x] 카카오 개발자 포털 앱 생성 (POPPON, 주식회사 인비토, 쇼핑 카테고리)
+- [x] 카카오 REST API Key + Client Secret 발급 + 활성화
+- [x] 카카오 Redirect URI 등록 (`https://beniaypzlnygtoqmbvnx.supabase.co/auth/v1/callback`)
+- [x] 카카오 동의항목 설정 (닉네임 필수, 프로필사진/이메일 선택)
+- [x] 카카오 로그인 활성화 + 웹 도메인 등록
+- [x] Supabase Kakao Provider 활성화 (REST API Key + Client Secret)
+- [x] AuthSheet 카카오 버튼 → `handleSNSLogin('kakao')` 연결 (기존 placeholder 제거)
+- [x] auth/callback/route.ts — 신규 유저 판단 로직 추가 (interest_categories + marketing_agreed 체크 → `/?onboarding=sns`)
+- [x] AuthProvider — openAuthSheet 초기 step 파라미터 지원 (onClick 호환: AuthSheetStep | unknown)
+- [x] AuthProvider — URL `onboarding=sns` 감지 → AuthSheet categories step 자동 열기 + URL 파라미터 제거
+- [x] AuthProvider — authSheetInitialStep state + 컨텍스트 제공
+- [x] AuthSheet — authSheetInitialStep 반영하여 열릴 때 해당 step으로 시작
+- [x] AuthSheet — isSNSOnboarding 모드 (카카오 전용 문구: "거의 다 됐어요!", "시작하기", "카카오 로그인이 완료되었습니다")
+- [x] profiles.phone — UNIQUE 제약 해제 (`DROP CONSTRAINT profiles_phone_key`)
+- [x] profiles.phone — NOT NULL → nullable 변경 (`ALTER COLUMN phone DROP NOT NULL`)
+- [x] handle_new_user 트리거 수정 — phone: `COALESCE → NULLIF(NEW.phone, '')`, provider 기본값: `'kmc' → 'email'`
 
 ---
 
 ## 🔴 미해결 버그 / 즉시 처리 필요
 
+- 🚨 **코드↔DB 컬럼명 불일치**: 코드에서 `interested_categories`/`marketing_opt_in`/`marketing_opt_in_at` 사용 중이나 실제 DB는 `interest_categories`/`marketing_agreed`/`marketing_agreed_at` → **AuthSheet, callback/route.ts, me/page.tsx 등에서 저장 실패 중. 코드 수정 필요**
+- ⚠️ **카카오 로그인 후 온보딩 진행 테스트 필요** — 신규 유저 판단 + categories/marketing 저장 동작 확인
 - ⚠️ **Supabase 리전 us-east-1 (미국 동부)** — Free 플랜 기본값. Vercel 서울→Supabase 미국 왕복 ~150ms 잔존. Pro 플랜 전환 시 아시아 리전 이전 검토
 - ⚠️ 홈 서브카피 "283개 브랜드" → 머천트 수 동적 표시 또는 업데이트 필요
 - ⚠️ 일부 구글 이미지 로고 품질 낮음 → 수동 교체 검토
@@ -1015,13 +1095,18 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 ## 🔲 진행 예정 작업
 
 **도메인 연결**
-- [ ] 가비아 DNS 설정 — poppon.kr: A: `@`→Vercel IP, CNAME: `www`→Vercel DNS
-- [ ] Vercel poppon 프로젝트에 poppon.kr 도메인 추가
+- [x] Vercel poppon 프로젝트에 poppon.kr 도메인 추가
+- [ ] 가비아 DNS 설정 — poppon.kr: A: `@`→`216.198.79.1`, CNAME: `www`→Vercel DNS
 - [ ] admin.poppon.kr CNAME 추가 → poppon-admin Vercel 도메인 연결
 - [ ] HTTPS/SSL 자동 발급 확인
 
 **회원 기능 연동**
-- [ ] Supabase Auth Provider 설정 (카카오 OAuth)
+- [x] Supabase Auth Provider 설정 (카카오 OAuth) ✅ 2/17
+- [x] 카카오 개발자 포털 앱 생성 + Redirect URI + 동의항목 설정 ✅ 2/17
+- [x] AuthSheet 카카오 버튼 → signInWithOAuth 연결 ✅ 2/17
+- [x] SNS 온보딩 플로우 (callback → 신규판단 → categories → marketing) ✅ 2/17
+- [x] profiles.phone UNIQUE 해제 + 트리거 수정 ✅ 2/17
+- [ ] **코드↔DB 컬럼명 불일치 수정 (interest_categories/marketing_agreed)** ← 다음 즉시
 - [ ] Supabase Auth Provider 설정 (네이버 — 커스텀 OIDC)
 - [ ] Supabase Auth Provider 설정 (애플 — 앱 출시 전)
 - [ ] KMC 본인인증 연동 (연휴 후)
@@ -1083,9 +1168,14 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - **Vercel Function Region**: 메인 앱 서울(icn1) 설정 완료. 어드민도 서울 설정 권장. 리전 변경 후 Redeploy 필요
 - **DealDetailClient 캐시**: dealCache는 메모리(클라이언트) 한정. 새로고침 시 초기화됨. 문제 시 캐시 무효화 로직 추가 필요
 - **PowerShell [id] 폴더**: `Remove-Item`/`ls` 시 `-LiteralPath` 사용 필수 (대괄호를 특수문자로 인식)
-- **TopNav 드롭다운 클릭 감지**: document.addEventListener('click') 패턴은 이벤트 버블링으로 버튼 onClick보다 먼저 실행되어 드롭다운이 닫힘 → 투명 오버레이(z-59) + 드롭다운(z-60) 패턴 사용 필수
-- **Supabase SSR 로그아웃**: Supabase SSR(@supabase/ssr)은 쿠키 기반 세션 관리 → localStorage/쿠키 강제삭제 불필요, supabase.auth.signOut()만 호출하면 됨. 강제삭제 시 오히려 세션 꼬임 발생
+- **AuthProvider TOKEN_REFRESHED**: `onAuthStateChange`에서 `TOKEN_REFRESHED` 이벤트 시 DB 쿼리(fetchProfile) 절대 금지 — 무한루프 발생. `profileLoadedForRef`로 중복 방지 필수
+- **로그아웃**: 클라이언트 `supabase.auth.signOut()` + `window.location.href` 조합은 구조적으로 불안정 — 반드시 서버 사이드 API(`/api/auth/signout`)에서 쿠키 삭제 후 리다이렉트. `<a>` 태그 사용 필수
+- **설정 탭 public 데이터**: categories/merchants 등 public 테이블 조회 시 Supabase 클라이언트 대신 REST API 직접 호출 (`fetch + apikey 헤더`) — 클라이언트 인증 상태와 무관하게 작동
 - **Toast 시스템**: AuthProvider의 showToast/setPendingToast 사용. 리다이렉트 후 토스트는 sessionStorage('poppon_pending_toast')에 저장 → layout mount 시 표시
+- **🚨 DB 컬럼명 불일치**: STATUS.md/코드에서 `interested_categories`/`marketing_opt_in`/`marketing_opt_in_at` 사용 → 실제 DB는 `interest_categories`/`marketing_agreed`/`marketing_agreed_at`. 코드 전수 수정 필요
+- **카카오 OAuth**: REST API Key `83c8e501803f831f075f7c955d91a000`, 앱 도메인 `poppon.vercel.app`. 도메인 변경 시 카카오 포털에서도 업데이트 필요
+- **openAuthSheet 타입**: `(initialStepOrEvent?: AuthSheetStep | unknown) => void` — onClick에 직접 전달 가능 + `openAuthSheet('categories')` 호출도 가능
+- **profiles.phone**: NOT NULL + UNIQUE 제약 해제됨. KMC 본인인증 연동 시 UNIQUE 재적용 검토
 
 ---
 
@@ -1115,7 +1205,9 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | **팝폰-회원가입+행동추적+어드민회원관리** | **2/16** | **AuthSheet 6단계(이메일가입/로그인/본인인증placeholder/카테고리/마케팅동의), soft delete 탈퇴, tracking user_id 연동, search_logs, 어드민 회원목록/상세/행동로그, Vercel 로딩 버그 미해결** |
 | **팝폰-성능최적화+UX부드러움** | **2/17** | **Supabase client.ts 싱글톤, Vercel 리전 북미→서울, DealModal 애니메이션, DealDetailClient 캐시, TopProgressBar, loading.tsx 5개, fade-in 트랜지션** |
 | **팝폰-인증UX+토스트+로그아웃수정** | **2/17** | **Toast 알림 시스템, 이메일 기억하기, 홈 CTA Lucide 아이콘, 마이페이지 관심카테고리/추천브랜드, TopNav 로그아웃 오버레이 패턴 수정, signOut await+타임아웃, Enter키 submit** |
+| **팝폰-로그아웃+무한루프디버깅** | **2/17** | **TOKEN_REFRESHED 무한루프 근본 차단(profileLoadedForRef), 서버 사이드 로그아웃 API(/api/auth/signout), 설정 탭 public 데이터 REST API 직접 호출, initAuth 3초 타임아웃, loadingTimedOut 제거** |
+| **팝폰-카카오OAuth+SNS온보딩** | **2/17** | **카카오 개발자 포털 설정, Supabase Kakao Provider 연결, AuthSheet 카카오 버튼 연결, SNS 온보딩 플로우(callback→신규판단→categories→marketing), profiles.phone UNIQUE 해제, handle_new_user 트리거 수정, DB 컬럼명 불일치 발견(interest_categories/marketing_agreed)** |
 
 ---
 
-*마지막 업데이트: 2026-02-17 (인증 UX: Toast 알림 + 이메일 기억하기 + 홈 CTA 모던화 + 마이페이지 관심카테고리/추천브랜드 + TopNav 로그아웃 오버레이 패턴 + Enter키 submit)*
+*마지막 업데이트: 2026-02-17 (카카오 OAuth 연동 + SNS 온보딩 플로우 + profiles.phone UNIQUE 해제 + DB 컬럼명 불일치 발견)*

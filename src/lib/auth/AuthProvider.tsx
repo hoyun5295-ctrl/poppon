@@ -13,6 +13,9 @@ interface ToastState {
   visible: boolean;
 }
 
+// AuthSheet에서 사용하는 step 타입
+export type AuthSheetStep = 'main' | 'signup' | 'login' | 'identity' | 'categories' | 'marketing';
+
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
@@ -21,10 +24,12 @@ interface AuthContextType {
   isLoggedIn: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  /** 가입/로그인 필요 시 바텀시트 열기 */
-  openAuthSheet: () => void;
+  /** 가입/로그인 필요 시 바텀시트 열기 (초기 step 지정 가능) */
+  openAuthSheet: (initialStepOrEvent?: AuthSheetStep | unknown) => void;
   closeAuthSheet: () => void;
   isAuthSheetOpen: boolean;
+  /** AuthSheet 열릴 때 초기 step */
+  authSheetInitialStep: AuthSheetStep;
   /** 인증이 필요한 액션 래퍼 - 비로그인 시 바텀시트 */
   requireAuth: (callback: () => void) => void;
   /** 토스트 */
@@ -43,12 +48,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthSheetOpen, setIsAuthSheetOpen] = useState(false);
+  const [authSheetInitialStep, setAuthSheetInitialStep] = useState<AuthSheetStep>('main');
   const [toast, setToast] = useState<ToastState>({ message: '', type: 'success', visible: false });
 
   const supabase = createClient();
 
   // ✅ 핵심: 프로필을 이미 로드한 userId를 추적 — 중복 호출 방지
   const profileLoadedForRef = useRef<string | null>(null);
+  // 온보딩 처리 완료 여부 (중복 방지)
+  const onboardingHandledRef = useRef(false);
 
   // ── Toast 함수 ──
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
@@ -70,6 +78,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch { /* ignore */ }
   }, [showToast]);
+
+  // ── URL에서 onboarding=sns 감지 → AuthSheet 자동 열기 ──
+  useEffect(() => {
+    if (onboardingHandledRef.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('onboarding') === 'sns') {
+      onboardingHandledRef.current = true;
+
+      // URL에서 파라미터 제거 (히스토리 깔끔하게)
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, '', cleanUrl);
+
+      // 약간의 딜레이 후 AuthSheet를 categories step으로 열기
+      // (auth 상태가 먼저 세팅되도록)
+      setTimeout(() => {
+        setAuthSheetInitialStep('categories');
+        setIsAuthSheetOpen(true);
+      }, 500);
+    }
+  }, []);
 
   // 프로필 조회
   const fetchProfile = useCallback(async (userId: string) => {
@@ -162,8 +191,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profileLoadedForRef.current = null;
   };
 
-  const openAuthSheet = () => setIsAuthSheetOpen(true);
-  const closeAuthSheet = () => setIsAuthSheetOpen(false);
+  const openAuthSheet = useCallback((initialStepOrEvent?: AuthSheetStep | unknown) => {
+    const step: AuthSheetStep = (typeof initialStepOrEvent === 'string') ? initialStepOrEvent as AuthSheetStep : 'main';
+    setAuthSheetInitialStep(step);
+    setIsAuthSheetOpen(true);
+  }, []);
+
+  const closeAuthSheet = useCallback(() => {
+    setIsAuthSheetOpen(false);
+    setAuthSheetInitialStep('main'); // 다음번 열릴 때를 위해 리셋
+  }, []);
 
   const requireAuth = (callback: () => void) => {
     if (user) {
@@ -186,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         openAuthSheet,
         closeAuthSheet,
         isAuthSheetOpen,
+        authSheetInitialStep,
         requireAuth,
         toast,
         showToast,

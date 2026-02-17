@@ -7,8 +7,7 @@ import {
   ShieldCheck, Check, Bell, MessageCircle, Sparkles,
   Shirt, UtensilsCrossed, Home, Plane, LayoutGrid
 } from 'lucide-react';
-import { useAuth } from '@/lib/auth/AuthProvider';
-import type { AuthSheetStep } from '@/lib/auth/AuthProvider';
+import { useAuth, type AuthSheetStep } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
 
 type AuthStep = AuthSheetStep;

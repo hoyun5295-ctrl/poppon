@@ -45,7 +45,7 @@ function AuthContent() {
         </p>
 
         <button
-          onClick={openAuthSheet}
+          onClick={() => openAuthSheet()}
           className="mt-6 w-full h-12 rounded-xl bg-red-500 text-white font-semibold
                      hover:bg-red-600 transition-colors"
         >

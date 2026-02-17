@@ -1,4 +1,4 @@
-# POPPON 프로젝트 STATUS
+﻿# POPPON 프로젝트 STATUS
 
 ## 프로젝트 개요
 - **제품명**: POPPON (K-RetailMeNot)
@@ -149,6 +149,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | **계정 탈퇴 API** | `src/app/api/me/delete-account/route.ts` ✅ 신규 |
 | **검색 로그 API** | `src/app/api/actions/search/route.ts` ✅ 신규 |
 | **로그아웃 API** | `src/app/api/auth/signout/route.ts` ✅ 신규 |
+| **네이버 OAuth 시작** | `src/app/api/auth/naver/route.ts` ✅ 신규 |
+| **네이버 OAuth 콜백** | `src/app/auth/callback/naver/route.ts` ✅ 신규 |
 
 ### 🔴 poppon-admin (어드민 앱)
 
@@ -270,14 +272,17 @@ src/app/
 │   └── loading.tsx          — 마이 스켈레톤 ✅ 신규
 ├── auth/
 │   ├── page.tsx             — 로그인/가입 (바텀시트 연동)
-│   └── callback/
-│       └── route.ts         — SNS OAuth 콜백
+│   ├── callback/
+│   │   ├── route.ts         — SNS OAuth 콜백 (카카오)
+│   │   └── naver/
+│   │       └── route.ts     — 네이버 OAuth 콜백 ✅ 신규
 ├── api/
 │   ├── submit/route.ts
 │   ├── actions/route.ts
 │   ├── actions/search/route.ts  — 검색 로그 ✅ 신규
 │   ├── auth/
 │   │   └── signout/route.ts — 서버 사이드 로그아웃 (쿠키 삭제 + 302) ✅ 신규
+│   │   └── naver/route.ts   — 네이버 OAuth 시작 (리다이렉트) ✅ 신규
 │   └── me/
 │       ├── saved-deals/route.ts
 │       ├── follows/merchants/route.ts
@@ -406,10 +411,10 @@ src/app/
 ## DB 테이블 (주요)
 | 테이블 | 상태 | 데이터 |
 |--------|------|--------|
-| deals | ✅ | **~639 active** |
+| deals | ✅ | **~1,995 전체 크롤 / ~610+ active** (2/17 풀크롤 완료) |
 | merchants | ✅ | **~339개** (전원 로고+brand_color 보유) |
 | categories | ✅ | **6개 active** / 6개 비활성 |
-| crawl_connectors | ✅ | **256 active** / 157 disabled / 0 error |
+| crawl_connectors | ✅ | **242 active** / 171 disabled / 0 error (2/17 풀크롤 후) |
 | deal_actions | ✅ | 72건+ (트래킹 작동중) |
 | submissions | ✅ | 0 |
 | **profiles** | ✅ | 0 (신규 테이블) |
@@ -1080,15 +1085,18 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] handle_new_user 트리거 수정 — phone: `COALESCE → NULLIF(NEW.phone, '')`, provider 기본값: `'kmc' → 'email'`
 
 ---
+- **네이버 OAuth**: Supabase 빌트인 미지원 → 수동 OAuth 플로우. `/api/auth/naver`(시작) + `/auth/callback/naver`(콜백). admin.createUser → generateLink → verifyOtp 패턴. 네이버 개발자센터 Callback URL 변경 시 코드도 동기화 필요
+- **네이버 OAuth 환경변수**: `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` — .env.local + Vercel 환경변수 모두 설정 필수 (poppon만, admin 불필요)
+- **Supabase admin API**: `updateUser` 아님, **`updateUserById`** 사용 필수 (GoTrueAdminApi 타입)
 
 ## 🔴 미해결 버그 / 즉시 처리 필요
 
-- 🚨 **코드↔DB 컬럼명 불일치**: 코드에서 `interested_categories`/`marketing_opt_in`/`marketing_opt_in_at` 사용 중이나 실제 DB는 `interest_categories`/`marketing_agreed`/`marketing_agreed_at` → **AuthSheet, callback/route.ts, me/page.tsx 등에서 저장 실패 중. 코드 수정 필요**
+- ~~🚨 코드↔DB 컬럼명 불일치~~ → ✅ 해결 (2/17)
 - ⚠️ **카카오 로그인 후 온보딩 진행 테스트 필요** — 신규 유저 판단 + categories/marketing 저장 동작 확인
-- ⚠️ **Supabase 리전 us-east-1 (미국 동부)** — Free 플랜 기본값. Vercel 서울→Supabase 미국 왕복 ~150ms 잔존. Pro 플랜 전환 시 아시아 리전 이전 검토
-- ⚠️ 홈 서브카피 "283개 브랜드" → 머천트 수 동적 표시 또는 업데이트 필요
-- ⚠️ 일부 구글 이미지 로고 품질 낮음 → 수동 교체 검토
-- ⚠️ poppon-admin에 layout.tsx 수정 커밋 아직 미반영 (로컬 파일 교체 + git push 필요)
+- ~~⚠️ Supabase 리전 us-east-1~~ → ✅ 확인 결과 **서울(ap-northeast-2)** 정상 (2/17)
+- ~~⚠️ 홈 서브카피 "283개 브랜드"~~ → ✅ 동적 표시 완료 — DB에서 merchants/deals count 쿼리 + 볼드+컬러(primary/amber) (2/17)
+- ⚠️ 일부 구글 이미지 로고 품질 낮음 → 5개 교체 완료(이마트/크리스피크림/교촌/안다르/이디야), 나머지 진행 중
+- ~~⚠️ poppon-admin layout.tsx 커밋 미반영~~ → ✅ 적용 완료 (2/17)
 
 ---
 
@@ -1107,10 +1115,10 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 - [x] SNS 온보딩 플로우 (callback → 신규판단 → categories → marketing) ✅ 2/17
 - [x] profiles.phone UNIQUE 해제 + 트리거 수정 ✅ 2/17
 - [x] **코드↔DB 컬럼명 불일치 수정 (interest_categories/marketing_agreed)** ✅ 2/17 — 4파일 12곳
-- [ ] Supabase Auth Provider 설정 (네이버 — 커스텀 OIDC)
+- - [x] **네이버 OAuth 연동 (수동 OAuth 플로우 — admin.createUser+generateLink+verifyOtp)** ✅ 2/17
 - [ ] Supabase Auth Provider 설정 (애플 — 앱 출시 전)
 - [ ] KMC 본인인증 연동 (연휴 후)
-- [ ] 가입 플로우 E2E 테스트
+- [x] 가입 플로우 E2E 테스트 → 수동 테스트 통과 ✅ 2/17
 - [ ] 카카오 알림톡 (채널 개설 필요)
 - [ ] 검색 페이지에서 trackSearch 호출 연동
 
@@ -1121,17 +1129,20 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 **크롤러 운영 안정화**
 - [x] Vercel 서버리스 Puppeteer 호환 (puppeteer-core + @sparticuz/chromium) ✅ 2/17
 - [x] 크롤 배치 프론트 순차 호출 + 실시간 진행률 UI ✅ 2/17
-- [ ] 최초 풀크롤 256개 실행 (진행 중 2/17)
+- [x] 최초 풀크롤 256개 실행 ✅ 2/17 — 208/256 성공(81%), 실패 48, 신규 81딜, 업데이트 415, 비용 $2.92, 90분
 - [ ] 일부 머천트 official_url 추가 수정 (까사미아→guud.com 등)
 
 **UI 반영**
-- [ ] 홈 서브카피 머천트 수 반영
+- [x] 홈 서브카피 머천트 수+딜 수 동적 표시 (볼드+컬러 강조) ✅ 2/17
+- [x] 검색 개선 — 중복 검색창 제거 + 머천트명 검색 + 브랜드 바로가기 카드 ✅ 2/17
+- [x] 로고 고품질 교체 5종 (이마트/크리스피크림/교촌/안다르/이디야) ✅ 2/17
 
 **인프라**
-- [ ] 가비아 클라우드 Standard 4vCore/16GB 신청 + Docker 세팅
-- [ ] Supabase → 자체 PostgreSQL 마이그레이션 (pg_dump)
-- [ ] poppon-admin + 크롤러 가비아 서버 이관
-- [ ] Docker Compose 구성 (PostgreSQL + Next.js + Puppeteer)
+- [x] **Supabase Pro 업그레이드 ($25/월)** ✅ 2/17
+- [x] **인프라 현 구성 유지 확정: Vercel Pro×2 + Supabase Pro = $65/월 (약 9만원)** ✅ 2/17
+- [ ] ~~가비아 클라우드~~ → 보류 (현 구성으로 충분, 필요 시 재검토)
+- [ ] ~~Supabase → 자체 PostgreSQL~~ → 보류 (Supabase Pro 유지)
+- [ ] Docker Compose 구성 — 트래픽 증가 시 이관용 준비
 - [ ] Cron 자동 크롤 설정 (하루 2회)
 
 ---
@@ -1143,14 +1154,14 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 
 ---
 
-## 🖥️ 인프라 설계 (합의 2/17)
-- **현재**: Vercel Pro ($20/월 × 2) — 메인(서울 icn1) + 어드민 각각
-- **이관 로드맵**:
-  - **1단계**: 가비아 클라우드 Standard 4vCore/16GB (월 15만원) — 어드민+크롤러+PostgreSQL
-  - **2단계**: 트래픽 증가 시 업그레이드 또는 IDC 상용서버 전환
-  - **최종**: IDC 상용서버 (HPE DL20 Gen11 등) — 전체 서비스 Docker 통합
-- **최종 구조**: poppon(사용자웹) → Vercel 유지(CDN) / poppon-admin+크롤러+DB → 자체 서버
-- **DB 방향**: Supabase → 자체 PostgreSQL (Docker) — 한줄로AI와 동일 패턴
+## 🖥️ 인프라 설계 (확정 2/17)
+- **현재 (확정)**: Vercel Pro ($20/월 × 2) + Supabase Pro ($25/월) = **$65/월 (약 9만원)**
+  - 메인앱: Vercel (서울 icn1, CDN + 서버리스 자동 스케일)
+  - 어드민: Vercel (서울)
+  - DB: Supabase Pro (200 동시커넥션, 8GB, 일 7회 백업, **서울 ap-northeast-2** ✅ 확인)
+- **결정 근거**: 서버리스 = 트래픽 몰려도 안 터짐(과금만 증가), 가비아 4C/16GB 단일서버보다 안정적
+- **향후 이관 트리거**: Supabase 비용이 월 $100+ 넘거나 크롤 규모 수천 건 시 자체 서버 검토
+- **최종 구조 (변동 없음)**: poppon → Vercel 유지(CDN) / poppon-admin+크롤러+DB → 자체 서버 (시기 미정)
 
 ---
 
@@ -1216,7 +1227,8 @@ DB 18개 테이블 + RLS, 전체 페이지 (홈/검색/카테고리/브랜드관
 | **팝폰-로그아웃+무한루프디버깅** | **2/17** | **TOKEN_REFRESHED 무한루프 근본 차단(profileLoadedForRef), 서버 사이드 로그아웃 API(/api/auth/signout), 설정 탭 public 데이터 REST API 직접 호출, initAuth 3초 타임아웃, loadingTimedOut 제거** |
 | **팝폰-카카오OAuth+SNS온보딩** | **2/17** | **카카오 개발자 포털 설정, Supabase Kakao Provider 연결, AuthSheet 카카오 버튼 연결, SNS 온보딩 플로우(callback→신규판단→categories→marketing), profiles.phone UNIQUE 해제, handle_new_user 트리거 수정, DB 컬럼명 불일치 발견(interest_categories/marketing_agreed)** |
 | **팝폰-컬럼수정+크롤러서버리스+인프라논의** | **2/17** | **DB 컬럼명 불일치 전수 수정(4파일 12곳), Vercel Puppeteer 호환(puppeteer-core+@sparticuz/chromium), 크롤 배치 프론트 순차 호출+실시간 진행률 UI, 인프라 방향 합의(가비아→IDC), 최초 풀크롤 실행** |
-
+| **팝폰-네이버OAuth+인프라확정** | **2/17** | **인프라 현 구성 유지 확정(Vercel+Supabase Pro $65/월), Supabase Pro 업그레이드, 네이버 OAuth 수동 플로우(api/auth/naver+callback/naver, admin.createUser+generateLink+verifyOtp), AuthSheet 네이버 버튼 연결, updateUserById 타입 수정** |
+| **팝폰-STATUS+검색개선+로고교체** | **2/17** | **Supabase 리전 서울 확인, 홈 서브카피 브랜드+딜 수 동적 표시(볼드+컬러), 풀크롤 256개 완료(208성공/$2.92), 로고 5종 교체(이마트/크리스피크림/교촌/안다르/이디야), 검색 개선(중복검색창 제거+머천트명 검색+브랜드 바로가기), E2E 수동 테스트 통과** |
 ---
 
-*마지막 업데이트: 2026-02-17 (DB 컬럼명 수정 + Vercel Puppeteer 호환 + 크롤 배치 순차호출 UI + 인프라 방향 합의 + 최초 풀크롤 실행)*
+*마지막 업데이트: 2026-02-17 (검색 개선 + 홈 서브카피 동적 표시 + 로고 교체 + 풀크롤 완료 + Supabase 서울 확인)*

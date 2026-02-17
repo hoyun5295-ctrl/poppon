@@ -12,7 +12,7 @@ export default async function HomePage() {
   const threeDaysLater = new Date(Date.now() + 1000 * 60 * 60 * 72).toISOString();
 
   // 병렬로 4개 섹션 데이터 가져오기
-  const [trendingRes, newRes, endingSoonRes, merchantCountRes] = await Promise.all([
+  const [trendingRes, newRes, endingSoonRes, merchantCountRes, dealCountRes] = await Promise.all([
     filterActiveDeals(
       supabase.from('deals').select(DEAL_CARD_SELECT),
       now
@@ -43,15 +43,23 @@ export default async function HomePage() {
     supabase
       .from('merchants')
       .select('id', { count: 'exact', head: true }),
+
+    // 활성 딜 수 카운트
+    supabase
+      .from('deals')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active'),
   ]);
 
   const trendingDeals = (trendingRes.data || []).map(toDealCard);
   const newDeals = (newRes.data || []).map(toDealCard);
   const endingSoonDeals = (endingSoonRes.data || []).map(toDealCard);
   const merchantCount = merchantCountRes.count || 0;
+  const dealCount = dealCountRes.count || 0;
 
-  // 10 단위 내림 (339 → 330+)
-  const displayCount = Math.floor(merchantCount / 10) * 10;
+  // 10 단위 내림 (339 → 330+, 1995 → 1,990+)
+  const displayMerchantCount = Math.floor(merchantCount / 10) * 10;
+  const displayDealCount = Math.floor(dealCount / 10) * 10;
 
   function dedupeByMerchant(deals: DealCard[], maxPerMerchant = 1): DealCard[] {
     const count: Record<string, number> = {};
@@ -71,7 +79,9 @@ export default async function HomePage() {
           한 곳에서
         </h1>
         <p className="mt-2 sm:mt-3 text-surface-500 text-xs sm:text-sm lg:text-base">
-          {displayCount > 0 ? `${displayCount}개+ 브랜드의 ` : ''}쿠폰, 프로모션 코드, 할인 이벤트를 검색하세요
+          {displayMerchantCount > 0 && displayDealCount > 0
+            ? `${displayMerchantCount.toLocaleString()}개+ 브랜드, ${displayDealCount.toLocaleString()}개+ 딜의 할인 정보를 검색하세요`
+            : '쿠폰, 프로모션 코드, 할인 이벤트를 검색하세요'}
         </p>
       </section>
 

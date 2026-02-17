@@ -13,15 +13,15 @@ export function Footer() {
               한국의 모든 할인/쿠폰/프로모션을 한 곳에서
             </p>
 
-            <div className="mt-4 flex flex-col gap-1 text-[11px] text-surface-500 leading-relaxed">
-              <p>주식회사 인비토 · 대표 유호윤</p>
-              <p>사업자등록번호 667-86-00578</p>
-              <p>통신판매업 제 2017-서울송파-0160호</p>
+            <div className="mt-4 flex flex-col gap-1 text-[13px] text-surface-500 leading-relaxed">
+              <p><span className="font-semibold text-surface-400">주식회사 인비토</span> · 대표 <span className="font-semibold text-surface-400">유호윤</span></p>
+              <p>사업자등록번호 <span className="font-semibold text-surface-400">667-86-00578</span></p>
+              <p>통신판매업 <span className="font-semibold text-surface-400">제 2017-서울송파-0160호</span></p>
               <p>서울시 송파구 오금로36길46, 4층</p>
               <p>
-                <a href="tel:1800-8125" className="hover:text-white transition-colors">1800-8125</a>
+                <a href="tel:1800-8125" className="font-semibold text-surface-400 hover:text-white transition-colors">1800-8125</a>
                 {' · '}
-                <a href="mailto:webmaster@poppon.kr" className="hover:text-white transition-colors">webmaster@poppon.kr</a>
+                <a href="mailto:webmaster@poppon.kr" className="font-semibold text-surface-400 hover:text-white transition-colors">webmaster@poppon.kr</a>
               </p>
             </div>
           </div>

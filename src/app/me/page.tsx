@@ -39,7 +39,7 @@ export default function MyPage() {
           로그인하면 딜 저장, 브랜드 구독, 알림 설정을 이용할 수 있어요
         </p>
         <button
-          onClick={openAuthSheet}
+          onClick={() => openAuthSheet()}
           className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition-colors"
         >
           <Smartphone className="w-4 h-4" />
@@ -371,7 +371,7 @@ function SettingsTab({ profile, user, onRefresh }: {
         <ToggleSetting
           label="마케팅 정보 수신 동의"
           desc="할인/프로모션 관련 마케팅 정보를 받습니다"
-          defaultOn={profile?.marketing_opt_in || false}
+          defaultOn={profile?.marketing_agreed || false}
         />
         <p className="text-xs text-surface-400 mt-3">
           동의를 철회하면 마케팅 관련 알림이 즉시 중단됩니다.
@@ -443,7 +443,7 @@ function SettingsTab({ profile, user, onRefresh }: {
 function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: any; onRefresh: () => Promise<void>; userId?: string }) {
   const { showToast } = useAuth();
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
-  const [selected, setSelected] = useState<string[]>(profile?.interested_categories || []);
+  const [selected, setSelected] = useState<string[]>(profile?.interest_categories || []);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -457,10 +457,10 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
   }, []);
 
   useEffect(() => {
-    const original = profile?.interested_categories || [];
+    const original = profile?.interest_categories || [];
     const changed = selected.length !== original.length || selected.some((id: string) => !original.includes(id));
     setHasChanges(changed);
-  }, [selected, profile?.interested_categories]);
+  }, [selected, profile?.interest_categories]);
 
   const toggle = (id: string) => {
     setSelected(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
@@ -473,7 +473,7 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        await supabase.from('profiles').update({ interested_categories: selected }).eq('id', session.user.id);
+        await supabase.from('profiles').update({ interest_categories: selected }).eq('id', session.user.id);
         await onRefresh();
         showToast('관심 카테고리가 저장되었습니다', 'success');
         setHasChanges(false);

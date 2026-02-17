@@ -8,9 +8,10 @@ import {
   Shirt, UtensilsCrossed, Home, Plane, LayoutGrid
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import type { AuthSheetStep } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
 
-type AuthStep = 'main' | 'signup' | 'login' | 'identity' | 'categories' | 'marketing';
+type AuthStep = AuthSheetStep;
 
 interface CategoryOption {
   id: string;
@@ -33,11 +34,15 @@ const REMEMBER_EMAIL_KEY = 'poppon_remember_email';
 /**
  * AuthSheet — 가입/로그인 바텀시트
  *
- * 신규가입: main → signup → identity → categories → marketing → 완료
- * 로그인:   main → login → 완료
+ * 이메일 신규가입: main → signup → identity → categories → marketing → 완료
+ * SNS 신규가입:   카카오 OAuth → callback → /?onboarding=sns → categories → marketing → 완료
+ * 로그인:         main → login → 완료
  */
 export function AuthSheet() {
-  const { isAuthSheetOpen, closeAuthSheet, refreshProfile, showToast } = useAuth();
+  const {
+    isAuthSheetOpen, closeAuthSheet, refreshProfile, showToast,
+    authSheetInitialStep, user
+  } = useAuth();
   const [step, setStep] = useState<AuthStep>('main');
 
   // 회원가입 폼
@@ -59,11 +64,27 @@ export function AuthSheet() {
   const [marketingPush, setMarketingPush] = useState(false);
   const [marketingEmail, setMarketingEmail] = useState(false);
 
+  // SNS 온보딩 모드 (뒤로가기 없이 categories→marketing만)
+  const [isSNSOnboarding, setIsSNSOnboarding] = useState(false);
+
   // 공통
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const supabase = createClient();
+
+  // ── AuthSheet가 열릴 때 초기 step 적용 ──
+  useEffect(() => {
+    if (isAuthSheetOpen) {
+      setStep(authSheetInitialStep);
+      // categories/marketing step으로 바로 열리면 SNS 온보딩 모드
+      if (authSheetInitialStep === 'categories' || authSheetInitialStep === 'marketing') {
+        setIsSNSOnboarding(true);
+      } else {
+        setIsSNSOnboarding(false);
+      }
+    }
+  }, [isAuthSheetOpen, authSheetInitialStep]);
 
   // 저장된 이메일 불러오기
   useEffect(() => {
@@ -205,7 +226,7 @@ export function AuthSheet() {
     }
   };
 
-  // ── SNS 로그인 (미래용) ──
+  // ── SNS 로그인 ──
   const handleSNSLogin = async (provider: 'kakao' | 'google') => {
     setLoading(true);
     setError('');
@@ -227,12 +248,22 @@ export function AuthSheet() {
   // ── 관심 카테고리 저장 ──
   const handleSaveCategories = async () => {
     if (selectedCategories.length > 0) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      // SNS 온보딩 모드에서는 이미 로그인된 상태이므로 user가 있음
+      const currentUser = user;
+      if (currentUser) {
         await supabase
           .from('profiles')
-          .update({ interested_categories: selectedCategories })
-          .eq('id', user.id);
+          .update({ interest_categories: selectedCategories })
+          .eq('id', currentUser.id);
+      } else {
+        // 이메일 가입 플로우: supabase.auth.getUser()로 확인
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          await supabase
+            .from('profiles')
+            .update({ interest_categories: selectedCategories })
+            .eq('id', authUser.id);
+        }
       }
     }
     setStep('marketing');
@@ -242,26 +273,38 @@ export function AuthSheet() {
   const handleSaveMarketing = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const hasConsent = marketingKakao || marketingPush || marketingEmail;
-        await supabase
-          .from('profiles')
-          .update({
-            marketing_opt_in: hasConsent,
-            marketing_opt_in_at: hasConsent ? new Date().toISOString() : null,
-          })
-          .eq('id', user.id);
+      const currentUser = user;
+      const userId = currentUser?.id;
+
+      if (!userId) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          await saveMarketingData(authUser.id);
+        }
+      } else {
+        await saveMarketingData(userId);
       }
+
       await refreshProfile();
-      showToast('회원가입이 완료되었습니다', 'success');
+      showToast(isSNSOnboarding ? '카카오 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
       handleComplete();
     } catch {
-      showToast('회원가입이 완료되었습니다', 'success');
+      showToast(isSNSOnboarding ? '카카오 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
       handleComplete();
     } finally {
       setLoading(false);
     }
+  };
+
+  const saveMarketingData = async (userId: string) => {
+    const hasConsent = marketingKakao || marketingPush || marketingEmail;
+    await supabase
+      .from('profiles')
+      .update({
+        marketing_agreed: hasConsent,
+        marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
+      })
+      .eq('id', userId);
   };
 
   // ── 카테고리 토글 ──
@@ -293,6 +336,7 @@ export function AuthSheet() {
     setMarketingKakao(false);
     setMarketingPush(false);
     setMarketingEmail(false);
+    setIsSNSOnboarding(false);
     // 저장된 이메일이 있으면 유지, 없으면 초기화
     try {
       const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
@@ -349,7 +393,7 @@ export function AuthSheet() {
                 <div className="space-y-2.5">
                   {/* 카카오 */}
                   <button
-                    onClick={() => setError('카카오 로그인은 준비 중입니다')}
+                    onClick={() => handleSNSLogin('kakao')}
                     disabled={loading}
                     className="flex items-center justify-center gap-3 w-full h-12 rounded-xl font-semibold text-sm transition-colors"
                     style={{ backgroundColor: '#FEE500', color: '#191919' }}
@@ -671,11 +715,20 @@ export function AuthSheet() {
                     <Bell className="w-8 h-8 text-red-500" />
                   </div>
                   <h2 className="text-xl font-bold text-gray-900">
-                    관심 카테고리를 선택하세요
+                    {isSNSOnboarding ? '거의 다 됐어요!' : '관심 카테고리를 선택하세요'}
                   </h2>
                   <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
-                    선택한 카테고리의 <span className="font-semibold text-red-500">새로운 할인·쿠폰</span>이
-                    <br />올라오면 <span className="font-semibold text-red-500">바로 알려드려요!</span>
+                    {isSNSOnboarding ? (
+                      <>
+                        관심 카테고리를 선택하면<br />
+                        <span className="font-semibold text-red-500">맞춤 할인 알림</span>을 받을 수 있어요
+                      </>
+                    ) : (
+                      <>
+                        선택한 카테고리의 <span className="font-semibold text-red-500">새로운 할인·쿠폰</span>이
+                        <br />올라오면 <span className="font-semibold text-red-500">바로 알려드려요!</span>
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -799,11 +852,17 @@ export function AuthSheet() {
                   className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
                              hover:bg-red-600 disabled:bg-gray-200 transition-colors"
                 >
-                  {loading ? '완료 중...' : '가입 완료'}
+                  {loading ? '완료 중...' : (isSNSOnboarding ? '시작하기' : '가입 완료')}
                 </button>
 
                 <button
-                  onClick={() => { showToast('회원가입이 완료되었습니다', 'success'); handleComplete(); }}
+                  onClick={() => {
+                    showToast(
+                      isSNSOnboarding ? '카카오 로그인이 완료되었습니다' : '회원가입이 완료되었습니다',
+                      'success'
+                    );
+                    handleComplete();
+                  }}
                   className="w-full mt-2 py-2 text-sm text-gray-400 hover:text-gray-600"
                 >
                   건너뛰기

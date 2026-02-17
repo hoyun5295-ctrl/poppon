@@ -195,8 +195,8 @@ export interface User {
   nickname: string | null;
   role: UserRole;
   interests: string[];
-  marketing_opt_in: boolean;
-  marketing_opt_in_at: string | null;
+  marketing_agreed: boolean;
+  marketing_agreed_at: string | null;
   notification_preferences: NotificationPreferencesLegacy;
   created_at: string;
   updated_at: string;

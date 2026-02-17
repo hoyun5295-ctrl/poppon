@@ -11,8 +11,8 @@ export default async function HomePage() {
   const now = new Date().toISOString();
   const threeDaysLater = new Date(Date.now() + 1000 * 60 * 60 * 72).toISOString();
 
-  // 병렬로 3개 섹션 데이터 가져오기
-  const [trendingRes, newRes, endingSoonRes] = await Promise.all([
+  // 병렬로 4개 섹션 데이터 가져오기
+  const [trendingRes, newRes, endingSoonRes, merchantCountRes] = await Promise.all([
     filterActiveDeals(
       supabase.from('deals').select(DEAL_CARD_SELECT),
       now
@@ -38,11 +38,20 @@ export default async function HomePage() {
       .lt('ends_at', threeDaysLater)
       .order('ends_at', { ascending: true })
       .limit(24),
+
+    // 머천트 수 카운트
+    supabase
+      .from('merchants')
+      .select('id', { count: 'exact', head: true }),
   ]);
 
   const trendingDeals = (trendingRes.data || []).map(toDealCard);
   const newDeals = (newRes.data || []).map(toDealCard);
   const endingSoonDeals = (endingSoonRes.data || []).map(toDealCard);
+  const merchantCount = merchantCountRes.count || 0;
+
+  // 10 단위 내림 (339 → 330+)
+  const displayCount = Math.floor(merchantCount / 10) * 10;
 
   function dedupeByMerchant(deals: DealCard[], maxPerMerchant = 1): DealCard[] {
     const count: Record<string, number> = {};
@@ -62,7 +71,7 @@ export default async function HomePage() {
           한 곳에서
         </h1>
         <p className="mt-2 sm:mt-3 text-surface-500 text-xs sm:text-sm lg:text-base">
-          쿠폰, 프로모션 코드, 할인 이벤트를 검색하세요
+          {displayCount > 0 ? `${displayCount}개+ 브랜드의 ` : ''}쿠폰, 프로모션 코드, 할인 이벤트를 검색하세요
         </p>
       </section>
 

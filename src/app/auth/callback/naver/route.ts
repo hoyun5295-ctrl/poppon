@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
 
     // 기존 유저인 경우 metadata에 naver 정보 추가
     if (!isNewUser && linkData.user?.id) {
-      await supabaseAdmin.auth.admin.updateUser(linkData.user.id, {
+      await supabaseAdmin.auth.admin.updateUserById(linkData.user.id, {
         user_metadata: {
           ...linkData.user.user_metadata,
           naver_id: naverId,

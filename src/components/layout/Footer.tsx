@@ -73,14 +73,42 @@ export function Footer() {
           </div>
         </div>
 
-        {/* 하단 */}
+        {/* 사업자 정보 */}
         <div className="mt-10 pt-6 border-t border-surface-700">
-          <p className="text-xs text-surface-500">
-            © {new Date().getFullYear()} POPPON by INVITO. All rights reserved.
-          </p>
-          <p className="text-xs text-surface-500 mt-1">
-            팝폰은 딜/쿠폰 정보를 모아서 제공하는 플랫폼이며, 개별 딜의 유효성과 조건은 해당 브랜드의 정책에 따릅니다.
-          </p>
+          <div className="flex flex-col gap-1.5 text-xs text-surface-500">
+            <p>
+              <span className="text-surface-400">주식회사 인비토</span>
+              <span className="mx-1.5 text-surface-600">|</span>
+              대표 유호윤
+              <span className="mx-1.5 text-surface-600">|</span>
+              사업자등록번호 667-86-00578
+            </p>
+            <p>
+              통신판매업 신고번호 제 2017-서울송파-0160호
+              <span className="mx-1.5 text-surface-600">|</span>
+              서울시 송파구 오금로36길46, 4층(가락동, 신승빌딩)
+            </p>
+            <p>
+              고객센터{' '}
+              <a href="tel:1800-8125" className="text-surface-400 hover:text-white transition-colors">
+                1800-8125
+              </a>
+              <span className="mx-1.5 text-surface-600">|</span>
+              이메일{' '}
+              <a href="mailto:webmaster@poppon.kr" className="text-surface-400 hover:text-white transition-colors">
+                webmaster@poppon.kr
+              </a>
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-1">
+            <p className="text-xs text-surface-500">
+              © {new Date().getFullYear()} POPPON by INVITO. All rights reserved.
+            </p>
+            <p className="text-xs text-surface-600">
+              팝폰은 딜/쿠폰 정보를 모아서 제공하는 플랫폼이며, 개별 딜의 유효성과 조건은 해당 브랜드의 정책에 따릅니다.
+            </p>
+          </div>
         </div>
       </div>
     </footer>

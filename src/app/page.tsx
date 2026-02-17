@@ -80,7 +80,10 @@ export default async function HomePage() {
         </h1>
         <p className="mt-2 sm:mt-3 text-surface-500 text-xs sm:text-sm lg:text-base">
           {displayMerchantCount > 0 && displayDealCount > 0
-            ? `${displayMerchantCount.toLocaleString()}개+ 브랜드, ${displayDealCount.toLocaleString()}개+ 딜의 할인 정보를 검색하세요`
+            ? <>
+                <span className="font-bold text-primary-500">{displayMerchantCount.toLocaleString()}개+ 브랜드</span>,{' '}
+                <span className="font-bold text-amber-500">{displayDealCount.toLocaleString()}개+ 딜</span>의 할인 정보를 검색하세요
+              </>
             : '쿠폰, 프로모션 코드, 할인 이벤트를 검색하세요'}
         </p>
       </section>

@@ -19,14 +19,14 @@ export default async function HomePage() {
     )
       .order('trending_score', { ascending: false })
       .order('quality_score', { ascending: false })
-      .limit(24),
+      .limit(48),
 
     filterActiveDeals(
       supabase.from('deals').select(DEAL_CARD_SELECT),
       now
     )
       .order('created_at', { ascending: false })
-      .limit(24),
+      .limit(48),
 
     supabase
       .from('deals')
@@ -37,7 +37,7 @@ export default async function HomePage() {
       .gt('ends_at', now)
       .lt('ends_at', threeDaysLater)
       .order('ends_at', { ascending: true })
-      .limit(24),
+      .limit(48),
 
     // 머천트 수 카운트
     supabase

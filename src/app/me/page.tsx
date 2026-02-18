@@ -100,6 +100,7 @@ export default function MyPage() {
           <div>
             <h1 className="text-base font-bold text-surface-900">
               {profile?.nickname || profile?.name || user?.email?.split('@')[0] || '사용자'}
+              <span className="font-medium text-surface-600">님, 환영합니다!</span>
             </h1>
             <p className="text-sm text-surface-400">
               {user?.email || ''}
@@ -222,44 +223,169 @@ function FollowsTab() {
 
   if (follows.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Store className="w-10 h-10 text-surface-300 mx-auto mb-3" />
-        <p className="text-surface-500 font-medium">구독한 브랜드가 없습니다</p>
-        <p className="text-sm text-surface-400 mt-1">브랜드관에서 구독 버튼을 눌러보세요</p>
-        <Link href="/search" className="mt-4 inline-flex items-center gap-1 text-sm text-primary-500 hover:text-primary-600 font-medium">
-          브랜드 둘러보기 <ChevronRight className="w-4 h-4" />
-        </Link>
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <Store className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+          <p className="text-surface-500 font-medium">구독한 브랜드가 없습니다</p>
+          <p className="text-sm text-surface-400 mt-1">아래에서 관심 브랜드를 구독해보세요</p>
+        </div>
+        <FollowsRecommendSection
+          excludeIds={[]}
+          onFollow={() => fetchFollows()}
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {follows.map((item) => {
-        const merchant = item.merchants;
-        if (!merchant) return null;
-        return (
-          <div key={item.id} className="flex items-center gap-3 p-3 bg-white border border-surface-100 rounded-xl">
-            {merchant.logo_url ? (
-              <img src={merchant.logo_url} alt={merchant.name} className="w-10 h-10 rounded-lg object-contain border border-surface-100 p-0.5" />
+    <div className="space-y-6">
+      {/* 내 구독 브랜드 */}
+      <div>
+        <h3 className="text-sm font-semibold text-surface-500 mb-3 flex items-center gap-1.5">
+          <Bell className="w-3.5 h-3.5" />
+          내 구독 브랜드 ({follows.length})
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {follows.map((item) => {
+            const merchant = item.merchants;
+            if (!merchant) return null;
+            return (
+              <div key={item.id} className="flex items-center gap-2.5 p-2.5 bg-white border border-surface-100 rounded-xl hover:border-surface-200 transition-colors">
+                {merchant.logo_url ? (
+                  <img src={merchant.logo_url} alt={merchant.name} className="w-9 h-9 rounded-lg object-contain border border-surface-100 p-0.5 bg-white shrink-0" />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-surface-100 flex items-center justify-center text-sm font-bold text-surface-400 shrink-0">
+                    {merchant.name?.charAt(0)}
+                  </div>
+                )}
+                <Link href={`/m/${merchant.slug}`} className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-surface-900 truncate">{merchant.name}</p>
+                  <p className="text-xs text-surface-400">활성 딜 {merchant.active_deal_count || 0}개</p>
+                </Link>
+                <button
+                  onClick={() => handleUnfollow(merchant.id)}
+                  className="shrink-0 px-2.5 py-1.5 text-xs text-surface-500 border border-surface-200 rounded-lg hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
+                >
+                  해제
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 추천 브랜드 */}
+      <FollowsRecommendSection
+        excludeIds={follows.map((f: any) => f.merchants?.id).filter(Boolean)}
+        onFollow={() => fetchFollows()}
+      />
+    </div>
+  );
+}
+
+// --- 구독 탭 내 추천 브랜드 (구독 시 자동 리프레시) ---
+function FollowsRecommendSection({ excludeIds, onFollow }: { excludeIds: string[]; onFollow: () => void }) {
+  const { showToast } = useAuth();
+  const [merchants, setMerchants] = useState<any[]>([]);
+  const [followedIds, setFollowedIds] = useState<Set<string>>(new Set(excludeIds));
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setFollowedIds(new Set(excludeIds));
+  }, [excludeIds]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/merchants?active_deal_count=gt.0&order=active_deal_count.desc&limit=12&select=id,name,slug,logo_url,active_deal_count,brand_color`,
+          { headers: { 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '' } }
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) setMerchants(data);
+      } catch { /* ignore */ }
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  const handleFollow = async (merchantId: string, merchantName: string) => {
+    try {
+      if (followedIds.has(merchantId)) {
+        await fetch(`/api/me/follows/merchants?merchant_id=${merchantId}`, { method: 'DELETE' });
+        setFollowedIds(prev => { const n = new Set(prev); n.delete(merchantId); return n; });
+        showToast(`${merchantName} 구독 해제`, 'info');
+      } else {
+        const res = await fetch('/api/me/follows/merchants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ merchant_id: merchantId }),
+        });
+        if (res.ok || res.status === 409) {
+          setFollowedIds(prev => new Set([...prev, merchantId]));
+          showToast(`${merchantName} 구독 완료!`, 'success');
+        }
+      }
+      onFollow(); // 상위 구독 목록 리프레시
+    } catch { /* ignore */ }
+  };
+
+  // 이미 구독한 브랜드 필터링
+  const filtered = merchants.filter(m => !followedIds.has(m.id));
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-surface-200 p-5">
+        <div className="h-5 w-32 bg-surface-100 rounded animate-pulse mb-4" />
+        <div className="grid grid-cols-2 gap-2">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-14 bg-surface-50 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (filtered.length === 0) return null;
+
+  return (
+    <div className="bg-surface-50 rounded-xl border border-surface-100 p-4">
+      <h3 className="text-sm font-semibold text-surface-600 mb-1 flex items-center gap-1.5">
+        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+        이런 브랜드는 어때요?
+      </h3>
+      <p className="text-xs text-surface-400 mb-3">
+        인기 브랜드를 구독하고 새 딜 알림을 받아보세요
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {filtered.slice(0, 8).map((m) => (
+          <div key={m.id} className="flex items-center gap-2.5 p-2.5 bg-white rounded-lg border border-surface-100 hover:border-surface-200 transition-colors">
+            {m.logo_url ? (
+              <img src={m.logo_url} alt={m.name} className="w-9 h-9 rounded-lg object-contain border border-surface-100 p-0.5 bg-white shrink-0" />
             ) : (
-              <div className="w-10 h-10 rounded-lg bg-surface-100 flex items-center justify-center text-sm font-bold text-surface-400">
-                {merchant.name?.charAt(0)}
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ backgroundColor: m.brand_color || '#94a3b8' }}>
+                {m.name?.charAt(0)}
               </div>
             )}
-            <Link href={`/m/${merchant.slug}`} className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-surface-900">{merchant.name}</p>
-              <p className="text-xs text-surface-400">활성 딜 {merchant.active_deal_count}개</p>
+            <Link href={`/m/${m.slug}`} className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-surface-800 truncate">{m.name}</p>
+              <p className="text-[11px] text-surface-400">딜 {m.active_deal_count}개</p>
             </Link>
             <button
-              onClick={() => handleUnfollow(merchant.id)}
-              className="shrink-0 px-3 py-1.5 text-xs text-surface-500 border border-surface-200 rounded-lg hover:bg-surface-50 transition-colors"
+              onClick={() => handleFollow(m.id, m.name)}
+              className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-primary-50 text-primary-500 hover:bg-primary-100 transition-colors"
             >
-              구독 해제
+              <Plus className="w-4 h-4" />
             </button>
           </div>
-        );
-      })}
+        ))}
+      </div>
+      <Link
+        href="/search"
+        className="flex items-center justify-center gap-1 mt-3 py-2 text-xs text-surface-400 hover:text-surface-600 transition-colors"
+      >
+        더 많은 브랜드 보기 <ChevronRight className="w-3.5 h-3.5" />
+      </Link>
     </div>
   );
 }

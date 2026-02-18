@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import {
   X, Mail, ChevronRight, ChevronLeft, Eye, EyeOff,
   ShieldCheck, Check, Bell, MessageCircle, Sparkles,
-  Shirt, UtensilsCrossed, Home, Plane, LayoutGrid
+  Shirt, UtensilsCrossed, Home, Plane, LayoutGrid, User
 } from 'lucide-react';
 import { useAuth, type AuthSheetStep } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
@@ -52,6 +52,12 @@ export function AuthSheet() {
 
   // 아이디 저장
   const [rememberEmail, setRememberEmail] = useState(false);
+
+  // 프로필 정보 (이메일 가입 시)
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileGender, setProfileGender] = useState('');
+  const [profileBirthDate, setProfileBirthDate] = useState('');
 
   // 카테고리 선택
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -250,6 +256,55 @@ export function AuthSheet() {
     window.location.href = '/api/auth/naver';
   };
 
+  // ── 프로필 정보 저장 (이메일 가입 시) ──
+  const handleSaveProfile = async () => {
+    if (!profileName.trim()) {
+      setError('이름을 입력해주세요');
+      return;
+    }
+    if (!profilePhone.trim() || !/^01[016789]-?\d{3,4}-?\d{4}$/.test(profilePhone.replace(/-/g, '').replace(/^01/, '01'))) {
+      setError('올바른 휴대전화번호를 입력해주세요');
+      return;
+    }
+    if (!profileGender) {
+      setError('성별을 선택해주세요');
+      return;
+    }
+    if (!profileBirthDate) {
+      setError('생년월일을 입력해주세요');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        // 전화번호 하이픈 포맷
+        const rawPhone = profilePhone.replace(/[^0-9]/g, '');
+        const formattedPhone = rawPhone.length === 11
+          ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
+          : rawPhone;
+
+        await supabase
+          .from('profiles')
+          .update({
+            name: profileName.trim(),
+            phone: formattedPhone,
+            gender: profileGender,
+            birth_date: profileBirthDate,
+            provider: 'email',
+          })
+          .eq('id', authUser.id);
+      }
+      setStep('categories');
+    } catch {
+      setError('저장 중 오류가 발생했습니다');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── 관심 카테고리 저장 ──
   const handleSaveCategories = async () => {
     if (selectedCategories.length > 0) {
@@ -336,6 +391,10 @@ export function AuthSheet() {
     setPasswordConfirm('');
     setShowPassword(false);
     setError('');
+    setProfileName('');
+    setProfilePhone('');
+    setProfileGender('');
+    setProfileBirthDate('');
     setSelectedCategories([]);
     setMarketingAll(false);
     setMarketingKakao(false);
@@ -667,46 +726,131 @@ export function AuthSheet() {
             )}
 
             {/* ═══════════════════════════════════════════
-                STEP: identity — 본인인증 (KMC placeholder)
+                STEP: identity — 회원 정보 입력
                ═══════════════════════════════════════════ */}
             {step === 'identity' && (
               <>
-                <div className="pt-2 mb-6 text-center">
-                  <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <ShieldCheck className="w-8 h-8 text-blue-500" />
+                <div className="pt-2 mb-5">
+                  <button
+                    onClick={() => { setStep('signup'); setError(''); }}
+                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    뒤로
+                  </button>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <User className="w-8 h-8 text-blue-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900">회원 정보 입력</h2>
+                    <p className="text-sm text-gray-500 mt-1.5">
+                      맞춤 할인 정보를 위해 기본 정보를 입력해주세요
+                    </p>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">본인인증</h2>
-                  <p className="text-sm text-gray-500 mt-1.5">
-                    안전한 서비스 이용을 위해 본인인증이 필요합니다
-                  </p>
                 </div>
 
-                {/* KMC/PASS 본인인증 버튼 (추후 실제 연동) */}
+                <div className="space-y-3">
+                  {/* 이름 (필수) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      이름 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder="실명을 입력해주세요"
+                      className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
+                                 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      autoFocus
+                    />
+                  </div>
+
+                  {/* 연락처 (필수) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      연락처 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={profilePhone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        if (val.length <= 11) {
+                          // 자동 하이픈
+                          if (val.length <= 3) setProfilePhone(val);
+                          else if (val.length <= 7) setProfilePhone(`${val.slice(0, 3)}-${val.slice(3)}`);
+                          else setProfilePhone(`${val.slice(0, 3)}-${val.slice(3, 7)}-${val.slice(7)}`);
+                        }
+                      }}
+                      placeholder="010-0000-0000"
+                      className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
+                                 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                    />
+                  </div>
+
+                  {/* 성별 (필수) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      성별 <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: '남성', label: '남성' },
+                        { value: '여성', label: '여성' },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setProfileGender(option.value)}
+                          className={`flex-1 h-12 rounded-xl border-2 text-sm font-medium transition-all ${
+                            profileGender === option.value
+                              ? 'border-red-500 bg-red-50 text-red-600'
+                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 생년월일 (필수) */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      생년월일 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={profileBirthDate}
+                      onChange={(e) => setProfileBirthDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      min="1920-01-01"
+                      className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
+                                 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-sm text-red-500 text-center mt-3">{error}</p>
+                )}
+
                 <button
-                  disabled
-                  className="flex items-center justify-center gap-3 w-full h-12 rounded-xl bg-blue-500 text-white font-semibold text-sm opacity-50 cursor-not-allowed"
+                  onClick={handleSaveProfile}
+                  disabled={loading}
+                  className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
+                             hover:bg-red-600 disabled:bg-gray-200 transition-colors"
                 >
-                  <ShieldCheck className="w-5 h-5" />
-                  휴대폰 본인인증 (준비 중)
+                  {loading ? '저장 중...' : '다음'}
                 </button>
 
-                <p className="text-xs text-gray-400 text-center mt-3">
-                  통신사 본인인증(KMC)으로 실명 확인이 진행됩니다
+                <p className="text-[11px] text-gray-400 text-center mt-3 leading-relaxed">
+                  입력된 정보는 맞춤형 할인 정보 제공 및 마케팅 활용에 사용됩니다.
+                  <br />
+                  자세한 내용은{' '}
+                  <a href="/legal/privacy" className="underline">개인정보처리방침</a>을 확인해주세요.
                 </p>
-
-                {/* 임시 스킵 버튼 (개발용) */}
-                <div className="mt-6 pt-4 border-t border-dashed border-gray-200">
-                  <p className="text-xs text-orange-500 text-center mb-2">
-                    개발 모드: 본인인증 없이 진행
-                  </p>
-                  <button
-                    onClick={() => setStep('categories')}
-                    className="w-full h-10 rounded-xl border border-orange-300 text-orange-500 text-sm font-medium
-                               hover:bg-orange-50 transition-colors"
-                  >
-                    건너뛰기 (테스트용)
-                  </button>
-                </div>
               </>
             )}
 

@@ -146,7 +146,7 @@ export default async function HomePage() {
 
           {/* 구독 알림 */}
           <a
-            href="/auth"
+            href="/me?tab=follows"
             className="group relative overflow-hidden rounded-2xl border border-primary-100 px-5 py-5 sm:px-6 sm:py-6 hover:border-primary-200 hover:shadow-sm transition-all bg-primary-50/40"
           >
             <div className="relative z-10">

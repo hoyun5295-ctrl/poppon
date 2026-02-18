@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
@@ -26,7 +27,9 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 
 export default function MyPage() {
   const { isLoggedIn, isLoading, user, profile, openAuthSheet, refreshProfile } = useAuth();
-  const [tab, setTab] = useState<Tab>('saved');
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab) || 'saved';
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   // 비로그인 상태
   if (!isLoading && !isLoggedIn) {
@@ -96,7 +99,7 @@ export default function MyPage() {
           )}
           <div>
             <h1 className="text-base font-bold text-surface-900">
-              {profile?.nickname || profile?.name || '사용자'}
+              {profile?.nickname || profile?.name || user?.email?.split('@')[0] || '사용자'}
             </h1>
             <p className="text-sm text-surface-400">
               {user?.email || ''}

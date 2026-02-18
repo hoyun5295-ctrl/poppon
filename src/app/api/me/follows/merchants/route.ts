@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from('followed_merchants')
-    .select('id, merchant_id, created_at, merchants(id, name, slug, logo_url)')
+    .select('id, merchant_id, created_at, merchants(id, name, slug, logo_url, active_deal_count)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 

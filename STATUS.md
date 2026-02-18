@@ -91,7 +91,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | DealDetail.tsx | `src/components/deal/DealDetail.tsx` |
 | DealModal.tsx | `src/components/deal/DealModal.tsx` |
 | CopyCodeButton.tsx | `src/components/deal/CopyCodeButton.tsx` |
-| DealDetailClient.tsx | `src/components/deal/DealDetailClient.tsx` |
+| DealDetailClient.tsx | `src/components/deal/DealDetailClient.tsx` ⚠️ 레거시 (사용 안 함, 빌드 호환용) |
 | TopNav.tsx | `src/components/layout/TopNav.tsx` |
 | Footer.tsx | `src/components/layout/Footer.tsx` |
 | SourceProtection.tsx | `src/components/layout/SourceProtection.tsx` |
@@ -124,7 +124,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | 카테고리 로딩 | `src/app/c/[categorySlug]/loading.tsx` |
 | 브랜드관 | `src/app/m/[merchantSlug]/page.tsx` |
 | 브랜드관 로딩 | `src/app/m/[merchantSlug]/loading.tsx` |
-| 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` |
+| 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` ✅ 서버사이드 (getDealBySlug) |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
 | 마이페이지 | `src/app/me/page.tsx` |
@@ -557,6 +557,7 @@ MerchantForm에서 이벤트 URL 입력
 - ⚠️ 일부 구글 이미지 로고 품질 낮음 (34개 교체 완료, 나머지는 어드민 파일 업로드로 교체 가능)
 - ⚠️ 기존 딜 카테고리 불일치 — 크롤러 v2.1까지 엉뚱한 카테고리로 배정된 딜 존재 (v2.2로 신규 딜은 해결, 기존 딜 일괄 수정 필요)
 - ⚠️ 기존 naver_brand 잘못된 딜 정리 필요 — 달바(23개 상품→hidden 완료, 7개 기획전 재크롤), 라네즈(7개 카테고리명 딜 → hidden 필요 후 naver_brand 재크롤)
+- ⚠️ deal_actions 테이블에 `metadata` 컬럼 추가 필요 (또는 tracking.ts에서 metadata 전송 제거) — 현재 API에서 metadata INSERT 제거로 임시 해결
 
 ### 즉시 (Phase 1 마무리)
 - **도메인**: 가비아 DNS 설정 (A: @→76.76.21.21, CNAME: www→cname.vercel-dns.com, admin→별도)
@@ -619,6 +620,10 @@ MerchantForm에서 이벤트 URL 입력
 - **커넥터 관리 API**: `/api/connectors/[id]` PATCH(URL/타입/상태/해시리셋) + DELETE(crawl_runs도 함께 삭제)
 - **브랜드 수정 후 필터 유지**: edit 페이지 URL에 `?category=xxx` 포함, MerchantForm returnCategory prop으로 전달
 - **useSearchParams + Suspense**: Next.js 15에서 useSearchParams() 사용하는 'use client' 페이지는 반드시 Suspense로 래핑 필수
+- **딜 모달 렌더링**: 서버사이드 `getDealBySlug()` 사용 필수. 클라이언트 Supabase 싱글톤은 AuthProvider auth lock으로 fetch 멈춤 위험
+- **DealDetailClient.tsx**: 레거시 파일 (사용 안 함). 모달/풀페이지 모두 서버사이드. 빌드 호환용 최소 코드만 유지
+- **deal_actions 테이블**: `metadata` 컬럼 없음. actions API에서 metadata 필드 INSERT 시 스키마 캐시 에러 발생
+- **Supabase 클라이언트 auth lock**: 싱글톤 createClient()로 AuthProvider가 getSession()+onAuthStateChange() 잡고 있으면, 같은 클라이언트로 다른 쿼리 시 블로킹 가능. 서버사이드 또는 REST 직접 호출로 우회
 
 ---
 
@@ -660,6 +665,7 @@ MerchantForm에서 이벤트 URL 입력
 | **팝폰-어드민브랜드관리+크롤카테고리수정** | **2/17** | **브랜드 검색버그+카테고리필터+slug직접입력+edit null수정+크롤러 카테고리 근본수정(v2.2)** |
 | **팝폰-로고파일업로드** | **2/17** | **Supabase Storage 연동, 어드민 MerchantForm 파일 업로드, 기존 로고 보존 로직** |
 | **팝폰-네이버브랜드크롤수정+커넥터관리** | **2/18** | **naver_brand fullPage+프롬프트v5+커넥터관리UI+브랜드필터유지** |
+| **팝폰-모달렌더링수정+actions수정** | **2/18** | **모달 서버사이드 전환(auth lock 해결)+actions API metadata 제거** |
 
 ---
 
@@ -703,4 +709,13 @@ MerchantForm에서 이벤트 URL 입력
 
 ---
 
-*마지막 업데이트: 2026-02-18 (네이버 브랜드스토어 크롤 수정 + AI 프롬프트 v5 + 커넥터 관리 UI)*
+### 딜 모달 렌더링 수정 + actions API 수정 (2/18)
+- [x] **모달 서버사이드 전환** — `@modal/(.)d/[slug]/page.tsx`에서 DealDetailClient(클라이언트) → `getDealBySlug`(서버사이드)로 변경
+  - 원인: AuthProvider 싱글톤 Supabase 클라이언트가 auth lock을 잡고 있어 클라이언트 fetch가 영원히 대기
+  - 해결: 풀페이지(`/d/[slug]`)와 동일한 서버사이드 방식으로 통일
+- [x] **actions API metadata 제거** — `deal_actions` 테이블에 `metadata` 컬럼 없음 → API에서 metadata 필드 제거 (500 에러 해결)
+- [x] **DealDetailClient 비활성화** — 모달/풀페이지 모두 서버사이드로 전환되어 더 이상 사용 안 함 (빌드 호환용 최소 파일 유지)
+
+---
+
+*마지막 업데이트: 2026-02-18 (모달 서버사이드 전환 + actions API metadata 수정)*

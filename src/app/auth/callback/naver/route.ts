@@ -12,7 +12,8 @@ import { cookies } from 'next/headers';
  * 3. 네이버 유저 정보 조회
  * 4. Supabase 유저 생성 또는 기존 매칭
  * 5. 세션 설정 (magiclink 방식)
- * 6. 신규 → /?onboarding=sns / 기존 → /
+ * 6. ✅ profiles 테이블에 프로필 정보 저장 (이름/성별/생일/전화번호/linked_providers)
+ * 7. 신규 → /?onboarding=sns / 기존 → /
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -135,8 +136,8 @@ export async function GET(request: NextRequest) {
           },
           setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
             try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
+              cookiesToSet.forEach(({ name: n, value, options }) =>
+                cookieStore.set(n, value, options)
               );
             } catch {
               // 무시
@@ -156,14 +157,65 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth?error=verify_failed', origin));
     }
 
-    // ── 8. 리다이렉트 ──
+    // ── 8. ✅ profiles 테이블에 프로필 정보 저장 ──
+    const userId = linkData.user?.id;
+    if (userId) {
+      try {
+        // 기존 프로필 조회 (linked_providers 보존용)
+        const { data: existingProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('linked_providers')
+          .eq('id', userId)
+          .single();
+
+        // 업데이트 객체 구성 (비어있지 않은 값만)
+        const profileUpdate: Record<string, any> = {
+          provider: 'naver',
+        };
+
+        if (naverUser.name) profileUpdate.name = naverUser.name;
+        if (naverUser.nickname) profileUpdate.nickname = naverUser.nickname;
+        if (naverUser.profile_image) profileUpdate.avatar_url = naverUser.profile_image;
+
+        // 성별 매핑: M→남성, F→여성
+        if (naverUser.gender) {
+          profileUpdate.gender = naverUser.gender === 'M' ? '남성' : naverUser.gender === 'F' ? '여성' : naverUser.gender;
+        }
+
+        // 생년월일: birthyear(YYYY) + birthday(MM-DD) → YYYY-MM-DD
+        if (naverUser.birthyear && naverUser.birthday) {
+          profileUpdate.birth_date = `${naverUser.birthyear}-${naverUser.birthday}`;
+        } else if (naverUser.birthday) {
+          profileUpdate.birth_date = naverUser.birthday;
+        }
+
+        // 휴대전화번호
+        if (naverUser.mobile) profileUpdate.phone = naverUser.mobile;
+
+        // linked_providers 배열 관리 (기존 + naver 추가)
+        const currentProviders: string[] = existingProfile?.linked_providers || [];
+        if (!currentProviders.includes('naver')) {
+          profileUpdate.linked_providers = [...currentProviders, 'naver'];
+        }
+
+        await supabaseAdmin
+          .from('profiles')
+          .update(profileUpdate)
+          .eq('id', userId);
+
+      } catch (profileError) {
+        // 프로필 업데이트 실패해도 로그인은 성공시킴
+        console.error('Profile update error:', profileError);
+      }
+    }
+
+    // ── 9. 리다이렉트 ──
     if (isNewUser) {
       return NextResponse.redirect(new URL('/?onboarding=sns', origin));
     }
 
     // 기존 유저: 온보딩 완료 여부 체크
     try {
-      const userId = linkData.user?.id;
       if (userId) {
         const { data: profile } = await supabase
           .from('profiles')

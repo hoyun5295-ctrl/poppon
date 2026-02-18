@@ -5,7 +5,8 @@ import Link from 'next/link';
 import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
   Bookmark, Shield, Smartphone, ExternalLink, AlertTriangle, KeyRound,
-  Check, Shirt, Sparkles, UtensilsCrossed, Home, Plane, LayoutGrid, Plus
+  Check, Shirt, Sparkles, UtensilsCrossed, Home, Plane, LayoutGrid, Plus,
+  User, Camera
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { setPendingToast } from '@/lib/auth/AuthProvider';
@@ -73,16 +74,26 @@ export default function MyPage() {
   }
 
   // === 로그인 상태 ===
+  const avatarUrl = user?.user_metadata?.avatar_url || profile?.avatar_url;
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8">
       {/* 프로필 헤더 */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
-            <span className="text-lg font-bold text-white">
-              {profile?.nickname?.charAt(0) || profile?.name?.charAt(0) || 'P'}
-            </span>
-          </div>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt="프로필"
+              className="w-12 h-12 rounded-full object-cover border border-surface-200"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center">
+              <span className="text-lg font-bold text-white">
+                {profile?.nickname?.charAt(0) || profile?.name?.charAt(0) || 'P'}
+              </span>
+            </div>
+          )}
           <div>
             <h1 className="text-base font-bold text-surface-900">
               {profile?.nickname || profile?.name || '사용자'}
@@ -259,6 +270,27 @@ function SettingsTab({ profile, user, onRefresh }: {
   const [passwordResetSent, setPasswordResetSent] = useState(false);
   const [passwordResetLoading, setPasswordResetLoading] = useState(false);
 
+  // ✅ 전체 프로필 조회 (AuthProvider가 제공하지 않는 필드 포함)
+  const [fullProfile, setFullProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFullProfile = async () => {
+      if (!user?.id) { setProfileLoading(false); return; }
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (data) setFullProfile(data);
+      } catch { /* ignore */ }
+      setProfileLoading(false);
+    };
+    fetchFullProfile();
+  }, [user?.id]);
+
   const supabase = createClient();
 
   // 비밀번호 재설정 이메일 발송
@@ -300,51 +332,66 @@ function SettingsTab({ profile, user, onRefresh }: {
     }
   };
 
+  // SNS 연동 여부 판별
+  const linkedProviders: string[] = fullProfile?.linked_providers || [];
+  const currentProvider = fullProfile?.provider || '';
+  const isLinked = (provider: string) =>
+    linkedProviders.includes(provider) || currentProvider === provider;
+
   return (
     <div className="space-y-5">
+      {/* ✅ 내 정보 섹션 */}
+      <ProfileInfoSection
+        fullProfile={fullProfile}
+        user={user}
+        loading={profileLoading}
+      />
+
       {/* 관심 카테고리 */}
       <InterestCategoriesSection profile={profile} onRefresh={onRefresh} userId={user?.id} />
 
       {/* 추천 브랜드 구독 */}
       <RecommendedBrandsSection userId={user?.id} />
 
-      {/* 비밀번호 변경 */}
-      <div className="bg-white rounded-xl border border-surface-200 p-5">
-        <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
-          <KeyRound className="w-4 h-4" />
-          비밀번호 변경
-        </h3>
-        {passwordResetSent ? (
-          <p className="text-sm text-green-600">
-            비밀번호 재설정 이메일을 발송했습니다. 메일함을 확인해주세요.
-          </p>
-        ) : (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-surface-700">{user?.email}</p>
-              <p className="text-xs text-surface-400">이메일로 재설정 링크를 보내드립니다</p>
+      {/* 비밀번호 변경 — 이메일 가입자만 표시 */}
+      {(!currentProvider || currentProvider === 'email') && (
+        <div className="bg-white rounded-xl border border-surface-200 p-5">
+          <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
+            <KeyRound className="w-4 h-4" />
+            비밀번호 변경
+          </h3>
+          {passwordResetSent ? (
+            <p className="text-sm text-green-600">
+              비밀번호 재설정 이메일을 발송했습니다. 메일함을 확인해주세요.
+            </p>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-surface-700">{user?.email}</p>
+                <p className="text-xs text-surface-400">이메일로 재설정 링크를 보내드립니다</p>
+              </div>
+              <button
+                onClick={handlePasswordReset}
+                disabled={passwordResetLoading}
+                className="px-3 py-1.5 text-xs text-primary-500 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50"
+              >
+                {passwordResetLoading ? '발송 중...' : '변경하기'}
+              </button>
             </div>
-            <button
-              onClick={handlePasswordReset}
-              disabled={passwordResetLoading}
-              className="px-3 py-1.5 text-xs text-primary-500 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50"
-            >
-              {passwordResetLoading ? '발송 중...' : '변경하기'}
-            </button>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      {/* SNS 연동 */}
+      {/* ✅ SNS 연동 — 실제 연동 상태 반영 */}
       <div className="bg-white rounded-xl border border-surface-200 p-5">
         <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
           <ExternalLink className="w-4 h-4" />
           소셜 계정 연동
         </h3>
         <div className="space-y-3">
-          <SNSLinkItem name="카카오" color="#FEE500" textColor="#191919" linked={false} />
-          <SNSLinkItem name="네이버" color="#03C75A" textColor="#fff" linked={false} />
-          <SNSLinkItem name="Apple" color="#000" textColor="#fff" linked={false} />
+          <SNSLinkItem name="카카오" color="#FEE500" textColor="#191919" linked={isLinked('kakao')} />
+          <SNSLinkItem name="네이버" color="#03C75A" textColor="#fff" linked={isLinked('naver')} />
+          <SNSLinkItem name="Apple" color="#000" textColor="#fff" linked={isLinked('apple')} />
         </div>
       </div>
 
@@ -439,6 +486,89 @@ function SettingsTab({ profile, user, onRefresh }: {
   );
 }
 
+// --- ✅ 내 정보 섹션 (네이버 검수용 + 실제 프로필 표시) ---
+function ProfileInfoSection({ fullProfile, user, loading }: {
+  fullProfile: any; user: any; loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-surface-200 p-5">
+        <div className="h-5 w-24 bg-surface-100 rounded animate-pulse mb-4" />
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-5 bg-surface-50 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const avatarUrl = user?.user_metadata?.avatar_url || fullProfile?.avatar_url;
+  const providerLabel = getProviderLabel(fullProfile?.provider);
+
+  return (
+    <div className="bg-white rounded-xl border border-surface-200 p-5">
+      <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
+        <User className="w-4 h-4" />
+        내 정보
+      </h3>
+
+      {/* 프로필 사진 */}
+      <div className="flex justify-center mb-5">
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt="프로필 사진"
+            className="w-20 h-20 rounded-full object-cover border-2 border-surface-200"
+          />
+        ) : (
+          <div className="w-20 h-20 rounded-full bg-surface-100 flex items-center justify-center">
+            <Camera className="w-8 h-8 text-surface-300" />
+          </div>
+        )}
+      </div>
+
+      {/* 정보 행 */}
+      <div className="space-y-0 divide-y divide-surface-100">
+        <ProfileInfoRow label="이름" value={fullProfile?.name} />
+        <ProfileInfoRow label="닉네임" value={fullProfile?.nickname} />
+        <ProfileInfoRow label="이메일" value={user?.email} />
+        <ProfileInfoRow label="성별" value={fullProfile?.gender} />
+        <ProfileInfoRow label="생년월일" value={fullProfile?.birth_date} />
+        <ProfileInfoRow label="연락처" value={fullProfile?.phone} />
+        {providerLabel && (
+          <ProfileInfoRow label="로그인 방법" value={providerLabel} />
+        )}
+      </div>
+
+      <p className="text-[11px] text-surface-400 mt-4 leading-relaxed">
+        SNS 로그인 시 동의한 정보가 표시됩니다. 정보 수정은 해당 SNS 계정에서 변경 후 재로그인하면 반영됩니다.
+      </p>
+    </div>
+  );
+}
+
+function ProfileInfoRow({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <span className="text-sm text-surface-500">{label}</span>
+      <span className={`text-sm font-medium ${value ? 'text-surface-800' : 'text-surface-300'}`}>
+        {value || '미설정'}
+      </span>
+    </div>
+  );
+}
+
+function getProviderLabel(provider?: string): string {
+  switch (provider) {
+    case 'kakao': return '카카오';
+    case 'naver': return '네이버';
+    case 'apple': return 'Apple';
+    case 'email': return '이메일';
+    default: return '';
+  }
+}
+
 // --- 관심 카테고리 편집 ---
 function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: any; onRefresh: () => Promise<void>; userId?: string }) {
   const { showToast } = useAuth();
@@ -466,7 +596,6 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
     setSelected(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
   };
 
-  // ✅ 수정: supabase.auth.getUser() 제거 — user.id는 이미 AuthProvider에서 제공
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -699,9 +828,9 @@ function SNSLinkItem({ name, color, textColor, linked }: {
       {linked ? (
         <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full font-medium">연동됨</span>
       ) : (
-        <button className="text-xs text-surface-400 font-medium">
+        <span className="text-xs text-surface-400 font-medium">
           준비 중
-        </button>
+        </span>
       )}
     </div>
   );

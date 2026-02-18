@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 // 허용된 액션 타입
@@ -10,7 +10,7 @@ const DEDUP_MINUTES = 5;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { deal_id, action_type, session_id, user_id, metadata } = body;
+    const { deal_id, action_type, session_id, user_id } = body;
 
     // 유효성 검증
     if (!deal_id || !action_type || !session_id) {
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       action_type,
       session_id,
       user_id: user_id || null,
-      metadata: metadata || null,
+      // metadata removed - column not in DB
     });
 
     if (error) {

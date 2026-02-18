@@ -1,5 +1,6 @@
+﻿import { getDealBySlug } from '@/lib/deals';
 import { DealModal } from '@/components/deal/DealModal';
-import { DealDetailClient } from '@/components/deal/DealDetailClient';
+import { DealDetail } from '@/components/deal/DealDetail';
 
 interface ModalDealPageProps {
   params: Promise<{ slug: string }>;
@@ -7,10 +8,13 @@ interface ModalDealPageProps {
 
 export default async function ModalDealPage({ params }: ModalDealPageProps) {
   const { slug } = await params;
+  const result = await getDealBySlug(slug);
+
+  if (!result) return null;
 
   return (
     <DealModal>
-      <DealDetailClient slug={slug} isModal />
+      <DealDetail deal={result.deal} isModal />
     </DealModal>
   );
 }

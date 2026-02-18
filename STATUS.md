@@ -39,7 +39,7 @@
 | 영역 | 기술 | 비고 |
 |------|------|------|
 | Frontend + Backend | **Next.js 15 (App Router)** | SSR/SSG, API Routes |
-| Database + Auth | **Supabase (PostgreSQL)** | RLS, OAuth (카카오/네이버/애플) |
+| Database + Auth | **Supabase (PostgreSQL)** | RLS, OAuth (카카오/네이버/애플), Storage |
 | 스타일링 | **Tailwind CSS + shadcn/ui** | Pretendard |
 | 상태관리 | **Zustand** | 경량 |
 | 배포 | **Vercel Pro ×2** | Git push 자동 배포, 서울(icn1) |
@@ -164,7 +164,7 @@ SELECT COUNT(*) FROM followed_merchants;
 #### 컴포넌트
 | 파일 | 경로 |
 |------|------|
-| MerchantForm.tsx | `src/components/admin/MerchantForm.tsx` ✅ v4 (커넥터 자동생성) |
+| MerchantForm.tsx | `src/components/admin/MerchantForm.tsx` ✅ v5 (slug+카테고리선택+커넥터자동생성+로고업로드+커넥터관리UI) |
 
 #### 페이지
 | 파일 | 경로 |
@@ -175,7 +175,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | 대시보드 | `src/app/(dashboard)/page.tsx` |
 | 대시보드 레이아웃 | `src/app/(dashboard)/layout.tsx` |
 | 딜 목록/생성/수정 | `src/app/(dashboard)/deals/` |
-| 머천트 목록/생성/수정 | `src/app/(dashboard)/merchants/` |
+| 머천트 목록 | `src/app/(dashboard)/merchants/page.tsx` ✅ 디바운스검색+카테고리필터+URL필터유지 |
+| 머천트 생성/수정 | `src/app/(dashboard)/merchants/new/`, `[id]/edit/` ✅ 커넥터관리UI+Suspense |
 | 회원 목록 | `src/app/(dashboard)/members/page.tsx` |
 | 회원 상세 | `src/app/(dashboard)/members/[id]/page.tsx` |
 | 크롤 모니터링 | `src/app/(dashboard)/crawls/page.tsx` ✅ v4 (타입 필터) |
@@ -186,8 +187,11 @@ SELECT COUNT(*) FROM followed_merchants;
 |------|------|
 | 어드민 인증 | `src/app/api/auth/route.ts` |
 | 딜 CRUD | `src/app/api/deals/route.ts` + `[id]/route.ts` ✅ FK 명시 |
-| 머천트 CRUD | `src/app/api/merchants/route.ts` + `[id]/route.ts` ✅ v4 (커넥터 자동생성) |
+| 머천트 목록+생성 | `src/app/api/merchants/route.ts` ✅ v4.3 (q검색+카테고리필터+커넥터자동생성) |
+| 머천트 개별 | `src/app/api/merchants/[id]/route.ts` ✅ v5 (GET에 커넥터목록 포함+PUT 필드분리) |
+| 커넥터 관리 | `src/app/api/connectors/[id]/route.ts` ✅ v5 (PATCH URL/타입/상태/해시리셋, DELETE) |
 | 대시보드 경량 | `src/app/api/dashboard/route.ts` ✅ active/expired/pending 분리 |
+| 로고 업로드 | `src/app/api/upload-logo/route.ts` ✅ Supabase Storage (merchant-logos 버킷) |
 | 회원 목록 | `src/app/api/members/route.ts` (N+1 제거) |
 | 회원 상세 | `src/app/api/members/[id]/route.ts` |
 | AI 크롤 (배치/단일) | `src/app/api/ai-crawl/route.ts` + `[connectorId]/route.ts` ✅ v4 (타입 시스템) |
@@ -199,8 +203,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | 파일 | 경로 |
 |------|------|
 | vercel.json | 루트 — Cron 스케줄 (3-batch + expire) |
-| AI 크롤 엔진 (v4) | `src/lib/crawl/ai-engine.ts` ✅ 타입별 프롬프트 |
-| 딜 저장 (v2.1) | `src/lib/crawl/save-deals.ts` ✅ tokens_used 저장 |
+| AI 크롤 엔진 (v5) | `src/lib/crawl/ai-engine.ts` ✅ 프롬프트 전면개선+fullPage+이벤트성 판단원칙 |
+| 딜 저장 (v2.2) | `src/lib/crawl/save-deals.ts` ✅ merchants.category_ids 직접 조회 |
 | 크롤러 테스트 | `scripts/test-ai-crawl.ts` |
 | 이벤트 페이지 탐지 | `scripts/detect-event-pages.ts` |
 | 로고 수집 v2/v3.1 | `scripts/fetch-merchant-logos.ts` / `fetch-merchant-logos-v3.ts` |
@@ -252,6 +256,7 @@ src/app/
 ├── api/
 │   ├── auth/, deals/, merchants/, dashboard/
 │   ├── members/ + [id]/     — 회원 API
+│   ├── connectors/[id]/     — 커넥터 PATCH/DELETE (v5)
 │   ├── ai-crawl/ + [connectorId]/
 │   ├── crawl-history/
 │   └── cron/crawl/, cron/expire/
@@ -272,7 +277,7 @@ src/app/
 `GET /auth/callback` (OAuth), `GET /api/auth/signout` (서버 로그아웃), `GET|POST|DELETE /api/me/saved-deals`, `GET|POST|DELETE /api/me/follows/merchants`, `DELETE /api/me/delete-account` (soft delete), `POST /api/actions/search`, `POST /deals/:id/actions` (view/click_out/copy_code/save/share)
 
 ### 어드민
-`POST /api/auth`, CRUD: `/api/deals`, `/api/merchants` (커넥터 자동생성), `GET /api/dashboard` (경량 count), `GET|PATCH /api/members` + `GET /api/members/:id`, `GET|POST /api/ai-crawl`, `GET /api/crawl-history`, `GET /api/cron/crawl` (3-batch, single 제외), `GET /api/cron/expire`
+`POST /api/auth`, CRUD: `/api/deals`, `/api/merchants` (q검색+카테고리필터+커넥터자동생성), `POST /api/upload-logo` (Supabase Storage), `GET /api/dashboard` (경량 count), `GET|PATCH /api/members` + `GET /api/members/:id`, `PATCH|DELETE /api/connectors/:id` (커넥터 URL/타입/상태 수정+삭제), `GET|POST /api/ai-crawl`, `GET /api/crawl-history`, `GET /api/cron/crawl` (3-batch, single 제외), `GET /api/cron/expire`
 
 ### 트래킹
 `GET /out/:dealId` — 아웃바운드 리다이렉트 (클릭로그 + 302)
@@ -310,13 +315,13 @@ src/app/
 
 ## DB 스키마
 
-### 데이터 현황 (2/17 야간 기준)
+### 데이터 현황 (2/17 기준)
 | 항목 | 수치 |
 |------|------|
-| 브랜드 (merchants) | 339개 (전원 로고+brand_color) |
-| 딜 (deals) | 1,064 전체 (active 871 / expired 193 / hidden 0) |
-| 커넥터 (crawl_connectors) | 256 active / 171 disabled / 0 error |
-| 커넥터 타입 | list 413 / naver_brand 1 / single 0 |
+| 브랜드 (merchants) | ~340개 (전원 로고+brand_color) |
+| 딜 (deals) | ~1,070 전체 (active ~875 / expired ~195) |
+| 커넥터 (crawl_connectors) | ~257 active / ~171 disabled |
+| 커넥터 타입 | list ~414 / naver_brand 1 / single 0 |
 | 카테고리 (depth 0) | 6개 active / 6개 비활성 |
 
 ### deals 테이블 (주요 컬럼)
@@ -332,7 +337,7 @@ view_count, click_out_count, save_count, feedback_work/fail_count,
 slug, meta_title, meta_description, created_at, updated_at, expired_at
 ```
 
-### merchants 테이블 (~339개)
+### merchants 테이블 (~340개)
 ```
 id, name, slug, logo_url, brand_color(#hex), description, official_url,
 category_ids(uuid[]), is_verified, follower_count, active_deal_count,
@@ -366,7 +371,7 @@ withdrawn_at, withdraw_reason, last_login_at, created_at, updated_at
 - **saved_deals**: id, user_id, deal_id, created_at — UNIQUE(user_id, deal_id)
 - **followed_merchants**: id, user_id, merchant_id, created_at — UNIQUE(user_id, merchant_id)
 - **crawl_connectors**: id, name, merchant_id, source_url, config, status, fail_count, last_run_at, content_hash(MD5), hash_updated_at, **connector_type**(list/single/naver_brand, DEFAULT 'list') ✅ v4
-- **crawl_runs**: id, connector_id, status(running/success/partial/failed), new/updated/expired_count, error_message, started_at, completed_at, tokens_used(2/17 추가)
+- **crawl_runs**: id, connector_id, status(running/success/partial/failed), new/updated/expired_count, error_message, started_at, completed_at, tokens_used
 - **deal_actions**: id, deal_id, user_id(nullable), session_id(ppn_sid), action_type, metadata(jsonb), created_at
 - **search_logs**: id, user_id(nullable), session_id, query, category_slug, result_count, created_at
 - **outbound_clicks**: deal_id(FK→deals.id) — hidden 딜 삭제 시 FK 제약 주의
@@ -441,35 +446,74 @@ NEXT_PUBLIC_MAIN_URL=https://poppon.kr
 
 ---
 
-## AI 크롤러 v4 (커넥터 타입 시스템)
+## AI 크롤러 v5 (프롬프트 전면 개선)
 
 ### 아키텍처
 ```
 커넥터 URL → Puppeteer (이미지 차단, 15s) → MD5 해시 비교
-  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.1 (URL+title 중복체크) → hash 저장
+  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.2 → hash 저장
+  → 카테고리: merchants.category_ids 직접 조회 (config fallback은 최종 수단)
   → single 타입: 해시 스킵, 성공 후 자동 disabled
+  → naver_brand 타입: fullPage 모드 (DOM 전체 수집) + 전용 프롬프트
 ```
 
-### 커넥터 타입 체계 (v4 신규)
-| 타입 | 설명 | Cron | 성공 후 | 해시체크 | 프롬프트 |
-|------|------|------|--------|---------|---------|
-| `list` | 이벤트 목록 페이지 | ✅ 매일 | active 유지 | ✅ | 여러 딜 추출 |
-| `single` | 개별 이벤트 URL | ❌ 제외 | **auto disabled** | ❌ (1회성) | 딜 1개만 분석 |
-| `naver_brand` | 네이버 브랜드스토어 | ✅ 매일 | active 유지 | ✅ | 여러 딜 추출 (향후 전용 파서) |
+### 프롬프트 v5 핵심 판단 원칙
+```
+모든 타입 공통:
+"이것은 기간 한정이거나 이벤트성 혜택인가, 아니면 상시 판매/상시 할인인가?"
+→ 이벤트성이면 수집, 상시이면 제외
 
-### 브랜드 등록 → 커넥터 자동생성
+naver_brand 추가 판단:
+"이 탭 이름에 소비자가 금전적 혜택을 기대할 수 있는 정보가 있는가?"
+✅ 할인율/증정/기간한정/혜택 키워드 → 기획전
+❌ 제품라인/성분/효능 분류 → 일반 카테고리 → 제외
+```
+
+### 커넥터 타입 체계 (v5)
+| 타입 | 설명 | Cron | 성공 후 | 해시체크 | DOM수집 | 프롬프트 |
+|------|------|------|--------|---------|--------|---------|
+| `list` | 이벤트 목록 페이지 | ✅ 매일 | active 유지 | ✅ | main 영역 | 이벤트성 딜 추출 |
+| `single` | 개별 이벤트 URL | ❌ 제외 | **auto disabled** | ❌ (1회성) | main 영역 | 딜 1개만 분석 |
+| `naver_brand` | 네이버 브랜드스토어 | ✅ 매일 | active 유지 | ✅ | **fullPage** (body 전체) | 기획전 탭만 추출 |
+
+### renderPage fullPage 모드 (v4.1~)
+```
+일반 모드 (list/single):
+  nav, header, footer 등 제거 → main/#content/#container 내부에서만 링크 수집
+
+fullPage 모드 (naver_brand):
+  script/style만 제거 → document.body 전체에서 링크 수집
+  이유: 네이버 브랜드스토어 기획전 탭이 main 영역 밖에 위치
+```
+
+### naver_brand 후처리 필터
+```
+/products/ URL 포함 딜 → 강제 차단 (console.warn 로그)
+이유: 네이버 상품 URL은 수시로 삭제되어 링크 깨짐
+```
+
+### 딜 카테고리 배정 로직 (v2.2 수정)
+```
+1순위: merchants.category_ids[0] → categories 테이블에서 ID 직접 조회
+2순위: connector.config.top_category → CATEGORY_SLUG_MAP 매핑 (fallback)
+3순위: 생활/리빙 (최종 fallback)
+```
+⚠️ **v2.1까지 버그**: `config.top_category || '생활'` 하드코딩으로 카테고리 엉뚱하게 배정 → v2.2에서 근본 수정
+
+### 브랜드 등록/수정 → 커넥터 자동생성
 ```
 MerchantForm에서 이벤트 URL 입력
   → brand.naver.com 감지 → naver_brand 자동선택
   → 그 외 → list/single 라디오 선택
-  → merchants API POST → 머천트 생성 + crawl_connectors INSERT
+  → merchants API POST/PUT → 머천트 생성/수정 + crawl_connectors INSERT
   → 중복 URL 체크 (이미 있으면 스킵)
+  → PUT: event_page_url/connector_type 필드 분리 (merchants 컬럼 오염 방지)
 ```
 
 ### 비용/성과
 - 전략 변천: static_html(실패) → API 직접(부분성공) → **Puppeteer+AI** ✅ 최종
 - 비용: 현재 ~150개 첫 크롤 ~$3, 이후 월 ~$15 (해시 스킵)
-- 로고: v2(HTTP)+v3.1(Puppeteer)+구글이미지 수집, 수동 34종 교체 완료
+- 로고: v2(HTTP)+v3.1(Puppeteer)+구글이미지 수집, 수동 34종 교체 완료, **v4.3: Supabase Storage 파일 업로드 도입**
 
 ---
 
@@ -483,7 +527,7 @@ MerchantForm에서 이벤트 URL 입력
 
 ## 개발 Phase
 - **Phase 0** ✅ 완료: DB 18테이블+RLS, 전체 페이지, 어드민, AI 크롤러 v3, Vercel 배포
-- **Phase 1** ✅ 거의 완료: 크롤러 v4(타입시스템)+만료+디자인+회원+브랜드 확장+어드민 분리+딜 정리
+- **Phase 1** ✅ 거의 완료: 크롤러 v5(프롬프트개선+fullPage)+만료+디자인+회원+브랜드 확장+어드민 분리+딜 정리+어드민 브랜드관리+커넥터관리
 - **Phase 2** 미착수: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯 / 성과 정산
 
 ---
@@ -491,7 +535,7 @@ MerchantForm에서 이벤트 URL 입력
 ## 🖥️ 인프라 설계 (확정 2/17)
 - **현재**: Vercel Pro ($20/월 × 2) + Supabase Pro ($25/월) = **$65/월 (약 9만원)**
   - 메인+어드민: Vercel (서울 icn1)
-  - DB: Supabase Pro (200 동시커넥션, 8GB, 일 7회 백업, **서울 ap-northeast-2**)
+  - DB: Supabase Pro (200 동시커넥션, 8GB, 일 7회 백업, **서울 ap-northeast-2**, Storage: merchant-logos 버킷)
 - **향후 이관 트리거**: Supabase 비용 월 $100+ 또는 크롤 수천 건 시 자체 서버 검토
 
 ---
@@ -510,19 +554,21 @@ MerchantForm에서 이벤트 URL 입력
 
 ### 미해결
 - ⚠️ 카카오 로그인 후 온보딩 테스트 필요
-- ⚠️ 일부 구글 이미지 로고 품질 낮음 (34개 교체 완료, 나머지 진행 중)
+- ⚠️ 일부 구글 이미지 로고 품질 낮음 (34개 교체 완료, 나머지는 어드민 파일 업로드로 교체 가능)
+- ⚠️ 기존 딜 카테고리 불일치 — 크롤러 v2.1까지 엉뚱한 카테고리로 배정된 딜 존재 (v2.2로 신규 딜은 해결, 기존 딜 일괄 수정 필요)
+- ⚠️ 기존 naver_brand 잘못된 딜 정리 필요 — 달바(23개 상품→hidden 완료, 7개 기획전 재크롤), 라네즈(7개 카테고리명 딜 → hidden 필요 후 naver_brand 재크롤)
 
 ### 즉시 (Phase 1 마무리)
 - **도메인**: 가비아 DNS 설정 (A: @→76.76.21.21, CNAME: www→cname.vercel-dns.com, admin→별도)
-- **크롤 테스트**: v4 엔진 단일 커넥터 실행 확인
-- **어드민**: 딜 관리 수정 링크 경로 확인 (`/deals/${id}/edit`)
+- **기존 딜 카테고리 일괄 수정**: merchants.category_ids 기준으로 deals.category_id UPDATE 쿼리
 
 ### 단기 (Phase 2)
 - **링크프라이스**: 제휴 API 연동 → `source_type: 'affiliate'` + `affiliate_url` 필드 활용
 - **회원**: 애플 OAuth, KMC 본인인증, 카카오 알림톡, 검색 trackSearch 연동
 - **어드민**: 탈퇴 30일 자동 삭제 Cron
-- **크롤러**: naver_brand 전용 파서 (구조 통일, API 비용 0원 가능)
+- **크롤러**: ~~naver_brand 전용 파서~~ ✅ v5에서 전용 프롬프트+fullPage 완성
 - **크롤러**: single 타입 처리 로직 검증 + 유저 제보(/submit) → single 커넥터 자동 생성
+- **크롤러**: 기존 list 타입으로 잘못 크롤된 naver_brand 딜 일괄 정리
 
 ### 중기 (Phase 3)
 - **수익화**: TargetUP-AI CRM 연동 (건당 60~70원 타겟 마케팅)
@@ -541,35 +587,38 @@ MerchantForm에서 이벤트 URL 입력
 - 딜 이미지: thumbnail_url은 DealCard에서 사용 안 함 (로고 중심 디자인)
 - Puppeteer waitForTimeout 제거됨 → `new Promise(r => setTimeout(r, ms))`
 - Vercel 빌드: `.rpc()` → `.then(() => {}, () => {})`, 타입 체크 엄격
-- 로고 수동교체: `public/logos/` + DB logo_url 동시 업데이트 필요
+- 로고 관리: 신규/교체 → 어드민 MerchantForm에서 파일 업로드 (Supabase Storage `merchant-logos` 버킷). 기존 외부 URL 로고는 그대로 유지됨
+- **로고 업로드 원칙**: edit 모드에서 파일 안 건드리면 payload에서 logo_url 제외 → DB 기존 값 유지. 이벤트 URL만 추가해도 로고 안 바뀜
 - CategoryGrid/CategoryTabBar: 'use client', CategoryIcon은 color prop만
 - **PowerShell**: Set-Content 인코딩 → node 스크립트 권장, [id] 폴더 → `-LiteralPath` 필수
 - **어드민 tsconfig.json**: `"exclude": ["node_modules", "scripts"]`
-- **Supabase API Keys**: 레거시 Disabled → sb_publishable_/sb_secret_ 사용. 양쪽 .env.local + Vercel 모두 신규 키
-- **Supabase client.ts 싱글톤**: `createClient()` 함수 사용 필수. `createBrowserClient()` 직접 호출 금지
-- **Vercel Function Region**: 메인+어드민 둘 다 서울(icn1) 설정 완료. 리전 변경 후 Redeploy 필요
-- **DealDetailClient 캐시**: 메모리(클라이언트) 한정, 새로고침 시 초기화
-- **AuthProvider TOKEN_REFRESHED**: fetchProfile 절대 금지 → 무한루프. `profileLoadedForRef`로 방지
+- **Supabase API Keys**: 레거시 Disabled → sb_publishable_/sb_secret_ 사용
+- **Supabase client.ts 싱글톤**: `createClient()` 함수 사용 필수
+- **Vercel Function Region**: 메인+어드민 둘 다 서울(icn1). 리전 변경 후 Redeploy 필요
+- **AuthProvider TOKEN_REFRESHED**: fetchProfile 절대 금지 → 무한루프
 - **로그아웃**: 서버 사이드 API(`/api/auth/signout`) 필수. `<a>` 태그 사용
-- **설정 탭 public 데이터**: Supabase REST API 직접 호출 (`fetch + apikey 헤더`)
 - **Toast 시스템**: sessionStorage('poppon_pending_toast') → layout mount 시 표시
 - **Puppeteer 서버리스**: `puppeteer-core` + `@sparticuz/chromium` 필수
-- **Vercel 배치 크롤 타임아웃**: 3-batch 분할 + 250초 타임아웃으로 해결
+- **Vercel 배치 크롤 타임아웃**: 3-batch 분할 + 250초 타임아웃
 - **카카오 OAuth**: REST API Key `83c8e501803f831f075f7c955d91a000`, 도메인 변경 시 카카오 포털 동기화
-- **openAuthSheet 타입**: `(initialStepOrEvent?: AuthSheetStep | unknown) => void`
 - **profiles.phone**: UNIQUE 해제됨. KMC 연동 시 재적용 검토
 - **Cron 3-batch**: 커넥터 이름순 정렬 → 3등분, 250초 초과 시 스킵. **v4: single 타입 자동 제외**
 - **DealModal 스크롤**: `position: fixed` + `top: -scrollY` 패턴 필수
-- **crawl_runs.tokens_used**: 2/17 추가. save-deals.ts completeCrawlRunLog에서 저장
-- **어드민 Supabase 타입 추론**: Generated Types 없이 `let _supabase: any` + `createClient<any>()` 사용. server.ts는 기존 `createServerClient` 유지
 - **어드민 N+1 쿼리**: 회원 목록 개별 `getUserById()` 금지 → `auth.admin.listUsers()` 배치 필수
-- **네이버 OAuth**: 수동 플로우 `/api/auth/naver` + `/auth/callback/naver`. `updateUserById` 사용 필수 (updateUser 아님). 환경변수 `NAVER_CLIENT_ID/SECRET` — poppon만
-- **어드민 딜 목록 0개 버그**: `/api/deals` categories 조인 FK 미명시 → `categories!deals_category_id_fkey` 필수 (2/17 수정)
-- **어드민 대시보드 marketing_opt_in**: 실제 컬럼명 `marketing_agreed`로 수정 (2/17)
+- **네이버 OAuth**: 수동 플로우. `updateUserById` 사용 필수 (updateUser 아님). 환경변수 `NAVER_CLIENT_ID/SECRET` — poppon만
+- **어드민 딜 목록**: `/api/deals` categories 조인 FK 명시 필수 (`categories!deals_category_id_fkey`)
 - **deals 삭제 시 FK**: outbound_clicks → deal_actions → saved_deals 순서로 먼저 삭제 필요
-- **hidden 딜 대정리**: 931개 중 금융 제외 849개 active 전환, 나머지 삭제 (2/17). 최종 active 871개
-- **커넥터 타입 컬럼**: `crawl_connectors.connector_type` DEFAULT 'list'. 기존 전부 list, naver URL은 naver_brand로 자동 분류
+- **커넥터 타입 컬럼**: `crawl_connectors.connector_type` DEFAULT 'list'
 - **single 커넥터**: 크롤 성공 시 자동 `status: 'disabled'`. Cron에서 제외. 해시 체크 안 함
+- **어드민 edit 페이지 null 처리**: 필드별 타입 맞춤 변환 필수 (배열→[], boolean→false). 일괄 `null→''` 금지 (v4.3 수정)
+- **머천트 PUT API**: event_page_url/connector_type 필드 분리 필수. merchants 컬럼에 없는 필드 update 시 에러 (v4.3 수정)
+- **크롤러 카테고리 배정**: save-deals.ts v2.2에서 merchants.category_ids 직접 조회. config.top_category는 fallback만
+- **크롤러 프롬프트 v5**: "이벤트성 판단 원칙" 기반 — 상시 할인/상시 판매가 제외, confidence 75 이상만 통과
+- **naver_brand fullPage**: renderPage에 `{ fullPage: true }` 옵션 → body 전체에서 링크 수집 (기획전 탭이 main 밖에 있음)
+- **naver_brand /products/ URL 차단**: 후처리 필터에서 강제 제거 (네이버 상품 URL 수시 삭제로 링크 깨짐)
+- **커넥터 관리 API**: `/api/connectors/[id]` PATCH(URL/타입/상태/해시리셋) + DELETE(crawl_runs도 함께 삭제)
+- **브랜드 수정 후 필터 유지**: edit 페이지 URL에 `?category=xxx` 포함, MerchantForm returnCategory prop으로 전달
+- **useSearchParams + Suspense**: Next.js 15에서 useSearchParams() 사용하는 'use client' 페이지는 반드시 Suspense로 래핑 필수
 
 ---
 
@@ -607,23 +656,51 @@ MerchantForm에서 이벤트 URL 입력
 | 팝폰-로고교체+푸터+홈그리드 | 2/17 | 로고 34종, 푸터 사업자 정보, 홈 limit 48 |
 | 팝폰-Cron자동화+크롤이력 | 2/17 | 3-batch 분할, 크롤 이력 페이지+API, 모달 스크롤 수정 |
 | 팝폰-어드민속도개선+회원상세+페이징 | 2/17 | 대시보드 경량API, 회원 N+1 제거, 브랜드/크롤 10개 페이징, 어드민 서울 설정 |
-| **팝폰-딜버그수정+커넥터타입v4+딜정리** | **2/17** | **딜 목록 FK 수정, 대시보드 active/expired 분리, 커넥터 타입 시스템(list/single/naver_brand), hidden 931개 정리→active 871개, 브랜드 등록 커넥터 자동생성** |
+| 팝폰-딜버그수정+커넥터타입v4+딜정리 | 2/17 | 딜 목록 FK 수정, 커넥터 타입 시스템, hidden 931개 정리→active 871개 |
+| **팝폰-어드민브랜드관리+크롤카테고리수정** | **2/17** | **브랜드 검색버그+카테고리필터+slug직접입력+edit null수정+크롤러 카테고리 근본수정(v2.2)** |
+| **팝폰-로고파일업로드** | **2/17** | **Supabase Storage 연동, 어드민 MerchantForm 파일 업로드, 기존 로고 보존 로직** |
+| **팝폰-네이버브랜드크롤수정+커넥터관리** | **2/18** | **naver_brand fullPage+프롬프트v5+커넥터관리UI+브랜드필터유지** |
 
 ---
 
-### 딜 버그 수정 + 커넥터 타입 v4 + 딜 정리 (2/17 야간)
-- [x] 딜 목록 0개 버그 — `/api/deals` categories 조인 FK 명시 (`categories!deals_category_id_fkey`)
-- [x] 대시보드 지표 개선 — active/expired/pending 분리, `marketing_opt_in` → `marketing_agreed` 수정
-- [x] 딜 관리 수정 링크 경로 — `/admin/deals/${id}/edit` → `/deals/${id}/edit`
-- [x] pending 327개 → active 전환 + 만료 57개 → expired + 파싱 오류 10개 → hidden
-- [x] 커넥터 타입 시스템 v4 — `connector_type` 컬럼 추가 (list/single/naver_brand)
-- [x] AI 엔진 v4 — single 전용 프롬프트, single 해시 스킵, single 성공 후 auto disabled
-- [x] Cron v4 — `.in('connector_type', ['list', 'naver_brand'])` single 자동 제외
-- [x] 브랜드 등록 폼 — 이벤트 URL 입력 → 커넥터 자동 생성 (naver 자동감지)
-- [x] 크롤 모니터링 — 타입 컬럼 + 타입별 필터 드롭다운
-- [x] hidden 931개 대정리 — 금융 7브랜드 제외 → 849개 active 전환 → 나머지 삭제 (FK 제약 해결)
-- [x] 최종 상태: active 871 / expired 193 / hidden 0 / 전체 1,064
+### 로고 파일 업로드 (2/17)
+- [x] Supabase Storage `merchant-logos` 버킷 생성 (Public)
+- [x] 로고 업로드 API (`/api/upload-logo`) — 5MB 제한, PNG/JPG/WebP/SVG
+- [x] MerchantForm v4.3 — "📁 파일에서 선택" 버튼 + 기존 URL 입력 유지
+- [x] 로고 보존 로직 — edit 모드에서 로고 안 건드리면 payload에서 logo_url 제외
+- [x] 업로드 상태 표시 (스피너) + 에러 핸들링 + 미리보기
+
+### 어드민 브랜드 관리 개선 + 크롤러 카테고리 수정 (2/17)
+- [x] 브랜드 검색 버그 — 파라미터 `search` → `q` 통일
+- [x] 브랜드 카테고리 필터 — 탭 바 + 미분류 표시 + 활성 딜 0개 하이라이트
+- [x] 브랜드 목록 디바운스 자동 검색 (300ms) — form submit 제거
+- [x] slug 직접 입력 — 영문+숫자+하이픈, 중복 체크, 한글 브랜드 빈칸 유도
+- [x] 카테고리 선택 UI — DB 실시간 로드 + 토글 버튼 (복수 선택)
+- [x] brand_color 입력 필드 + 컬러 프리뷰
+- [x] edit 페이지 null 처리 — `null→''` 일괄 변환 제거 → 필드별 타입 맞춤 (배열→[], boolean→false)
+- [x] 머천트 PUT API — event_page_url/connector_type 분리 (merchants 컬럼 오염 방지)
+- [x] 브랜드 수정 시 커넥터 자동 생성 — PUT에서도 이벤트 URL 있으면 커넥터 INSERT
+- [x] **크롤러 카테고리 근본 수정 (save-deals v2.2)** — `config.top_category || '생활'` → merchants.category_ids 직접 조회
+- [x] 스킨푸드 커넥터 — 자체 사이트 Prototype.js 충돌 → 네이버 브랜드스토어로 URL 변경
+- [ ] 기존 딜 카테고리 일괄 수정 (merchants.category_ids 기준 UPDATE) — 미실행
 
 ---
 
-*마지막 업데이트: 2026-02-17 야간 (커넥터 타입 v4 + 딜 대정리 + 브랜드 등록 커넥터 자동생성)*
+### 네이버 브랜드스토어 크롤 수정 + 프롬프트 v5 + 커넥터 관리 (2/18)
+- [x] **renderPage fullPage 모드** — naver_brand 타입일 때 body 전체에서 링크 수집 (기획전 탭이 main 영역 밖에 위치하는 문제 해결)
+- [x] **naver_brand 전용 프롬프트** — 기획전 vs 일반 카테고리 구분 원칙 추가 ("금전적 혜택 기대 가능?" 판단)
+- [x] **LIST 프롬프트 전면 개선** — "이벤트성 판단 원칙" 중심 재작성 (상시 할인/상시 판매가 제외)
+- [x] **SINGLE 프롬프트 개선** — 이벤트성 판단 원칙 추가
+- [x] **confidence 기준 상향** — 70→75 (후처리 필터 포함)
+- [x] **naver_brand /products/ URL 차단** — 후처리 필터에서 강제 제거
+- [x] 달바 잘못된 딜 23개 hidden + 해시 리셋 + naver_brand 재크롤 → 7개 기획전 추출 성공
+- [x] **커넥터 관리 API** — `/api/connectors/[id]` PATCH(URL/타입/상태/해시리셋) + DELETE
+- [x] **커넥터 관리 UI** — MerchantForm edit 모드에서 기존 커넥터 조회/URL수정/타입변경/상태토글/해시리셋/삭제
+- [x] **머천트 GET API** — 커넥터 목록 포함 반환
+- [x] **브랜드 수정 후 카테고리 필터 유지** — URL param으로 상태 유지 (`?category=xxx`)
+- [x] **useSearchParams Suspense 래핑** — Next.js 15 빌드 에러 해결
+- [ ] 라네즈 잘못된 딜 hidden + naver_brand 재크롤 — 미실행
+
+---
+
+*마지막 업데이트: 2026-02-18 (네이버 브랜드스토어 크롤 수정 + AI 프롬프트 v5 + 커넥터 관리 UI)*

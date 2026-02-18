@@ -38,15 +38,31 @@ export async function POST(request: NextRequest) {
 
     // ✅ user_id 결정: body에서 받은 값 우선, 없으면 서버 세션에서 추출
     let userId = bodyUserId || null;
+
+    // 🔍 디버그: body userId 확인
+    console.error(`[Actions DEBUG] body userId: "${bodyUserId}" (type: ${typeof bodyUserId}), action: ${action_type}`);
+
+    // body userId가 있으면 UUID 형식 검증
+    if (userId && !uuidRegex.test(userId)) {
+      console.error(`[Actions DEBUG] body userId INVALID format, ignoring: "${userId}"`);
+      userId = null;
+    }
+
     if (!userId) {
       try {
         const authClient = await createServerSupabaseClient();
-        const { data: { user } } = await authClient.auth.getUser();
+        const { data: { user }, error: authError } = await authClient.auth.getUser();
         userId = user?.id || null;
-      } catch {
-        // 세션 없으면 null — 비로그인 트래킹
+
+        // 🔍 디버그: 서버 세션 결과
+        console.error(`[Actions DEBUG] server userId: ${userId}, authError: ${authError?.message || 'none'}`);
+      } catch (e: any) {
+        console.error(`[Actions DEBUG] server auth exception: ${e?.message || e}`);
       }
     }
+
+    // 🔍 디버그: 최종 userId
+    console.error(`[Actions DEBUG] FINAL userId: ${userId}, session: ${session_id}`);
 
     // ✅ Service client 사용 (RLS 우회 — 비로그인도 insert 가능)
     const supabase = await createServiceClient();
@@ -76,12 +92,25 @@ export async function POST(request: NextRequest) {
       user_id: userId,
     });
 
+    // ✅ FK 에러 시 user_id=null로 재시도 (트래킹 누락 방지)
     if (error) {
+      if (error.message.includes('foreign key') && userId) {
+        console.error(`[Actions DEBUG] FK error with userId "${userId}", retrying with null`);
+        const { error: retryError } = await supabase.from('deal_actions').insert({
+          deal_id,
+          action_type,
+          session_id,
+          user_id: null,
+        });
+        if (retryError) {
+          console.error('[Actions API] Retry insert error:', retryError.message);
+          return NextResponse.json({ error: '로깅 실패' }, { status: 500 });
+        }
+        return NextResponse.json({ ok: true, fallback: true });
+      }
+
       console.error('[Actions API] Insert error:', error.message);
-      return NextResponse.json(
-        { error: '로깅 실패' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: '로깅 실패' }, { status: 500 });
     }
 
     // 카운트 증가 (fire-and-forget)

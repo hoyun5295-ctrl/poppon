@@ -95,7 +95,7 @@ export function DealModal({ children }: DealModalProps) {
         onClick={handleClose}
       />
 
-      {/* 데스크톱: 센터 모달 */}
+      {/* 데스크탑: 센터 모달 */}
       <div className="hidden md:flex absolute inset-0 items-center justify-center px-4">
         <div
           className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto transition-all duration-200 ease-out ${
@@ -105,14 +105,17 @@ export function DealModal({ children }: DealModalProps) {
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={handleClose}
-            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-surface-100 hover:bg-surface-200 transition-colors"
-            aria-label="닫기"
-          >
-            <X className="w-4 h-4 text-surface-500" />
-          </button>
-          <div className="p-5">
+          {/* ✅ X 버튼 별도 행 */}
+          <div className="flex justify-end px-3 pt-3">
+            <button
+              onClick={handleClose}
+              className="p-2 rounded-full bg-surface-100 hover:bg-surface-200 transition-colors"
+              aria-label="닫기"
+            >
+              <X className="w-4 h-4 text-surface-500" />
+            </button>
+          </div>
+          <div className="px-5 pb-5">
             {children}
           </div>
         </div>
@@ -139,20 +142,23 @@ export function DealModal({ children }: DealModalProps) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
+          {/* ✅ 드래그 핸들 + X 버튼 같은 행 */}
           <div
             data-drag-handle
-            className="flex items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing"
+            className="flex items-center justify-between px-3 pt-3 pb-1 cursor-grab active:cursor-grabbing"
           >
+            <div className="flex-1" />
             <div className="w-10 h-1 rounded-full bg-surface-300" />
+            <div className="flex-1 flex justify-end">
+              <button
+                onClick={handleClose}
+                className="p-2 rounded-full bg-surface-100 active:bg-surface-200 transition-colors"
+                aria-label="닫기"
+              >
+                <X className="w-4 h-4 text-surface-500" />
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={handleClose}
-            className="absolute top-3 right-3 z-10 p-2 rounded-full bg-surface-100 active:bg-surface-200 transition-colors"
-            aria-label="닫기"
-          >
-            <X className="w-4 h-4 text-surface-500" />
-          </button>
 
           <div
             className="overflow-y-auto overscroll-contain px-4 pb-6 pb-safe"

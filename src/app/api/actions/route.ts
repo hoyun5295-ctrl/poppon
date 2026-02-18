@@ -40,13 +40,9 @@ export async function POST(request: NextRequest) {
     let userId: string | null = null;
     try {
       const authClient = await createServerSupabaseClient();
-      const { data: { user }, error: authError } = await authClient.auth.getUser();
+      const { data: { user } } = await authClient.auth.getUser();
       userId = user?.id || null;
-
-      // 🔍 디버그 (원인 확인 후 제거)
-      console.error(`[Actions] userId: ${userId}, authError: ${authError?.message || 'none'}, action: ${action_type}`);
-    } catch (e: any) {
-      console.error(`[Actions] auth exception: ${e?.message || e}`);
+    } catch {
       // 세션 없으면 null — 비로그인 트래킹
     }
 
@@ -79,7 +75,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('[Actions] Insert error:', error.message, '| userId:', userId);
+      console.error('[Actions] Insert error:', error.message);
       return NextResponse.json(
         { error: '로깅 실패' },
         { status: 500 }

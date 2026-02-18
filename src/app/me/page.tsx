@@ -6,7 +6,7 @@ import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
   Bookmark, Shield, Smartphone, ExternalLink, AlertTriangle, KeyRound,
   Check, Shirt, Sparkles, UtensilsCrossed, Home, Plane, LayoutGrid, Plus,
-  User, Camera
+  User, Camera, Clock
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { setPendingToast } from '@/lib/auth/AuthProvider';
@@ -309,6 +309,8 @@ function SettingsTab({ profile, user, onRefresh }: {
 
   // 계정 탈퇴
   const [withdrawReason, setWithdrawReason] = useState('');
+  // ✅ 탈퇴 요청 완료 상태 (API 성공 후 즉시 UI 반영)
+  const [withdrawRequested, setWithdrawRequested] = useState(false);
 
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
@@ -319,15 +321,17 @@ function SettingsTab({ profile, user, onRefresh }: {
         body: JSON.stringify({ reason: withdrawReason }),
       });
       if (res.ok) {
-        window.location.href = '/';
+        // ✅ 페이지 이동 대신 상태만 변경 (세션 유지)
+        setWithdrawRequested(true);
+        setShowDeleteConfirm(false);
       } else {
-        alert('계정 삭제 중 오류가 발생했습니다. 다시 시도해주세요.');
+        const data = await res.json();
+        alert(data.error || '탈퇴 요청 중 오류가 발생했습니다.');
       }
     } catch {
-      alert('계정 삭제 중 오류가 발생했습니다.');
+      alert('탈퇴 요청 중 오류가 발생했습니다.');
     } finally {
       setDeleteLoading(false);
-      setShowDeleteConfirm(false);
     }
   };
 
@@ -337,8 +341,34 @@ function SettingsTab({ profile, user, onRefresh }: {
   const isLinked = (provider: string) =>
     linkedProviders.includes(provider) || currentProvider === provider;
 
+  // ✅ 탈퇴 대기 상태 판별 (DB에서 가져온 값 또는 방금 요청한 값)
+  const isPendingWithdrawal = fullProfile?.status === 'pending_withdrawal' || withdrawRequested;
+
   return (
     <div className="space-y-5">
+      {/* ✅ 탈퇴 심사 중 안내 배너 */}
+      {isPendingWithdrawal && (
+        <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
+          <div className="flex items-start gap-3">
+            <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-700">
+                탈퇴 요청이 접수되었습니다
+              </p>
+              <p className="text-xs text-amber-600 mt-1 leading-relaxed">
+                관리자 승인 후 탈퇴가 완료됩니다. 승인 전까지 서비스를 정상적으로 이용하실 수 있으며,
+                탈퇴를 취소하시려면 고객센터로 문의해주세요.
+              </p>
+              {fullProfile?.withdrawn_at && (
+                <p className="text-[11px] text-amber-500 mt-2">
+                  요청일: {new Date(fullProfile.withdrawn_at).toLocaleDateString('ko-KR')}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ✅ 내 정보 섹션 */}
       <ProfileInfoSection
         fullProfile={fullProfile}
@@ -428,7 +458,13 @@ function SettingsTab({ profile, user, onRefresh }: {
       <div className="bg-white rounded-xl border border-surface-200 p-5">
         <h3 className="font-semibold text-surface-900 mb-4">계정</h3>
 
-        {!showDeleteConfirm ? (
+        {/* ✅ 이미 탈퇴 대기 중이면 재요청 차단 */}
+        {isPendingWithdrawal ? (
+          <div className="flex items-center gap-2 text-sm text-amber-600">
+            <Clock className="w-4 h-4" />
+            탈퇴 심사 중입니다
+          </div>
+        ) : !showDeleteConfirm ? (
           <button
             onClick={() => setShowDeleteConfirm(true)}
             className="text-sm text-red-500 hover:text-red-600 font-medium"
@@ -444,8 +480,8 @@ function SettingsTab({ profile, user, onRefresh }: {
                   정말 탈퇴하시겠습니까?
                 </p>
                 <p className="text-xs text-red-600 mt-1 leading-relaxed">
-                  탈퇴 시 30일간 데이터가 보관된 후 영구 삭제됩니다.
-                  30일 이내 재로그인하면 복구 가능합니다.
+                  탈퇴 요청은 관리자 승인 후 처리됩니다.
+                  승인 전까지 서비스를 정상적으로 이용하실 수 있습니다.
                 </p>
 
                 <select
@@ -467,7 +503,7 @@ function SettingsTab({ profile, user, onRefresh }: {
                     disabled={deleteLoading}
                     className="px-4 py-2 text-xs font-semibold text-white bg-red-500 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
                   >
-                    {deleteLoading ? '처리 중...' : '탈퇴하기'}
+                    {deleteLoading ? '처리 중...' : '탈퇴 요청'}
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}

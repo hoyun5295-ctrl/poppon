@@ -97,7 +97,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | SourceProtection.tsx | `src/components/layout/SourceProtection.tsx` |
 | TopProgressBar.tsx | `src/components/layout/TopProgressBar.tsx` |
 | Toast.tsx | `src/components/common/Toast.tsx` |
-| AuthSheet.tsx | `src/components/auth/AuthSheet.tsx` |
+| AuthSheet.tsx | `src/components/auth/AuthSheet.tsx` ✅ 이메일 가입 시 프로필 정보 입력 스텝 추가 (2/18) |
 | MobileFilterSheet.tsx | `src/components/search/MobileFilterSheet.tsx` |
 | SearchBar.tsx | `src/components/search/SearchBar.tsx` |
 | SearchFilters.tsx | `src/components/search/SearchFilters.tsx` |
@@ -131,6 +131,9 @@ SELECT COUNT(*) FROM followed_merchants;
 | 마이 로딩 | `src/app/me/loading.tsx` |
 | 로그인 | `src/app/auth/page.tsx` (바텀시트 연동) |
 | OAuth 콜백 | `src/app/auth/callback/route.ts` |
+| 개인정보처리방침 | `src/app/legal/privacy/page.tsx` ✅ 2/18 |
+| 이용약관 | `src/app/legal/terms/page.tsx` ✅ 2/18 |
+| 마케팅수신동의 | `src/app/legal/marketing/page.tsx` ✅ 2/18 |
 
 #### 데이터 / 타입 / 유틸 / 인증
 | 파일 | 경로 |
@@ -235,6 +238,7 @@ src/app/
 ├── submit/                  — 유저 제보
 ├── me/                      — 마이페이지 + loading.tsx
 ├── auth/                    — 로그인 + callback/ (카카오) + callback/naver/
+├── legal/                   — 개인정보처리방침, 이용약관, 마케팅수신동의
 ├── api/
 │   ├── submit/, actions/, actions/search/
 │   ├── auth/signout/, auth/naver/
@@ -357,7 +361,7 @@ gender, birth_date(varchar), ci, di,
 interest_categories(uuid[], DEFAULT '{}'), marketing_agreed(boolean, DEFAULT false),
 marketing_agreed_at, marketing_channel(text[]),
 provider(DEFAULT 'email'), linked_providers(text[]),
-role(user/admin/super_admin), status(active/withdrawn/banned),
+role(user/admin/super_admin), status(active/pending_withdrawal/withdrawn/banned),
 withdrawn_at, withdraw_reason, last_login_at, created_at, updated_at
 ```
 
@@ -402,9 +406,9 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 
 ### 아키텍처
 ```
-[이메일 가입] AuthSheet 6단계 → Supabase Auth → profiles 트리거 → 본인인증(placeholder) → 관심카테고리 → 마케팅동의
+[이메일 가입] AuthSheet 7단계 → Supabase Auth → profiles 트리거 → 프로필 정보(이름/전화/성별/생일) → 관심카테고리 → 마케팅동의
 [카카오 로그인] signInWithOAuth → 카카오 동의 → Supabase 콜백 → 신규? → /?onboarding=sns → AuthSheet(categories)
-[탈퇴] 마이페이지 → soft delete (status='withdrawn') → 30일 후 완전 삭제
+[탈퇴] 마이페이지 → pending_withdrawal → 어드민 승인 → withdrawn → 30일 후 완전 삭제 ⚠️ 구현 예정
 [로그아웃] <a href="/api/auth/signout"> → sb- 쿠키 삭제 + 302 → sessionStorage 토스트
 ```
 
@@ -412,6 +416,10 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 - ✅ DB 6테이블 + RLS + 트리거, AuthProvider + AuthSheet, 카카오 OAuth, SNS 온보딩
 - ✅ 서버 사이드 로그아웃, Toast 시스템, TOKEN_REFRESHED 무한루프 방지
 - ✅ 네이버 OAuth (수동 플로우 — admin.createUser+generateLink+verifyOtp)
+- ✅ 네이버 OAuth 프로필 저장 (이름/이메일/성별/생일/연령대/전화번호 → profiles 테이블)
+- ✅ 이메일 가입 시 프로필 정보 입력 (이름/전화/성별/생일 — identity 스텝)
+- ✅ 법적 페이지 3종 (개인정보처리방침/이용약관/마케팅수신동의)
+- ⬜ **회원탈퇴 어드민 승인** — 설계 완료, 다음 세션 구현 예정
 - ⬜ 애플 OAuth (앱 출시 후), KMC 본인인증, 카카오 알림톡
 
 ### 환경변수
@@ -560,13 +568,14 @@ MerchantForm에서 이벤트 URL 입력
 - ⚠️ deal_actions 테이블에 `metadata` 컬럼 추가 필요 (또는 tracking.ts에서 metadata 전송 제거) — 현재 API에서 metadata INSERT 제거로 임시 해결
 
 ### 즉시 (Phase 1 마무리)
+- **🔴 회원탈퇴 어드민 승인** — 키워드: "회원탈퇴어드민승인" → 아래 설계대로 구현
 - **도메인**: 가비아 DNS 설정 (A: @→76.76.21.21, CNAME: www→cname.vercel-dns.com, admin→별도)
 - **기존 딜 카테고리 일괄 수정**: merchants.category_ids 기준으로 deals.category_id UPDATE 쿼리
 
 ### 단기 (Phase 2)
 - **링크프라이스**: 제휴 API 연동 → `source_type: 'affiliate'` + `affiliate_url` 필드 활용
 - **회원**: 애플 OAuth, KMC 본인인증, 카카오 알림톡, 검색 trackSearch 연동
-- **어드민**: 탈퇴 30일 자동 삭제 Cron
+- **어드민**: 탈퇴 승인 후 30일 자동 완전삭제 Cron
 - **크롤러**: ~~naver_brand 전용 파서~~ ✅ v5에서 전용 프롬프트+fullPage 완성
 - **크롤러**: single 타입 처리 로직 검증 + 유저 제보(/submit) → single 커넥터 자동 생성
 - **크롤러**: 기존 list 타입으로 잘못 크롤된 naver_brand 딜 일괄 정리
@@ -624,6 +633,10 @@ MerchantForm에서 이벤트 URL 입력
 - **DealDetailClient.tsx**: 레거시 파일 (사용 안 함). 모달/풀페이지 모두 서버사이드. 빌드 호환용 최소 코드만 유지
 - **deal_actions 테이블**: `metadata` 컬럼 없음. actions API에서 metadata 필드 INSERT 시 스키마 캐시 에러 발생
 - **Supabase 클라이언트 auth lock**: 싱글톤 createClient()로 AuthProvider가 getSession()+onAuthStateChange() 잡고 있으면, 같은 클라이언트로 다른 쿼리 시 블로킹 가능. 서버사이드 또는 REST 직접 호출로 우회
+- **네이버 OAuth 프로필 저장**: 콜백에서 user_metadata → profiles 테이블로 이름/이메일/성별/생일/연령대/전화번호 저장. `updateUserById` 사용
+- **이메일 가입 프로필 입력**: AuthSheet identity 스텝에서 이름(필수)/전화(필수)/성별(필수)/생일(필수) 수집 → profiles UPDATE
+- **법적 페이지**: `/legal/privacy`, `/legal/terms`, `/legal/marketing` — AuthSheet 약관 링크(462줄)에서 연결됨
+- **한줄로AI**: 동일 법인(인비토) 운영 → 개인정보처리방침에 "자사 CRM 서비스, 제3자 제공 아님"으로 명시
 
 ---
 
@@ -666,6 +679,7 @@ MerchantForm에서 이벤트 URL 입력
 | **팝폰-로고파일업로드** | **2/17** | **Supabase Storage 연동, 어드민 MerchantForm 파일 업로드, 기존 로고 보존 로직** |
 | **팝폰-네이버브랜드크롤수정+커넥터관리** | **2/18** | **naver_brand fullPage+프롬프트v5+커넥터관리UI+브랜드필터유지** |
 | **팝폰-모달렌더링수정+actions수정** | **2/18** | **모달 서버사이드 전환(auth lock 해결)+actions API metadata 제거** |
+| **팝폰-네이버검수+법적페이지+탈퇴설계** | **2/18** | **네이버OAuth 프로필저장+법적페이지3종+이메일프로필입력+회원탈퇴어드민승인 설계** |
 
 ---
 
@@ -718,4 +732,45 @@ MerchantForm에서 이벤트 URL 입력
 
 ---
 
-*마지막 업데이트: 2026-02-18 (모달 서버사이드 전환 + actions API metadata 수정)*
+### 네이버 검수 준비 + 법적 페이지 + 이메일 프로필 + 탈퇴 설계 (2/18)
+- [x] **네이버 OAuth 프로필 저장** — 콜백에서 user_metadata(이름/이메일/성별/생일/연령대/전화번호) → profiles 테이블 저장
+- [x] **마이페이지 내 정보** — fullProfile 조회로 실제 프로필 데이터 표시 (네이버 검수용)
+- [x] **법적 페이지 3종** — 개인정보처리방침/이용약관/마케팅수신동의 (회사: 주식회사 인비토, 한줄로AI 타겟마케팅 명시)
+- [x] **이메일 가입 프로필 입력** — AuthSheet identity 스텝을 본인인증 placeholder → 실제 프로필 입력으로 교체
+  - 수집 항목: 이름(필수), 전화번호(필수, 자동 하이픈), 성별(필수, 토글), 생년월일(필수)
+  - 가입 플로우: signup → identity(프로필) → categories → marketing
+- [x] **회원탈퇴 기능 확인** — 마이페이지 설정 탭에 이미 완전히 구현됨 (API + UI + 사유 수집)
+- [ ] **🔴 회원탈퇴 어드민 승인** — 설계 완료, **다음 세션 구현** (키워드: "회원탈퇴어드민승인")
+
+### 🔴 회원탈퇴 어드민 승인 — 설계 (확정 2/18)
+```
+[플로우]
+유저 "탈퇴하기" 클릭 → status: 'pending_withdrawal' (즉시 withdrawn 아님)
+→ 어드민 회원관리에서 탈퇴 대기 목록 확인
+→ 승인 → status: 'withdrawn' + withdrawn_at 기록 + 로그아웃 처리
+→ 거부 → status: 'active' 복원 (사유 입력)
+
+[profiles.status 값]
+- active: 정상
+- pending_withdrawal: 탈퇴 대기 (새로 추가)
+- withdrawn: 탈퇴 완료 (어드민 승인 후)
+- banned: 차단
+
+[유저 경험]
+- 탈퇴 요청 후: 마이페이지에 "탈퇴 심사 중입니다" 안내 표시
+- 서비스 이용은 계속 가능 (pending 상태에서도 로그인 유지)
+- 어드민 승인 시: 다음 접속 때 로그아웃 처리
+
+[수정 대상]
+| 앱 | 파일 | 변경 내용 |
+|---|---|---|
+| poppon | api/me/delete-account/route.ts | withdrawn → pending_withdrawal로 변경 |
+| poppon | me/page.tsx (SettingsTab) | 탈퇴 대기 중 상태 표시 UI 추가 |
+| poppon-admin | api/members/[id]/route.ts | PATCH 승인/거부 API 추가 |
+| poppon-admin | members/page.tsx | 탈퇴 대기 필터 + 배지 표시 |
+| poppon-admin | members/[id]/page.tsx | 승인/거부 버튼 추가 |
+```
+
+---
+
+*마지막 업데이트: 2026-02-18 (네이버 검수 준비 + 법적 페이지 + 탈퇴 어드민 승인 설계)*

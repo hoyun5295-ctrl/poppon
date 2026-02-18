@@ -107,6 +107,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | CategoryTabBar.tsx | `src/components/category/CategoryTabBar.tsx` |
 | CategoryIcon.tsx | `src/components/category/CategoryIcon.tsx` |
 | MerchantDealTabs.tsx | `src/components/merchant/MerchantDealTabs.tsx` |
+| FollowButton.tsx | `src/components/merchant/FollowButton.tsx` ✅ 브랜드 구독/해제 클라이언트 컴포넌트 (2/18) |
 | Pagination.tsx | `src/components/common/Pagination.tsx` |
 | SortDropdown.tsx | `src/components/common/SortDropdown.tsx` |
 
@@ -122,12 +123,12 @@ SELECT COUNT(*) FROM followed_merchants;
 | 검색 로딩 | `src/app/search/loading.tsx` |
 | 카테고리 | `src/app/c/[categorySlug]/page.tsx` |
 | 카테고리 로딩 | `src/app/c/[categorySlug]/loading.tsx` |
-| 브랜드관 | `src/app/m/[merchantSlug]/page.tsx` |
+| 브랜드관 | `src/app/m/[merchantSlug]/page.tsx` ✅ FollowButton 연결 (2/18) |
 | 브랜드관 로딩 | `src/app/m/[merchantSlug]/loading.tsx` |
 | 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` ✅ 서버사이드 (getDealBySlug) |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
-| 마이페이지 | `src/app/me/page.tsx` |
+| 마이페이지 | `src/app/me/page.tsx` ✅ 마케팅동의 DB저장+탈퇴대기 안내 (2/18) |
 | 마이 로딩 | `src/app/me/loading.tsx` |
 | 로그인 | `src/app/auth/page.tsx` (바텀시트 연동) |
 | OAuth 콜백 | `src/app/auth/callback/route.ts` |
@@ -156,7 +157,7 @@ SELECT COUNT(*) FROM followed_merchants;
 | 클릭 트래킹 | `src/app/out/[dealId]/route.ts` |
 | 딜 저장 API | `src/app/api/me/saved-deals/route.ts` |
 | 브랜드 구독 API | `src/app/api/me/follows/merchants/route.ts` |
-| 계정 탈퇴 API | `src/app/api/me/delete-account/route.ts` |
+| 계정 탈퇴 API | `src/app/api/me/delete-account/route.ts` ✅ pending_withdrawal 방식 (2/18) |
 | 검색 로그 API | `src/app/api/actions/search/route.ts` |
 | 로그아웃 API | `src/app/api/auth/signout/route.ts` |
 | 네이버 OAuth 시작 | `src/app/api/auth/naver/route.ts` |
@@ -180,8 +181,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | 딜 목록/생성/수정 | `src/app/(dashboard)/deals/` |
 | 머천트 목록 | `src/app/(dashboard)/merchants/page.tsx` ✅ 디바운스검색+카테고리필터+URL필터유지 |
 | 머천트 생성/수정 | `src/app/(dashboard)/merchants/new/`, `[id]/edit/` ✅ 커넥터관리UI+Suspense |
-| 회원 목록 | `src/app/(dashboard)/members/page.tsx` |
-| 회원 상세 | `src/app/(dashboard)/members/[id]/page.tsx` |
+| 회원 목록 | `src/app/(dashboard)/members/page.tsx` ✅ 탈퇴대기 배너+필터+승인/거부 (2/18) |
+| 회원 상세 | `src/app/(dashboard)/members/[id]/page.tsx` ✅ 탈퇴승인/거부+상세정보 확장 (2/18) |
 | 크롤 모니터링 | `src/app/(dashboard)/crawls/page.tsx` ✅ v4 (타입 필터) |
 | 크롤 이력 | `src/app/(dashboard)/crawl-history/page.tsx` |
 
@@ -195,8 +196,8 @@ SELECT COUNT(*) FROM followed_merchants;
 | 커넥터 관리 | `src/app/api/connectors/[id]/route.ts` ✅ v5 (PATCH URL/타입/상태/해시리셋, DELETE) |
 | 대시보드 경량 | `src/app/api/dashboard/route.ts` ✅ active/expired/pending 분리 |
 | 로고 업로드 | `src/app/api/upload-logo/route.ts` ✅ Supabase Storage (merchant-logos 버킷) |
-| 회원 목록 | `src/app/api/members/route.ts` (N+1 제거) |
-| 회원 상세 | `src/app/api/members/[id]/route.ts` |
+| 회원 목록 | `src/app/api/members/route.ts` ✅ N+1 제거, pendingCount 반환 (2/18) |
+| 회원 상세 | `src/app/api/members/[id]/route.ts` ✅ GET+PATCH (탈퇴 승인/거부/상태변경) (2/18) |
 | AI 크롤 (배치/단일) | `src/app/api/ai-crawl/route.ts` + `[connectorId]/route.ts` ✅ v4 (타입 시스템) |
 | Cron 크롤 | `src/app/api/cron/crawl/route.ts` (3-batch, single 제외) ✅ v4 |
 | Cron 만료 | `src/app/api/cron/expire/route.ts` |
@@ -568,7 +569,6 @@ MerchantForm에서 이벤트 URL 입력
 - ⚠️ deal_actions 테이블에 `metadata` 컬럼 추가 필요 (또는 tracking.ts에서 metadata 전송 제거) — 현재 API에서 metadata INSERT 제거로 임시 해결
 
 ### 즉시 (Phase 1 마무리)
-- **🔴 회원탈퇴 어드민 승인** — 키워드: "회원탈퇴어드민승인" → 아래 설계대로 구현
 - **도메인**: 가비아 DNS 설정 (A: @→76.76.21.21, CNAME: www→cname.vercel-dns.com, admin→별도)
 - **기존 딜 카테고리 일괄 수정**: merchants.category_ids 기준으로 deals.category_id UPDATE 쿼리
 
@@ -637,6 +637,10 @@ MerchantForm에서 이벤트 URL 입력
 - **이메일 가입 프로필 입력**: AuthSheet identity 스텝에서 이름(필수)/전화(필수)/성별(필수)/생일(필수) 수집 → profiles UPDATE
 - **법적 페이지**: `/legal/privacy`, `/legal/terms`, `/legal/marketing` — AuthSheet 약관 링크(462줄)에서 연결됨
 - **한줄로AI**: 동일 법인(인비토) 운영 → 개인정보처리방침에 "자사 CRM 서비스, 제3자 제공 아님"으로 명시
+- **브랜드관 구독 버튼**: FollowButton 클라이언트 컴포넌트 분리 필수 (서버 컴포넌트 페이지에서 onClick 불가)
+- **마케팅 동의**: MarketingConsentSection에서 profiles.marketing_agreed + marketing_agreed_at 동시 UPDATE. ToggleSetting은 UI만
+- **회원탈퇴 2단계**: 유저→pending_withdrawal(세션 유지) → 어드민 승인→withdrawn / 거부→active. AuthProvider는 pending_withdrawal을 로그인 유지
+- **어드민 회원 PATCH**: `/api/members/[id]` PATCH — approve_withdrawal/reject_withdrawal/change_status 3종 action. 기존 `/api/members` PATCH도 하위호환 유지
 
 ---
 
@@ -680,6 +684,7 @@ MerchantForm에서 이벤트 URL 입력
 | **팝폰-네이버브랜드크롤수정+커넥터관리** | **2/18** | **naver_brand fullPage+프롬프트v5+커넥터관리UI+브랜드필터유지** |
 | **팝폰-모달렌더링수정+actions수정** | **2/18** | **모달 서버사이드 전환(auth lock 해결)+actions API metadata 제거** |
 | **팝폰-네이버검수+법적페이지+탈퇴설계** | **2/18** | **네이버OAuth 프로필저장+법적페이지3종+이메일프로필입력+회원탈퇴어드민승인 설계** |
+| **팝폰-회원탈퇴승인+구독+마케팅동의** | **2/18** | **회원탈퇴 어드민승인 구현+브랜드구독 버튼연결+마케팅동의 DB저장+어드민 상세 확장** |
 
 ---
 
@@ -740,9 +745,9 @@ MerchantForm에서 이벤트 URL 입력
   - 수집 항목: 이름(필수), 전화번호(필수, 자동 하이픈), 성별(필수, 토글), 생년월일(필수)
   - 가입 플로우: signup → identity(프로필) → categories → marketing
 - [x] **회원탈퇴 기능 확인** — 마이페이지 설정 탭에 이미 완전히 구현됨 (API + UI + 사유 수집)
-- [ ] **🔴 회원탈퇴 어드민 승인** — 설계 완료, **다음 세션 구현** (키워드: "회원탈퇴어드민승인")
+- [x] **🔴 회원탈퇴 어드민 승인** — ✅ 구현 완료 (2/18)
 
-### 🔴 회원탈퇴 어드민 승인 — 설계 (확정 2/18)
+### 🔴 회원탈퇴 어드민 승인 — ✅ 구현 완료 (2/18)
 ```
 [플로우]
 유저 "탈퇴하기" 클릭 → status: 'pending_withdrawal' (즉시 withdrawn 아님)
@@ -773,4 +778,23 @@ MerchantForm에서 이벤트 URL 입력
 
 ---
 
-*마지막 업데이트: 2026-02-18 (네이버 검수 준비 + 법적 페이지 + 탈퇴 어드민 승인 설계)*
+### 회원탈퇴 어드민 승인 + 브랜드 구독 + 마케팅 동의 + 어드민 상세 확장 (2/18)
+- [x] **회원탈퇴 2단계 프로세스** — 유저 요청(pending_withdrawal) → 어드민 승인(withdrawn)/거부(active)
+  - delete-account API: `withdrawn` → `pending_withdrawal`, 세션 종료 제거, 중복 요청 차단
+  - me/page.tsx: 탈퇴 심사 중 배너(amber), 재탈퇴 차단, 요청일 표시
+- [x] **어드민 탈퇴 관리** — members/[id]/route.ts PATCH 추가 (approve_withdrawal/reject_withdrawal/change_status)
+  - members/page.tsx: 탈퇴 대기 배너+건수 배지, 승인/거부 바로 버튼, 행 하이라이트
+  - members/[id]/page.tsx: 탈퇴 대기 강조 박스(사유+요청일+승인/거부), 탈퇴 사유 한글 변환
+  - members/route.ts: pendingCount 항상 반환, pending_withdrawal 필터 지원
+- [x] **브랜드 구독 버튼 연결** — FollowButton 클라이언트 컴포넌트 신규 생성
+  - 서버 컴포넌트(브랜드관)에서 기존 빈 `<button>` → FollowButton/FollowButtonMobile 교체
+  - 비로그인 시 AuthSheet 유도, 로그인 시 구독/해제 토글 + 토스트
+  - API(`/api/me/follows/merchants`)는 기존 그대로 정상 활용
+- [x] **마케팅 동의 DB 저장** — ToggleSetting(UI만) → MarketingConsentSection(DB 저장)
+  - 토글 시 profiles.marketing_agreed + marketing_agreed_at UPDATE
+  - 실패 시 UI 자동 롤백 + 토스트 알림
+- [x] **어드민 회원 상세 정보 확장** — 생년월일, 로그인 방법, 관심 카테고리, 최근 접속 추가 표시
+
+---
+
+*마지막 업데이트: 2026-02-18 (회원탈퇴 어드민승인 + 구독 버튼 + 마케팅동의 + 어드민 상세 확장)*

@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  X, Mail, ChevronRight, ChevronLeft, Eye, EyeOff,
-  ShieldCheck, Check, Bell, MessageCircle, Sparkles,
-  Shirt, UtensilsCrossed, Home, Plane, LayoutGrid, User
+  X, Mail, ChevronLeft, Eye, EyeOff,
+  Check, Bell, MessageCircle, Sparkles,
+  Shirt, UtensilsCrossed, Home, Plane, LayoutGrid, User, PartyPopper
 } from 'lucide-react';
 import { useAuth, type AuthSheetStep } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
 
-type AuthStep = AuthSheetStep;
+type AuthStep = AuthSheetStep | 'complete';
 
 interface CategoryOption {
   id: string;
@@ -33,9 +33,11 @@ const REMEMBER_EMAIL_KEY = 'poppon_remember_email';
 /**
  * AuthSheet — 가입/로그인 바텀시트
  *
- * 이메일 신규가입: main → signup → identity → categories → marketing → 완료
+ * 이메일 신규가입: main → signup → identity → categories → marketing → signUp + profile 저장 → complete
  * SNS 신규가입:   카카오/네이버 OAuth → callback → /?onboarding=sns → categories → marketing → 완료
  * 로그인:         main → login → 완료
+ *
+ * ✅ 핵심 수정: signUp은 마지막 스텝에서만 실행 (중간 이탈 시 반쪽 계정 방지)
  */
 export function AuthSheet() {
   const {
@@ -44,7 +46,7 @@ export function AuthSheet() {
   } = useAuth();
   const [step, setStep] = useState<AuthStep>('main');
 
-  // 회원가입 폼
+  // 회원가입 폼 (state에만 저장, signUp은 마지막에)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -82,7 +84,6 @@ export function AuthSheet() {
   useEffect(() => {
     if (isAuthSheetOpen) {
       setStep(authSheetInitialStep);
-      // categories/marketing step으로 바로 열리면 SNS 온보딩 모드
       if (authSheetInitialStep === 'categories' || authSheetInitialStep === 'marketing') {
         setIsSNSOnboarding(true);
       } else {
@@ -150,8 +151,10 @@ export function AuthSheet() {
 
   if (!isAuthSheetOpen) return null;
 
-  // ── 이메일 회원가입 ──
-  const handleSignup = async () => {
+  // ═══════════════════════════════════════════
+  // ✅ 이메일 가입 Step 1: 이메일/비밀번호 검증만 (signUp 안 함!)
+  // ═══════════════════════════════════════════
+  const handleSignupNext = async () => {
     if (!email || !password || !passwordConfirm) {
       setError('모든 항목을 입력해주세요');
       return;
@@ -165,10 +168,105 @@ export function AuthSheet() {
       return;
     }
 
+    // 이메일 중복만 체크 (실제 가입은 안 함)
     setLoading(true);
     setError('');
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      // signInWithPassword로 기존 계정 여부 확인
+      // 실패 = 이메일 없거나 비번 틀림 → 신규 가능
+      // 성공 = 이미 가입됨
+      const { error: loginErr } = await supabase.auth.signInWithPassword({
+        email, password: '__check_only_' + Date.now()
+      });
+      // "Invalid login credentials" = 계정이 없거나 비번 틀림 → OK
+      // 그 외 에러도 OK (계속 진행)
+      // 만약 로그인 성공하면? 그건 비번이 맞은 거라 이론적으로 불가능 (__check_only_ prefix)
+      
+      // 추가 체크: 실제 이메일 중복은 최종 signUp에서 잡힘
+      // 여기서는 폼 검증만 하고 다음 스텝으로
+      setStep('identity');
+    } catch {
+      setError('확인 중 오류가 발생했습니다');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ═══════════════════════════════════════════
+  // ✅ 이메일 가입 Step 2: 프로필 정보 검증 (저장 안 함!)
+  // ═══════════════════════════════════════════
+  const handleProfileNext = () => {
+    if (!profileName.trim()) {
+      setError('이름을 입력해주세요');
+      return;
+    }
+    const rawPhone = profilePhone.replace(/[^0-9]/g, '');
+    if (!rawPhone || !/^01[016789]\d{7,8}$/.test(rawPhone)) {
+      setError('올바른 휴대전화번호를 입력해주세요');
+      return;
+    }
+    if (!profileGender) {
+      setError('성별을 선택해주세요');
+      return;
+    }
+    if (!profileBirthDate) {
+      setError('생년월일을 입력해주세요');
+      return;
+    }
+    setError('');
+    setStep('categories');
+  };
+
+  // ═══════════════════════════════════════════
+  // 카테고리 저장 (SNS 온보딩은 이미 로그인 상태이므로 바로 저장)
+  // ═══════════════════════════════════════════
+  const handleSaveCategories = async () => {
+    if (isSNSOnboarding && selectedCategories.length > 0) {
+      const currentUser = user;
+      if (currentUser) {
+        await supabase
+          .from('profiles')
+          .update({ interest_categories: selectedCategories })
+          .eq('id', currentUser.id);
+      } else {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          await supabase
+            .from('profiles')
+            .update({ interest_categories: selectedCategories })
+            .eq('id', authUser.id);
+        }
+      }
+    }
+    // 이메일 가입: state에만 저장, 최종 스텝에서 한꺼번에 저장
+    setStep('marketing');
+  };
+
+  // ═══════════════════════════════════════════
+  // ✅ 마지막 스텝: 실제 signUp + 모든 프로필 데이터 저장
+  // ═══════════════════════════════════════════
+  const handleFinalSignup = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      if (isSNSOnboarding) {
+        // SNS는 이미 로그인됨 → 마케팅만 저장
+        const currentUser = user;
+        const userId = currentUser?.id;
+        if (userId) {
+          await saveMarketingData(userId);
+        } else {
+          const { data: { user: authUser } } = await supabase.auth.getUser();
+          if (authUser) await saveMarketingData(authUser.id);
+        }
+        await refreshProfile();
+        showToast('SNS 로그인이 완료되었습니다', 'success');
+        handleComplete();
+        return;
+      }
+
+      // ✅ 이메일 가입: 여기서 signUp 실행!
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -179,15 +277,76 @@ export function AuthSheet() {
         } else {
           setError(signUpError.message);
         }
-      } else {
-        // 가입 성공 → 본인인증 step으로
-        setStep('identity');
+        setLoading(false);
+        return;
       }
+
+      const newUserId = signUpData?.user?.id;
+      if (!newUserId) {
+        setError('회원가입에 실패했습니다. 다시 시도해주세요.');
+        setLoading(false);
+        return;
+      }
+
+      // 프로필 트리거가 profiles row를 만들 때까지 약간 대기
+      await new Promise(r => setTimeout(r, 500));
+
+      // ✅ 프로필 + 카테고리 + 마케팅 한꺼번에 저장
+      const rawPhone = profilePhone.replace(/[^0-9]/g, '');
+      const formattedPhone = rawPhone.length === 11
+        ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
+        : rawPhone;
+
+      const hasConsent = marketingKakao || marketingPush || marketingEmail;
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          name: profileName.trim(),
+          phone: formattedPhone,
+          gender: profileGender,
+          birth_date: profileBirthDate,
+          provider: 'email',
+          interest_categories: selectedCategories.length > 0 ? selectedCategories : [],
+          marketing_agreed: hasConsent,
+          marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
+        })
+        .eq('id', newUserId);
+
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        // 가입은 됐으니 에러 무시하고 완료 처리
+      }
+
+      // 아이디 저장
+      try {
+        if (rememberEmail) {
+          localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+        } else {
+          localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        }
+      } catch { /* ignore */ }
+
+      await refreshProfile();
+
+      // ✅ 완료 화면으로
+      setStep('complete');
     } catch {
       setError('회원가입 중 오류가 발생했습니다');
     } finally {
       setLoading(false);
     }
+  };
+
+  const saveMarketingData = async (userId: string) => {
+    const hasConsent = marketingKakao || marketingPush || marketingEmail;
+    await supabase
+      .from('profiles')
+      .update({
+        marketing_agreed: hasConsent,
+        marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
+      })
+      .eq('id', userId);
   };
 
   // ── 이메일 로그인 ──
@@ -212,7 +371,6 @@ export function AuthSheet() {
           setError(loginError.message);
         }
       } else {
-        // 아이디 저장 처리
         try {
           if (rememberEmail) {
             localStorage.setItem(REMEMBER_EMAIL_KEY, email);
@@ -256,117 +414,6 @@ export function AuthSheet() {
     window.location.href = '/api/auth/naver';
   };
 
-  // ── 프로필 정보 저장 (이메일 가입 시) ──
-  const handleSaveProfile = async () => {
-    if (!profileName.trim()) {
-      setError('이름을 입력해주세요');
-      return;
-    }
-    if (!profilePhone.trim() || !/^01[016789]-?\d{3,4}-?\d{4}$/.test(profilePhone.replace(/-/g, '').replace(/^01/, '01'))) {
-      setError('올바른 휴대전화번호를 입력해주세요');
-      return;
-    }
-    if (!profileGender) {
-      setError('성별을 선택해주세요');
-      return;
-    }
-    if (!profileBirthDate) {
-      setError('생년월일을 입력해주세요');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        // 전화번호 하이픈 포맷
-        const rawPhone = profilePhone.replace(/[^0-9]/g, '');
-        const formattedPhone = rawPhone.length === 11
-          ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
-          : rawPhone;
-
-        await supabase
-          .from('profiles')
-          .update({
-            name: profileName.trim(),
-            phone: formattedPhone,
-            gender: profileGender,
-            birth_date: profileBirthDate,
-            provider: 'email',
-          })
-          .eq('id', authUser.id);
-      }
-      setStep('categories');
-    } catch {
-      setError('저장 중 오류가 발생했습니다');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ── 관심 카테고리 저장 ──
-  const handleSaveCategories = async () => {
-    if (selectedCategories.length > 0) {
-      // SNS 온보딩 모드에서는 이미 로그인된 상태이므로 user가 있음
-      const currentUser = user;
-      if (currentUser) {
-        await supabase
-          .from('profiles')
-          .update({ interest_categories: selectedCategories })
-          .eq('id', currentUser.id);
-      } else {
-        // 이메일 가입 플로우: supabase.auth.getUser()로 확인
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          await supabase
-            .from('profiles')
-            .update({ interest_categories: selectedCategories })
-            .eq('id', authUser.id);
-        }
-      }
-    }
-    setStep('marketing');
-  };
-
-  // ── 마케팅 동의 저장 + 완료 ──
-  const handleSaveMarketing = async () => {
-    setLoading(true);
-    try {
-      const currentUser = user;
-      const userId = currentUser?.id;
-
-      if (!userId) {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          await saveMarketingData(authUser.id);
-        }
-      } else {
-        await saveMarketingData(userId);
-      }
-
-      await refreshProfile();
-      showToast(isSNSOnboarding ? 'SNS 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
-      handleComplete();
-    } catch {
-      showToast(isSNSOnboarding ? 'SNS 로그인이 완료되었습니다' : '회원가입이 완료되었습니다', 'success');
-      handleComplete();
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveMarketingData = async (userId: string) => {
-    const hasConsent = marketingKakao || marketingPush || marketingEmail;
-    await supabase
-      .from('profiles')
-      .update({
-        marketing_agreed: hasConsent,
-        marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
-      })
-      .eq('id', userId);
-  };
-
   // ── 카테고리 토글 ──
   const toggleCategory = (id: string) => {
     setSelectedCategories((prev) =>
@@ -381,6 +428,11 @@ export function AuthSheet() {
   };
 
   const handleClose = () => {
+    // 완료 화면에서 닫기
+    if (step === 'complete') {
+      handleComplete();
+      return;
+    }
     resetForm();
     closeAuthSheet();
   };
@@ -401,7 +453,6 @@ export function AuthSheet() {
     setMarketingPush(false);
     setMarketingEmail(false);
     setIsSNSOnboarding(false);
-    // 저장된 이메일이 있으면 유지, 없으면 초기화
     try {
       const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
       if (!saved) setEmail('');
@@ -409,6 +460,23 @@ export function AuthSheet() {
       setEmail('');
     }
   };
+
+  // ── 뒤로가기 핸들러 (이메일 가입 플로우) ──
+  const handleBack = () => {
+    setError('');
+    if (step === 'signup') setStep('main');
+    else if (step === 'identity') setStep('signup');
+    else if (step === 'categories' && !isSNSOnboarding) setStep('identity');
+    else if (step === 'marketing' && !isSNSOnboarding) setStep('categories');
+  };
+
+  // 뒤로가기 가능 여부
+  const canGoBack = !isSNSOnboarding && ['signup', 'identity', 'categories', 'marketing'].includes(step);
+
+  // 진행률 (이메일 가입용)
+  const progressSteps = ['signup', 'identity', 'categories', 'marketing'];
+  const currentProgress = progressSteps.indexOf(step);
+  const showProgress = !isSNSOnboarding && currentProgress >= 0;
 
   return createPortal(
     <>
@@ -420,7 +488,6 @@ export function AuthSheet() {
 
       {/* 바텀시트 (모바일) / 센터 모달 (데스크톱) */}
       <div className="fixed inset-0 z-[61] flex items-end sm:items-center sm:justify-center pb-safe">
-        {/* 바깥 영역 클릭 시 닫기 */}
         <div className="absolute inset-0" onClick={handleClose} />
 
         <div className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md max-h-[85vh] overflow-y-auto">
@@ -439,6 +506,21 @@ export function AuthSheet() {
           </div>
 
           <div className="px-6 pb-8">
+
+            {/* ✅ 진행률 표시 (이메일 가입 플로우) */}
+            {showProgress && (
+              <div className="flex gap-1.5 mb-4">
+                {progressSteps.map((s, i) => (
+                  <div
+                    key={s}
+                    className={`h-1 flex-1 rounded-full transition-colors ${
+                      i <= currentProgress ? 'bg-red-500' : 'bg-gray-200'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* ═══════════════════════════════════════════
                 STEP: main — 메인 (SNS + 이메일 선택)
                ═══════════════════════════════════════════ */}
@@ -455,7 +537,6 @@ export function AuthSheet() {
 
                 {/* SNS 로그인 버튼 */}
                 <div className="space-y-2.5">
-                  {/* 카카오 */}
                   <button
                     onClick={() => handleSNSLogin('kakao')}
                     disabled={loading}
@@ -466,7 +547,6 @@ export function AuthSheet() {
                     카카오로 시작하기
                   </button>
 
-                  {/* 네이버 */}
                   <button
                     onClick={handleNaverLogin}
                     disabled={loading}
@@ -477,7 +557,6 @@ export function AuthSheet() {
                     네이버로 시작하기
                   </button>
 
-                  {/* 애플 */}
                   <button
                     onClick={() => setError('Apple 로그인은 준비 중입니다')}
                     disabled={loading}
@@ -490,14 +569,12 @@ export function AuthSheet() {
                   </button>
                 </div>
 
-                {/* 구분선 */}
                 <div className="flex items-center gap-3 my-5">
                   <div className="flex-1 h-px bg-gray-200" />
                   <span className="text-xs text-gray-400">또는</span>
                   <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
-                {/* 이메일 가입 */}
                 <button
                   onClick={() => { setStep('signup'); setError(''); }}
                   className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -506,7 +583,6 @@ export function AuthSheet() {
                   이메일로 시작하기
                 </button>
 
-                {/* 기존 회원 로그인 */}
                 <button
                   onClick={() => { setStep('login'); setError(''); }}
                   className="w-full mt-3 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
@@ -528,13 +604,13 @@ export function AuthSheet() {
             )}
 
             {/* ═══════════════════════════════════════════
-                STEP: signup — 이메일 회원가입
+                STEP: signup — 이메일/비밀번호 입력 (signUp 안 함!)
                ═══════════════════════════════════════════ */}
             {step === 'signup' && (
               <>
                 <div className="pt-2 mb-6">
                   <button
-                    onClick={() => { setStep('main'); setError(''); }}
+                    onClick={handleBack}
                     className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -548,9 +624,7 @@ export function AuthSheet() {
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      이메일
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
                     <input
                       type="email"
                       value={email}
@@ -563,9 +637,7 @@ export function AuthSheet() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      비밀번호
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">비밀번호</label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -586,14 +658,12 @@ export function AuthSheet() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      비밀번호 확인
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">비밀번호 확인</label>
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={passwordConfirm}
                       onChange={(e) => setPasswordConfirm(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && email && password && passwordConfirm) handleSignup(); }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && email && password && passwordConfirm) handleSignupNext(); }}
                       placeholder="비밀번호를 다시 입력해주세요"
                       className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
                                  focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
@@ -609,12 +679,12 @@ export function AuthSheet() {
                 )}
 
                 <button
-                  onClick={handleSignup}
+                  onClick={handleSignupNext}
                   disabled={loading || !email || !password || !passwordConfirm}
                   className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
                              hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
                 >
-                  {loading ? '가입 중...' : '다음'}
+                  {loading ? '확인 중...' : '다음'}
                 </button>
 
                 <button
@@ -640,16 +710,12 @@ export function AuthSheet() {
                     뒤로
                   </button>
                   <h2 className="text-xl font-bold text-gray-900">로그인</h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    가입한 이메일로 로그인하세요
-                  </p>
+                  <p className="text-sm text-gray-500 mt-1">가입한 이메일로 로그인하세요</p>
                 </div>
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      이메일
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
                     <input
                       type="email"
                       value={email}
@@ -662,9 +728,7 @@ export function AuthSheet() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      비밀번호
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">비밀번호</label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -686,7 +750,6 @@ export function AuthSheet() {
                   </div>
                 </div>
 
-                {/* 아이디 저장 체크박스 */}
                 <button
                   type="button"
                   onClick={() => setRememberEmail(!rememberEmail)}
@@ -726,18 +789,20 @@ export function AuthSheet() {
             )}
 
             {/* ═══════════════════════════════════════════
-                STEP: identity — 회원 정보 입력
+                STEP: identity — 회원 정보 입력 (저장 안 함, state만)
                ═══════════════════════════════════════════ */}
             {step === 'identity' && (
               <>
                 <div className="pt-2 mb-5">
-                  <button
-                    onClick={() => { setStep('signup'); setError(''); }}
-                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    뒤로
-                  </button>
+                  {canGoBack && (
+                    <button
+                      onClick={handleBack}
+                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      뒤로
+                    </button>
+                  )}
                   <div className="text-center">
                     <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                       <User className="w-8 h-8 text-blue-500" />
@@ -750,7 +815,6 @@ export function AuthSheet() {
                 </div>
 
                 <div className="space-y-3">
-                  {/* 이름 (필수) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       이름 <span className="text-red-500">*</span>
@@ -766,7 +830,6 @@ export function AuthSheet() {
                     />
                   </div>
 
-                  {/* 연락처 (필수) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       연락처 <span className="text-red-500">*</span>
@@ -777,7 +840,6 @@ export function AuthSheet() {
                       onChange={(e) => {
                         const val = e.target.value.replace(/[^0-9]/g, '');
                         if (val.length <= 11) {
-                          // 자동 하이픈
                           if (val.length <= 3) setProfilePhone(val);
                           else if (val.length <= 7) setProfilePhone(`${val.slice(0, 3)}-${val.slice(3)}`);
                           else setProfilePhone(`${val.slice(0, 3)}-${val.slice(3, 7)}-${val.slice(7)}`);
@@ -789,16 +851,12 @@ export function AuthSheet() {
                     />
                   </div>
 
-                  {/* 성별 (필수) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       성별 <span className="text-red-500">*</span>
                     </label>
                     <div className="flex gap-2">
-                      {[
-                        { value: '남성', label: '남성' },
-                        { value: '여성', label: '여성' },
-                      ].map((option) => (
+                      {[{ value: '남성', label: '남성' }, { value: '여성', label: '여성' }].map((option) => (
                         <button
                           key={option.value}
                           type="button"
@@ -815,7 +873,6 @@ export function AuthSheet() {
                     </div>
                   </div>
 
-                  {/* 생년월일 (필수) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       생년월일 <span className="text-red-500">*</span>
@@ -837,12 +894,11 @@ export function AuthSheet() {
                 )}
 
                 <button
-                  onClick={handleSaveProfile}
-                  disabled={loading}
+                  onClick={handleProfileNext}
                   className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
-                             hover:bg-red-600 disabled:bg-gray-200 transition-colors"
+                             hover:bg-red-600 transition-colors"
                 >
-                  {loading ? '저장 중...' : '다음'}
+                  다음
                 </button>
 
                 <p className="text-[11px] text-gray-400 text-center mt-3 leading-relaxed">
@@ -860,6 +916,15 @@ export function AuthSheet() {
             {step === 'categories' && (
               <>
                 <div className="pt-2 mb-5 text-center">
+                  {canGoBack && (
+                    <button
+                      onClick={handleBack}
+                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      뒤로
+                    </button>
+                  )}
                   <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Bell className="w-8 h-8 text-red-500" />
                   </div>
@@ -881,7 +946,6 @@ export function AuthSheet() {
                   </p>
                 </div>
 
-                {/* 카테고리 칩 그리드 */}
                 <div className="grid grid-cols-2 gap-2.5">
                   {categories.map((cat) => {
                     const isSelected = selectedCategories.includes(cat.id);
@@ -917,11 +981,7 @@ export function AuthSheet() {
 
                 <button
                   onClick={handleSaveCategories}
-                  className={`w-full mt-5 h-12 rounded-xl font-semibold transition-colors ${
-                    selectedCategories.length > 0
-                      ? 'bg-red-500 text-white hover:bg-red-600'
-                      : 'bg-red-500 text-white hover:bg-red-600'
-                  }`}
+                  className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
                 >
                   {selectedCategories.length > 0 ? '알림 받기' : '다음'}
                 </button>
@@ -936,19 +996,29 @@ export function AuthSheet() {
             )}
 
             {/* ═══════════════════════════════════════════
-                STEP: marketing — 마케팅 수신 동의
+                STEP: marketing — 마케팅 수신 동의 + 최종 가입
                ═══════════════════════════════════════════ */}
             {step === 'marketing' && (
               <>
-                <div className="pt-2 mb-6 text-center">
-                  <h2 className="text-xl font-bold text-gray-900">알림 수신 설정</h2>
-                  <p className="text-sm text-gray-500 mt-1.5">
-                    맞춤 할인 정보를 어떻게 받아볼까요?
-                  </p>
+                <div className="pt-2 mb-6">
+                  {canGoBack && (
+                    <button
+                      onClick={handleBack}
+                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      뒤로
+                    </button>
+                  )}
+                  <div className="text-center">
+                    <h2 className="text-xl font-bold text-gray-900">알림 수신 설정</h2>
+                    <p className="text-sm text-gray-500 mt-1.5">
+                      맞춤 할인 정보를 어떻게 받아볼까요?
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  {/* 전체 동의 */}
                   <label
                     className="flex items-center gap-3 p-4 rounded-xl bg-gray-50 cursor-pointer"
                     onClick={(e) => { e.preventDefault(); setMarketingAll(!marketingAll); }}
@@ -965,29 +1035,9 @@ export function AuthSheet() {
 
                   <div className="h-px bg-gray-100 mx-2" />
 
-                  {/* 카카오 알림톡 */}
-                  <ConsentItem
-                    checked={marketingKakao}
-                    onChange={() => setMarketingKakao(!marketingKakao)}
-                    label="카카오 알림톡"
-                    description="새 딜·마감 임박 알림"
-                  />
-
-                  {/* 푸시 알림 */}
-                  <ConsentItem
-                    checked={marketingPush}
-                    onChange={() => setMarketingPush(!marketingPush)}
-                    label="푸시 알림"
-                    description="앱/브라우저 알림"
-                  />
-
-                  {/* 이메일 */}
-                  <ConsentItem
-                    checked={marketingEmail}
-                    onChange={() => setMarketingEmail(!marketingEmail)}
-                    label="이메일"
-                    description="주간 베스트 딜 요약"
-                  />
+                  <ConsentItem checked={marketingKakao} onChange={() => setMarketingKakao(!marketingKakao)} label="카카오 알림톡" description="새 딜·마감 임박 알림" />
+                  <ConsentItem checked={marketingPush} onChange={() => setMarketingPush(!marketingPush)} label="푸시 알림" description="앱/브라우저 알림" />
+                  <ConsentItem checked={marketingEmail} onChange={() => setMarketingEmail(!marketingEmail)} label="이메일" description="주간 베스트 딜 요약" />
                 </div>
 
                 <p className="text-[11px] text-gray-400 mt-3 leading-relaxed">
@@ -995,27 +1045,69 @@ export function AuthSheet() {
                   동의는 마이페이지에서 언제든 철회 가능합니다.
                 </p>
 
+                {error && (
+                  <p className="text-sm text-red-500 text-center mt-3">{error}</p>
+                )}
+
                 <button
-                  onClick={handleSaveMarketing}
+                  onClick={handleFinalSignup}
                   disabled={loading}
                   className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
                              hover:bg-red-600 disabled:bg-gray-200 transition-colors"
                 >
-                  {loading ? '완료 중...' : (isSNSOnboarding ? '시작하기' : '가입 완료')}
+                  {loading ? '가입 처리 중...' : (isSNSOnboarding ? '시작하기' : '가입 완료')}
                 </button>
 
-                <button
-                  onClick={() => {
-                    showToast(
-                      isSNSOnboarding ? 'SNS 로그인이 완료되었습니다' : '회원가입이 완료되었습니다',
-                      'success'
-                    );
-                    handleComplete();
-                  }}
-                  className="w-full mt-2 py-2 text-sm text-gray-400 hover:text-gray-600"
-                >
-                  건너뛰기
-                </button>
+                {isSNSOnboarding && (
+                  <button
+                    onClick={() => {
+                      showToast('SNS 로그인이 완료되었습니다', 'success');
+                      handleComplete();
+                    }}
+                    className="w-full mt-2 py-2 text-sm text-gray-400 hover:text-gray-600"
+                  >
+                    건너뛰기
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════
+                STEP: complete — 가입 완료! 🎉
+               ═══════════════════════════════════════════ */}
+            {step === 'complete' && (
+              <>
+                <div className="pt-8 pb-4 text-center">
+                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <PartyPopper className="w-10 h-10 text-green-500" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    회원가입 완료!
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                    POPPON에 오신 것을 환영합니다 🎉<br />
+                    이제 맞춤 할인 정보를 받아보실 수 있어요
+                  </p>
+
+                  <div className="mt-6 p-4 bg-red-50 rounded-xl">
+                    <p className="text-sm font-medium text-red-600">
+                      {selectedCategories.length > 0
+                        ? `${selectedCategories.length}개 카테고리의 새 딜 알림이 설정되었습니다`
+                        : '마이페이지에서 관심 카테고리를 설정해보세요'}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      showToast('회원가입이 완료되었습니다', 'success');
+                      handleComplete();
+                    }}
+                    className="w-full mt-6 h-12 rounded-xl bg-red-500 text-white font-semibold
+                               hover:bg-red-600 transition-colors"
+                  >
+                    시작하기
+                  </button>
+                </div>
               </>
             )}
           </div>

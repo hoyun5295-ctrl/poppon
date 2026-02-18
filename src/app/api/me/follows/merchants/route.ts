@@ -1,28 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-/**
- * /api/me/follows/merchants
- * 
- * GET    — 내 구독 브랜드 목록
- * POST   — 브랜드 구독 { merchant_id }
- * DELETE — 구독 해제 ?merchant_id=xxx
- */
-
+// GET: 구독 브랜드 목록
 export async function GET() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { data, error } = await supabase
     .from('followed_merchants')
-    .select(`
-      id, notify, created_at,
-      merchants:merchant_id (id, name, slug, logo_url, brand_color, active_deal_count)
-    `)
+    .select('id, merchant_id, created_at, merchants(id, name, slug, logo_url)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -33,17 +23,32 @@ export async function GET() {
   return NextResponse.json({ followedMerchants: data || [] });
 }
 
+// POST: 브랜드 구독
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { merchant_id } = await request.json();
+  const body = await request.json();
+  const { merchant_id } = body;
+
   if (!merchant_id) {
-    return NextResponse.json({ error: 'merchant_id 필수' }, { status: 400 });
+    return NextResponse.json({ error: 'merchant_id required' }, { status: 400 });
+  }
+
+  // 중복 체크
+  const { data: existing } = await supabase
+    .from('followed_merchants')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('merchant_id', merchant_id)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({ error: 'Already followed' }, { status: 409 });
   }
 
   const { data, error } = await supabase
@@ -53,39 +58,37 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    if (error.message.includes('duplicate') || error.message.includes('unique')) {
-      return NextResponse.json({ error: '이미 구독 중입니다' }, { status: 409 });
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ follow: data });
+  return NextResponse.json({ follow: data }, { status: 201 });
 }
 
+// DELETE: 브랜드 구독 해제
 export async function DELETE(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
-  const merchantId = searchParams.get('merchant_id');
+  const merchant_id = searchParams.get('merchant_id');
 
-  if (!merchantId) {
-    return NextResponse.json({ error: 'merchant_id 필수' }, { status: 400 });
+  if (!merchant_id) {
+    return NextResponse.json({ error: 'merchant_id required' }, { status: 400 });
   }
 
   const { error } = await supabase
     .from('followed_merchants')
     .delete()
     .eq('user_id', user.id)
-    .eq('merchant_id', merchantId);
+    .eq('merchant_id', merchant_id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ success: true });
 }

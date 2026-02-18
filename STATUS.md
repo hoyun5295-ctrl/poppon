@@ -65,6 +65,7 @@
 | CategoryTabBar.tsx | `src/components/category/CategoryTabBar.tsx` |
 | CategoryIcon.tsx | `src/components/category/CategoryIcon.tsx` |
 | MerchantDealTabs.tsx | `src/components/merchant/MerchantDealTabs.tsx` |
+| DealActionBar.tsx | `src/components/deal/DealActionBar.tsx` ✅ 딜 상세 저장/브랜드관/구독 액션 |
 | FollowButton.tsx | `src/components/merchant/FollowButton.tsx` ✅ 구독/해제 클라이언트 컴포넌트 |
 | Pagination.tsx | `src/components/common/Pagination.tsx` |
 | SortDropdown.tsx | `src/components/common/SortDropdown.tsx` |
@@ -75,7 +76,7 @@
 | 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider + TopProgressBar + Toast 래핑) |
 | 글로벌 CSS | `src/app/globals.css` (fade-in + toast 애니메이션) |
 | 미들웨어 | `src/middleware.ts` |
-| 홈 | `src/app/page.tsx` |
+| 홈 | `src/app/page.tsx` ✅ 새딜알림 CTA → /me?tab=follows (2/18) |
 | 홈 로딩 | `src/app/loading.tsx` |
 | 검색 | `src/app/search/page.tsx` + `loading.tsx` |
 | 카테고리 | `src/app/c/[categorySlug]/page.tsx` + `loading.tsx` |
@@ -83,7 +84,7 @@
 | 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` ✅ 서버사이드 |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
-| 마이페이지 | `src/app/me/page.tsx` + `loading.tsx` |
+| 마이페이지 | `src/app/me/page.tsx` + `loading.tsx` ✅ 환영메시지+구독2열+추천브랜드 (2/18) |
 | 로그인 | `src/app/auth/page.tsx` + `callback/route.ts` + `callback/naver/route.ts` |
 | 법적 페이지 | `src/app/legal/privacy/`, `terms/`, `marketing/` |
 
@@ -106,8 +107,8 @@
 | 제보 API | `src/app/api/submit/route.ts` |
 | 행동추적 API | `src/app/api/actions/route.ts` ✅ createServiceClient + 서버 세션 user_id 자동감지 (2/18) |
 | 클릭 트래킹 | `src/app/out/[dealId]/route.ts` |
-| 딜 저장 API | `src/app/api/me/saved-deals/route.ts` |
-| 브랜드 구독 API | `src/app/api/me/follows/merchants/route.ts` ✅ 복원 (2/18) |
+| 딜 저장 API | `src/app/api/me/saved-deals/route.ts` ✅ try-catch 디버깅 로그 (2/18) |
+| 브랜드 구독 API | `src/app/api/me/follows/merchants/route.ts` ✅ active_deal_count 포함 (2/18) |
 | 계정 탈퇴 API | `src/app/api/me/delete-account/route.ts` (pending_withdrawal) |
 | 검색 로그 API | `src/app/api/actions/search/route.ts` |
 | 로그아웃 API | `src/app/api/auth/signout/route.ts` |
@@ -385,6 +386,8 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 ### 즉시 (Phase 1 마무리)
 - **도메인**: 가비아 DNS 설정 (A: @→76.76.21.21, CNAME: www→cname.vercel-dns.com)
 - **기존 딜 카테고리 일괄 수정**: merchants.category_ids 기준 deals.category_id UPDATE
+- **merchants.active_deal_count 자동갱신**: cron/expire 및 save-deals에서 딜 변경 시 카운트 갱신
+- **딜 제보 어드민 승인 UI**: submit된 제보 목록 확인/승인/거부 어드민 페이지
 
 ### 단기 (Phase 2)
 - 링크프라이스 제휴 API, 애플 OAuth, KMC 본인인증, 카카오 알림톡
@@ -402,6 +405,9 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 ### DB / Supabase
 - Supabase 조인 FK 명시 필수: `categories!deals_category_id_fkey`
 - deals 삭제 시 FK: outbound_clicks → deal_actions → saved_deals 순서로 먼저 삭제
+- saved_deals.user_id FK: `auth.users(id)` 참조 (public.users 아님, 2/18 수정)
+- followed_merchants.user_id FK: `public.profiles(id)` 참조
+- merchants.active_deal_count: 자동 갱신 없음 → 수동 일괄 UPDATE 필요 (cron 연동 예정)
 - profiles.phone: UNIQUE 해제됨 (KMC 연동 시 재적용)
 - deal_actions 테이블: `metadata` 컬럼 없음
 - Supabase 클라이언트 auth lock: 싱글톤으로 AuthProvider가 잡고 있으면 블로킹 → 서버사이드 우회
@@ -447,25 +453,25 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 ## 최근 채팅 히스토리
 | 채팅 | 날짜 | 주요 내용 |
 |------|------|-----------|
-| 팝폰-네이버브랜드크롤수정+커넥터관리 | 2/18 | naver_brand fullPage+프롬프트v5+커넥터관리UI |
 | 팝폰-모달렌더링수정+actions수정 | 2/18 | 모달 서버사이드 전환+actions metadata 제거 |
 | 팝폰-네이버검수+법적페이지+탈퇴설계 | 2/18 | 네이버OAuth 프로필+법적페이지3종+이메일프로필+탈퇴설계 |
 | 팝폰-회원탈퇴승인+구독+마케팅동의 | 2/18 | 회원탈퇴 어드민승인+구독버튼+마케팅동의+어드민 상세 확장 |
-| **팝폰-회원가입수정+행동로그+페이징** | **2/18** | **signUp 지연+완료화면+actions 서버user_id+구독API 복원+어드민 10개 페이징** |
+| 팝폰-회원가입수정+행동로그+페이징 | 2/18 | signUp 지연+완료화면+actions 서버user_id+구독API 복원+어드민 10개 페이징 |
+| **팝폰-딜저장수정+마이페이지개선** | **2/18** | **saved_deals FK수정+저장API 디버깅+마이페이지 환영메시지+구독2열+추천브랜드+홈CTA수정** |
 
 ---
 
-### 회원가입 수정 + 행동 로그 수정 + 구독 API 복원 + 어드민 페이징 (2/18)
-- [x] **AuthSheet signUp 지연** — signup 스텝에서 signUp 실행 안 함 → marketing 스텝 "가입 완료" 클릭 시 signUp + profile + categories + marketing 한꺼번에 저장
-  - 중간 이탈 시 반쪽 계정 생성 방지 (근본 수정)
-  - identity/categories 스텝은 state만 저장
-  - 진행률 바 (4단계) 추가
-  - 뒤로가기 모든 스텝 가능
-- [x] **회원가입 완료 화면** — 🎉 PartyPopper 아이콘 + "회원가입 완료!" + "시작하기" 버튼
-- [x] **actions API 수정** — `createServiceClient` 사용 (RLS 우회) + body user_id null이면 서버 세션에서 자동 추출
-- [x] **구독 API 복원** — `src/app/api/me/follows/merchants/route.ts` 재생성 (GET/POST/DELETE, createServerSupabaseClient import)
-- [x] **어드민 회원 상세 페이징** — 행동로그/저장딜/구독/검색 모든 탭 10개씩 클라이언트 페이징 (페이지번호+이전/다음+전체건수)
+### 딜 저장 수정 + 마이페이지 개선 (2/18)
+- [x] **딜 모달 저장 500 에러 수정** — `saved_deals.user_id` FK가 `public.users` 참조 → `auth.users` 참조로 수정 (DB FK 재생성)
+- [x] **saved-deals API 디버깅** — POST/DELETE에 try-catch + console.log 추가 (운영 에러 추적용)
+- [x] **홈 "새딜알림받기" CTA** — `href="/auth"` → `href="/me?tab=follows"` (로그인 상태에서 구독탭 직접 진입)
+- [x] **마이페이지 URL 탭 파라미터** — `useSearchParams`로 `?tab=follows` 직접 진입 지원
+- [x] **마이페이지 환영 메시지** — "사용자" → "nickname/name/email앞부분 + 님, 환영합니다!"
+- [x] **구독 API active_deal_count** — follows API select에 `active_deal_count` 추가 → "활성 딜 N개" 정상 표시
+- [x] **merchants.active_deal_count 일괄 업데이트** — SQL로 전체 머천트 실제 딜 수 반영
+- [x] **구독 탭 2열 그리드** — 1열 → `grid-cols-1 sm:grid-cols-2`, "내 구독 브랜드 (N)" 헤더
+- [x] **추천 브랜드 섹션** — 구독 안 한 인기 브랜드 최대 8개, +버튼 구독 시 자동 리프레시, 빈 상태에서도 표시
 
 ---
 
-*마지막 업데이트: 2026-02-18 (회원가입 signUp 지연 + 행동로그 수정 + 구독API 복원 + 어드민 페이징)*
+*마지막 업데이트: 2026-02-18 (딜 저장 FK 수정 + 마이페이지 환영메시지 + 구독탭 2열 + 추천브랜드)*

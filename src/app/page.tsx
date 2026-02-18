@@ -57,10 +57,6 @@ export default async function HomePage() {
   const merchantCount = merchantCountRes.count || 0;
   const dealCount = dealCountRes.count || 0;
 
-  // 10 단위 내림 (339 → 330+, 1995 → 1,990+)
-  const displayMerchantCount = Math.floor(merchantCount / 10) * 10;
-  const displayDealCount = Math.floor(dealCount / 10) * 10;
-
   function dedupeByMerchant(deals: DealCard[], maxPerMerchant = 1): DealCard[] {
     const count: Record<string, number> = {};
     return deals.filter((d) => {
@@ -79,10 +75,10 @@ export default async function HomePage() {
           한 곳에서
         </h1>
         <p className="mt-2 sm:mt-3 text-surface-500 text-xs sm:text-sm lg:text-base">
-          {displayMerchantCount > 0 && displayDealCount > 0
+          {merchantCount > 0 && dealCount > 0
             ? <>
-                <span className="font-bold text-primary-500">{displayMerchantCount.toLocaleString()}개+ 브랜드</span>,{' '}
-                <span className="font-bold text-amber-500">{displayDealCount.toLocaleString()}개+ 딜</span>의 할인 정보를 검색하세요
+                <span className="font-bold text-primary-500">{merchantCount.toLocaleString()}개 브랜드</span>,{' '}
+                <span className="font-bold text-amber-500">{dealCount.toLocaleString()}개 딜</span>의 할인 정보를 검색하세요
               </>
             : '쿠폰, 프로모션 코드, 할인 이벤트를 검색하세요'}
         </p>

@@ -278,13 +278,12 @@ function SettingsTab({ profile, user, onRefresh }: {
     const fetchFullProfile = async () => {
       if (!user?.id) { setProfileLoading(false); return; }
       try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        if (data) setFullProfile(data);
+        // ✅ 서버사이드 API로 조회 (createClient() auth lock 우회)
+        const res = await fetch('/api/me/profile');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) setFullProfile(data.profile);
+        }
       } catch { /* ignore */ }
       setProfileLoading(false);
     };

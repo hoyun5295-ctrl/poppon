@@ -438,21 +438,11 @@ function SettingsTab({ profile, user, onRefresh }: {
         </div>
       </div>
 
-      {/* 마케팅 동의 */}
-      <div className="bg-white rounded-xl border border-surface-200 p-5">
-        <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
-          <Shield className="w-4 h-4" />
-          마케팅 동의
-        </h3>
-        <ToggleSetting
-          label="마케팅 정보 수신 동의"
-          desc="할인/프로모션 관련 마케팅 정보를 받습니다"
-          defaultOn={profile?.marketing_agreed || false}
-        />
-        <p className="text-xs text-surface-400 mt-3">
-          동의를 철회하면 마케팅 관련 알림이 즉시 중단됩니다.
-        </p>
-      </div>
+      {/* 마케팅 동의 — ✅ 실제 DB 저장 */}
+      <MarketingConsentSection
+        defaultOn={fullProfile?.marketing_agreed ?? profile?.marketing_agreed ?? false}
+        userId={user?.id}
+      />
 
       {/* 계정 */}
       <div className="bg-white rounded-xl border border-surface-200 p-5">
@@ -814,6 +804,76 @@ function RecommendedBrandsSection({ userId }: { userId?: string }) {
       >
         더 많은 브랜드 보기 <ChevronRight className="w-3.5 h-3.5" />
       </Link>
+    </div>
+  );
+}
+
+// --- ✅ 마케팅 동의 (실제 DB 저장) ---
+function MarketingConsentSection({ defaultOn, userId }: { defaultOn: boolean; userId?: string }) {
+  const { showToast } = useAuth();
+  const [on, setOn] = useState(defaultOn);
+  const [saving, setSaving] = useState(false);
+
+  // fullProfile 로딩 후 값이 바뀌면 동기화
+  useEffect(() => { setOn(defaultOn); }, [defaultOn]);
+
+  const handleToggle = async () => {
+    if (!userId) return;
+    const newValue = !on;
+    setOn(newValue); // 즉시 UI 반영
+    setSaving(true);
+
+    try {
+      const supabase = createClient();
+      const updateData: any = {
+        marketing_agreed: newValue,
+      };
+      // 동의 시 동의 시각 기록, 철회 시 null
+      if (newValue) {
+        updateData.marketing_agreed_at = new Date().toISOString();
+      } else {
+        updateData.marketing_agreed_at = null;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', userId);
+
+      if (error) {
+        setOn(!newValue); // 실패 시 롤백
+        showToast('저장 실패', 'error');
+      } else {
+        showToast(newValue ? '마케팅 수신에 동의했습니다' : '마케팅 수신을 철회했습니다', 'success');
+      }
+    } catch {
+      setOn(!newValue); // 실패 시 롤백
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-surface-200 p-5">
+      <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
+        <Shield className="w-4 h-4" />
+        마케팅 동의
+      </h3>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-surface-700">마케팅 정보 수신 동의</p>
+          <p className="text-xs text-surface-400">할인/프로모션 관련 마케팅 정보를 받습니다</p>
+        </div>
+        <button
+          onClick={handleToggle}
+          disabled={saving}
+          className={`w-10 h-6 rounded-full transition-colors relative ${on ? 'bg-primary-500' : 'bg-surface-200'} ${saving ? 'opacity-50' : ''}`}
+        >
+          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${on ? 'left-5' : 'left-1'}`} />
+        </button>
+      </div>
+      <p className="text-xs text-surface-400 mt-3">
+        동의를 철회하면 마케팅 관련 알림이 즉시 중단됩니다.
+      </p>
     </div>
   );
 }

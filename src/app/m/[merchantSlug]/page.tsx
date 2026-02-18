@@ -9,6 +9,7 @@ import { MerchantDealTabs } from '@/components/merchant/MerchantDealTabs';
 import { SortDropdown } from '@/components/common/SortDropdown';
 import { Pagination } from '@/components/common/Pagination';
 import { APP_NAME } from '@/lib/constants';
+import { FollowButton, FollowButtonMobile } from '@/components/merchant/FollowButton';
 
 const DEALS_PER_PAGE = 20;
 
@@ -161,9 +162,9 @@ export default async function MerchantPage({ params, searchParams }: MerchantPag
               </span>
             </div>
 
-            <button className="mt-3 w-full py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-xl active:bg-primary-600 transition-colors">
-              구독하기
-            </button>
+            <div className="mt-3">
+              <FollowButtonMobile merchantId={merchant.id} merchantName={merchant.name} />
+            </div>
           </div>
         </div>
 
@@ -200,9 +201,9 @@ export default async function MerchantPage({ params, searchParams }: MerchantPag
               </span>
             </div>
 
-            <button className="mt-4 px-5 py-2 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600 active:bg-primary-700 transition-colors">
-              구독하기
-            </button>
+            <div className="mt-4">
+              <FollowButton merchantId={merchant.id} merchantName={merchant.name} />
+            </div>
           </div>
         </div>
       </section>

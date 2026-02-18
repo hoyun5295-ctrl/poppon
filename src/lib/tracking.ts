@@ -1,12 +1,9 @@
 // ===========================================
-// POPPON 행동 추적 유틸
-// 비로그인: session_id (쿠키 30일)
-// 로그인: session_id + user_id
-// ===========================================
-// ✅ v2: auth readiness 큐 시스템
-//    - AuthProvider 초기화 전 trackAction 호출 시 큐에 대기
-//    - setTrackingUserId() 호출 시점에 큐 flush (user_id 포함)
-//    - 3초 안전장치 타임아웃 (auth 실패해도 null로 전송)
+// POPPON 행동 추적 유틸 v3
+// - user_id: 서버가 쿠키 세션에서 100% 추출 (클라이언트 전송 안 함)
+// - 전송: fetch + keepalive (페이지 이탈에도 전송 보장)
+// - sendBeacon: fetch 실패 시 fallback
+// - fire-and-forget: UI 절대 블로킹 안 함
 // ===========================================
 
 import type { DealActionType } from '@/types';
@@ -48,127 +45,35 @@ export function getSessionId(): string {
   return sid;
 }
 
-// --- Auth Readiness 큐 시스템 ---
+// --- setTrackingUserId (AuthProvider 호환 — 호출해도 무해) ---
 
-let _userId: string | null = null;
-let _authReady = false;
-
-interface QueuedAction {
-  type: 'action';
-  payload: { dealId: string; actionType: DealActionType; metadata?: Record<string, unknown> };
-}
-
-interface QueuedSearch {
-  type: 'search';
-  payload: { query: string; categorySlug?: string; resultCount?: number };
-}
-
-type QueuedItem = QueuedAction | QueuedSearch;
-
-const _queue: QueuedItem[] = [];
-let _flushTimer: ReturnType<typeof setTimeout> | null = null;
-
-// 안전장치: 3초 후 auth 미완료면 null로라도 전송
-const AUTH_TIMEOUT_MS = 3000;
-
-function startFlushTimer(): void {
-  if (_flushTimer) return;
-  _flushTimer = setTimeout(() => {
-    if (!_authReady) {
-      _authReady = true;
-      flushQueue();
-    }
-  }, AUTH_TIMEOUT_MS);
-}
-
-function flushQueue(): void {
-  if (_flushTimer) {
-    clearTimeout(_flushTimer);
-    _flushTimer = null;
-  }
-
-  while (_queue.length > 0) {
-    const item = _queue.shift()!;
-    if (item.type === 'action') {
-      sendAction(item.payload);
-    } else {
-      sendSearch(item.payload);
-    }
-  }
-}
-
-/**
- * AuthProvider에서 로그인/로그아웃 시 호출
- * → 큐에 대기 중이던 액션들을 user_id 포함하여 flush
- */
-export function setTrackingUserId(userId: string | null): void {
-  _userId = userId;
-  _authReady = true;
-  flushQueue();
+// AuthProvider에서 여전히 호출하므로 인터페이스 유지 (실제 사용 안 함)
+export function setTrackingUserId(_userId: string | null): void {
+  // v3: user_id는 서버에서 쿠키 세션으로 추출하므로 클라이언트 저장 불필요
+  // AuthProvider 호환성을 위해 함수만 유지
 }
 
 export function getTrackingUserId(): string | null {
-  return _userId;
+  return null;
 }
 
-// --- 실제 전송 함수 ---
+// --- 전송 함수 (fetch + keepalive → sendBeacon fallback) ---
 
-function sendAction({ dealId, actionType, metadata }: {
-  dealId: string;
-  actionType: DealActionType;
-  metadata?: Record<string, unknown>;
-}): void {
-  const sessionId = getSessionId();
-
-  const payload = JSON.stringify({
-    deal_id: dealId,
-    action_type: actionType,
-    session_id: sessionId,
-    user_id: _userId,
-    metadata,
-  });
-
-  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-    const blob = new Blob([payload], { type: 'application/json' });
-    const sent = navigator.sendBeacon('/api/actions', blob);
-    if (sent) return;
-  }
-
-  fetch('/api/actions', {
+function sendPayload(url: string, payload: string): void {
+  // 1차: fetch + keepalive + credentials (쿠키 전달 보장)
+  fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: payload,
     keepalive: true,
-  }).catch(() => {});
-}
-
-function sendSearch({ query, categorySlug, resultCount }: {
-  query: string;
-  categorySlug?: string;
-  resultCount?: number;
-}): void {
-  const sessionId = getSessionId();
-
-  const payload = JSON.stringify({
-    query,
-    session_id: sessionId,
-    user_id: _userId,
-    category_slug: categorySlug,
-    result_count: resultCount,
+    credentials: 'same-origin',
+  }).catch(() => {
+    // 2차: fetch 실패 시 sendBeacon fallback (페이지 이탈 등)
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon(url, blob);
+    }
   });
-
-  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-    const blob = new Blob([payload], { type: 'application/json' });
-    const sent = navigator.sendBeacon('/api/actions/search', blob);
-    if (sent) return;
-  }
-
-  fetch('/api/actions/search', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: payload,
-    keepalive: true,
-  }).catch(() => {});
 }
 
 // --- 행동 추적 API 호출 ---
@@ -176,36 +81,42 @@ function sendSearch({ query, categorySlug, resultCount }: {
 interface TrackActionParams {
   dealId: string;
   actionType: DealActionType;
-  metadata?: Record<string, unknown>;
 }
 
 /**
  * 딜 액션을 서버에 기록 (fire-and-forget)
  * UI를 절대 블로킹하지 않음
- * ✅ auth 미초기화 시 큐에 대기 → setTrackingUserId 호출 시 flush
+ * user_id는 서버가 쿠키 세션에서 자동 추출
  */
-export function trackAction({ dealId, actionType, metadata }: TrackActionParams): void {
-  if (_authReady) {
-    sendAction({ dealId, actionType, metadata });
-  } else {
-    _queue.push({ type: 'action', payload: { dealId, actionType, metadata } });
-    startFlushTimer();
-  }
+export function trackAction({ dealId, actionType }: TrackActionParams): void {
+  const sessionId = getSessionId();
+
+  const payload = JSON.stringify({
+    deal_id: dealId,
+    action_type: actionType,
+    session_id: sessionId,
+  });
+
+  sendPayload('/api/actions', payload);
 }
 
 // --- 검색 추적 ---
 
 /**
  * 검색 로그 기록 (fire-and-forget)
- * ✅ auth 미초기화 시 큐에 대기
+ * user_id는 서버가 쿠키 세션에서 자동 추출
  */
 export function trackSearch(query: string, categorySlug?: string, resultCount?: number): void {
-  if (_authReady) {
-    sendSearch({ query, categorySlug, resultCount });
-  } else {
-    _queue.push({ type: 'search', payload: { query, categorySlug, resultCount } });
-    startFlushTimer();
-  }
+  const sessionId = getSessionId();
+
+  const payload = JSON.stringify({
+    query,
+    session_id: sessionId,
+    category_slug: categorySlug,
+    result_count: resultCount,
+  });
+
+  sendPayload('/api/actions/search', payload);
 }
 
 // --- 편의 함수 ---
@@ -215,7 +126,7 @@ export function trackDealView(dealId: string): void {
 }
 
 export function trackCopyCode(dealId: string, code: string): void {
-  trackAction({ dealId, actionType: 'copy_code', metadata: { code } });
+  trackAction({ dealId, actionType: 'copy_code' });
 }
 
 export function trackClickOut(dealId: string): void {

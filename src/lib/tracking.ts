@@ -3,6 +3,11 @@
 // 비로그인: session_id (쿠키 30일)
 // 로그인: session_id + user_id
 // ===========================================
+// ✅ v2: auth readiness 큐 시스템
+//    - AuthProvider 초기화 전 trackAction 호출 시 큐에 대기
+//    - setTrackingUserId() 호출 시점에 큐 flush (user_id 포함)
+//    - 3초 안전장치 타임아웃 (auth 실패해도 null로 전송)
+// ===========================================
 
 import type { DealActionType } from '@/types';
 
@@ -43,36 +48,76 @@ export function getSessionId(): string {
   return sid;
 }
 
-// --- User ID 관리 (AuthProvider에서 주입) ---
+// --- Auth Readiness 큐 시스템 ---
 
 let _userId: string | null = null;
+let _authReady = false;
+
+interface QueuedAction {
+  type: 'action';
+  payload: { dealId: string; actionType: DealActionType; metadata?: Record<string, unknown> };
+}
+
+interface QueuedSearch {
+  type: 'search';
+  payload: { query: string; categorySlug?: string; resultCount?: number };
+}
+
+type QueuedItem = QueuedAction | QueuedSearch;
+
+const _queue: QueuedItem[] = [];
+let _flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+// 안전장치: 3초 후 auth 미완료면 null로라도 전송
+const AUTH_TIMEOUT_MS = 3000;
+
+function startFlushTimer(): void {
+  if (_flushTimer) return;
+  _flushTimer = setTimeout(() => {
+    if (!_authReady) {
+      _authReady = true;
+      flushQueue();
+    }
+  }, AUTH_TIMEOUT_MS);
+}
+
+function flushQueue(): void {
+  if (_flushTimer) {
+    clearTimeout(_flushTimer);
+    _flushTimer = null;
+  }
+
+  while (_queue.length > 0) {
+    const item = _queue.shift()!;
+    if (item.type === 'action') {
+      sendAction(item.payload);
+    } else {
+      sendSearch(item.payload);
+    }
+  }
+}
 
 /**
  * AuthProvider에서 로그인/로그아웃 시 호출
- * → 이후 모든 trackAction에 user_id가 자동 포함됨
+ * → 큐에 대기 중이던 액션들을 user_id 포함하여 flush
  */
 export function setTrackingUserId(userId: string | null): void {
   _userId = userId;
+  _authReady = true;
+  flushQueue();
 }
 
 export function getTrackingUserId(): string | null {
   return _userId;
 }
 
-// --- 행동 추적 API 호출 ---
+// --- 실제 전송 함수 ---
 
-interface TrackActionParams {
+function sendAction({ dealId, actionType, metadata }: {
   dealId: string;
   actionType: DealActionType;
   metadata?: Record<string, unknown>;
-}
-
-/**
- * 딜 액션을 서버에 기록 (fire-and-forget)
- * UI를 절대 블로킹하지 않음
- * 로그인 상태면 user_id 자동 포함
- */
-export function trackAction({ dealId, actionType, metadata }: TrackActionParams): void {
+}): void {
   const sessionId = getSessionId();
 
   const payload = JSON.stringify({
@@ -94,17 +139,14 @@ export function trackAction({ dealId, actionType, metadata }: TrackActionParams)
     headers: { 'Content-Type': 'application/json' },
     body: payload,
     keepalive: true,
-  }).catch(() => {
-    // 실패해도 무시
-  });
+  }).catch(() => {});
 }
 
-// --- 검색 추적 ---
-
-/**
- * 검색 로그 기록 (fire-and-forget)
- */
-export function trackSearch(query: string, categorySlug?: string, resultCount?: number): void {
+function sendSearch({ query, categorySlug, resultCount }: {
+  query: string;
+  categorySlug?: string;
+  resultCount?: number;
+}): void {
   const sessionId = getSessionId();
 
   const payload = JSON.stringify({
@@ -127,6 +169,43 @@ export function trackSearch(query: string, categorySlug?: string, resultCount?: 
     body: payload,
     keepalive: true,
   }).catch(() => {});
+}
+
+// --- 행동 추적 API 호출 ---
+
+interface TrackActionParams {
+  dealId: string;
+  actionType: DealActionType;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * 딜 액션을 서버에 기록 (fire-and-forget)
+ * UI를 절대 블로킹하지 않음
+ * ✅ auth 미초기화 시 큐에 대기 → setTrackingUserId 호출 시 flush
+ */
+export function trackAction({ dealId, actionType, metadata }: TrackActionParams): void {
+  if (_authReady) {
+    sendAction({ dealId, actionType, metadata });
+  } else {
+    _queue.push({ type: 'action', payload: { dealId, actionType, metadata } });
+    startFlushTimer();
+  }
+}
+
+// --- 검색 추적 ---
+
+/**
+ * 검색 로그 기록 (fire-and-forget)
+ * ✅ auth 미초기화 시 큐에 대기
+ */
+export function trackSearch(query: string, categorySlug?: string, resultCount?: number): void {
+  if (_authReady) {
+    sendSearch({ query, categorySlug, resultCount });
+  } else {
+    _queue.push({ type: 'search', payload: { query, categorySlug, resultCount } });
+    startFlushTimer();
+  }
 }
 
 // --- 편의 함수 ---

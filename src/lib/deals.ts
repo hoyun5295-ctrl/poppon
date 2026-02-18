@@ -3,7 +3,7 @@ import type { DealCard as DealCardType, UrgencyTag } from '@/types';
 
 const DEAL_DETAIL_SELECT = `
   *,
-  merchants (name, slug, logo_url, brand_color),
+  merchants (id, name, slug, logo_url, brand_color),
   categories!deals_category_id_fkey (name, slug)
 `;
 
@@ -15,7 +15,7 @@ const DEAL_CARD_SELECT = `
   ends_at, is_evergreen, benefit_tags,
   quality_score, trending_score,
   affiliate_disclosure, slug, created_at,
-  merchants (name, logo_url, brand_color),
+  merchants (id, name, slug, logo_url, brand_color),
   categories!deals_category_id_fkey (name)
 `;
 

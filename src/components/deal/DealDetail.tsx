@@ -6,6 +6,7 @@ import { ExternalLink, Calendar, Info } from 'lucide-react';
 import type { Deal, Merchant, Category } from '@/types';
 import { formatTimeRemaining, formatDateRange } from '@/lib/utils/format';
 import { CopyCodeButton } from './CopyCodeButton';
+import { DealActionBar } from './DealActionBar';
 import { trackDealView } from '@/lib/tracking';
 
 // 카테고리별 액센트 색상
@@ -18,7 +19,7 @@ const CATEGORY_ACCENT: Record<string, string> = {
 
 interface DealDetailProps {
   deal: Deal & {
-    merchants: Pick<Merchant, 'name' | 'slug' | 'logo_url'>;
+    merchants: Pick<Merchant, 'id' | 'name' | 'slug' | 'logo_url'>;
     categories: Pick<Category, 'name' | 'slug'>;
   };
   isModal?: boolean;
@@ -40,40 +41,51 @@ export function DealDetail({ deal, isModal = false }: DealDetailProps) {
 
   return (
     <div>
-      {/* 브랜드 */}
-      <div className="flex items-center gap-3 mb-4">
-        {deal.merchants?.logo_url ? (
-          <img
-            src={deal.merchants.logo_url}
-            alt={deal.merchants.name}
-            className="w-11 h-11 rounded-xl bg-white border border-surface-100 object-contain p-1"
-          />
-        ) : (
-          <div className={`w-11 h-11 rounded-xl ${accentColor} flex items-center justify-center`}>
-            <span className="text-base font-bold text-white">
-              {deal.merchants?.name?.charAt(0) || '?'}
-            </span>
-          </div>
-        )}
-        <div>
-          {/* 모달: <a> hard navigation (모달 확실히 닫힘) / 풀페이지: <Link> soft navigation */}
-          {isModal ? (
-            <a
-              href={merchantHref}
-              className="text-sm font-semibold text-surface-700 hover:text-primary-500 transition-colors"
-            >
-              {deal.merchants?.name}
-            </a>
+      {/* ✅ 브랜드 + 액션 바 */}
+      <div className="flex items-start justify-between gap-2 mb-4">
+        {/* 왼쪽: 로고 + 브랜드명 */}
+        <div className="flex items-center gap-3 min-w-0">
+          {deal.merchants?.logo_url ? (
+            <img
+              src={deal.merchants.logo_url}
+              alt={deal.merchants.name}
+              className="w-11 h-11 rounded-xl bg-white border border-surface-100 object-contain p-1 shrink-0"
+            />
           ) : (
-            <Link
-              href={merchantHref}
-              className="text-sm font-semibold text-surface-700 hover:text-primary-500 transition-colors"
-            >
-              {deal.merchants?.name}
-            </Link>
+            <div className={`w-11 h-11 rounded-xl ${accentColor} flex items-center justify-center shrink-0`}>
+              <span className="text-base font-bold text-white">
+                {deal.merchants?.name?.charAt(0) || '?'}
+              </span>
+            </div>
           )}
-          <p className="text-xs text-surface-400">{deal.categories?.name}</p>
+          <div className="min-w-0">
+            {isModal ? (
+              <a
+                href={merchantHref}
+                className="text-sm font-semibold text-surface-700 hover:text-primary-500 transition-colors"
+              >
+                {deal.merchants?.name}
+              </a>
+            ) : (
+              <Link
+                href={merchantHref}
+                className="text-sm font-semibold text-surface-700 hover:text-primary-500 transition-colors"
+              >
+                {deal.merchants?.name}
+              </Link>
+            )}
+            <p className="text-xs text-surface-400">{deal.categories?.name}</p>
+          </div>
         </div>
+
+        {/* 오른쪽: 액션 버튼 (저장/브랜드관/구독) */}
+        <DealActionBar
+          dealId={deal.id}
+          merchantId={deal.merchants?.id || deal.merchant_id}
+          merchantName={deal.merchants?.name || ''}
+          merchantSlug={deal.merchants?.slug || ''}
+          isModal={isModal}
+        />
       </div>
 
       {/* 제목 */}

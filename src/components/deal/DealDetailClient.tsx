@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { DealDetail } from './DealDetail';
@@ -8,7 +8,7 @@ var SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 var SELECT = '*,merchants(name,slug,logo_url,brand_color),categories!deals_category_id_fkey(name,slug)';
 var dealCache = new Map();
 
-export function DealDetailClient({ slug, isModal = false }) {
+export function DealDetailClient({ slug, isModal = false }: { slug: string; isModal?: boolean }) {
   var decodedSlug = decodeURIComponent(slug);
   var cached = dealCache.get(decodedSlug);
   var [deal, setDeal] = useState(cached || null);

@@ -76,7 +76,7 @@
 | 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider + TopProgressBar + Toast 래핑) |
 | 글로벌 CSS | `src/app/globals.css` (fade-in + toast 애니메이션) |
 | 미들웨어 | `src/middleware.ts` |
-| 홈 | `src/app/page.tsx` ✅ 새딜알림 CTA → /me?tab=follows (2/18) |
+| 홈 | `src/app/page.tsx` ✅ 실시간 브랜드/딜 정확한 수치 + 새딜알림 CTA (2/18) |
 | 홈 로딩 | `src/app/loading.tsx` |
 | 검색 | `src/app/search/page.tsx` + `loading.tsx` |
 | 카테고리 | `src/app/c/[categorySlug]/page.tsx` + `loading.tsx` |
@@ -126,11 +126,12 @@
 |------|------|
 | 루트 레이아웃 | `src/app/layout.tsx` |
 | 미들웨어 | `src/middleware.ts` (비밀번호 보호) |
-| 대시보드 | `src/app/(dashboard)/page.tsx` + `layout.tsx` |
+| 대시보드 | `src/app/(dashboard)/page.tsx` + `layout.tsx` ✅ 제보관리 메뉴 추가 (2/18) |
 | 딜 목록/생성/수정 | `src/app/(dashboard)/deals/` |
 | 머천트 목록/생성/수정 | `src/app/(dashboard)/merchants/` |
 | 회원 목록 | `src/app/(dashboard)/members/page.tsx` |
 | 회원 상세 | `src/app/(dashboard)/members/[id]/page.tsx` ✅ 10개씩 페이징 (2/18) |
+| 제보 관리 | `src/app/(dashboard)/submissions/page.tsx` ✅ 승인/거부+메모+탭필터+페이징 (2/18) |
 | 크롤 모니터링 | `src/app/(dashboard)/crawls/page.tsx` |
 | 크롤 이력 | `src/app/(dashboard)/crawl-history/page.tsx` |
 
@@ -144,6 +145,8 @@
 | 대시보드 | `src/app/api/dashboard/route.ts` |
 | 로고 업로드 | `src/app/api/upload-logo/route.ts` |
 | 회원 | `src/app/api/members/route.ts` + `[id]/route.ts` (GET+PATCH) |
+| 제보 목록 | `src/app/api/submissions/route.ts` ✅ GET status필터+페이징 (2/18) |
+| 제보 승인/거부 | `src/app/api/submissions/[id]/route.ts` ✅ PATCH status+admin_note (2/18) |
 | AI 크롤 | `src/app/api/ai-crawl/route.ts` + `[connectorId]/route.ts` |
 | Cron | `src/app/api/cron/crawl/route.ts` + `cron/expire/route.ts` |
 | 크롤 이력 | `src/app/api/crawl-history/route.ts` |
@@ -152,7 +155,7 @@
 | 파일 | 경로 |
 |------|------|
 | AI 크롤 엔진 (v5) | `src/lib/crawl/ai-engine.ts` |
-| 딜 저장 (v2.2) | `src/lib/crawl/save-deals.ts` |
+| 딜 저장 (v2.3) | `src/lib/crawl/save-deals.ts` ✅ active_deal_count 자동갱신 (2/18) |
 | 기타 스크립트 | `scripts/` (테스트, 로고수집, OG이미지 등) |
 
 ---
@@ -184,9 +187,10 @@ src/app/
 src/app/
 ├── login/
 ├── (dashboard)/
-│   ├── deals/, merchants/, members/, crawls/, crawl-history/
+│   ├── deals/, merchants/, members/, submissions/, crawls/, crawl-history/
 ├── api/
 │   ├── auth/, deals/, merchants/, dashboard/, members/+[id]/
+│   ├── submissions/+[id]/
 │   ├── connectors/[id]/, ai-crawl/+[connectorId]/
 │   └── cron/crawl/, cron/expire/, crawl-history/, upload-logo/
 ```
@@ -206,7 +210,7 @@ src/app/
 `GET /auth/callback`, `GET /api/auth/signout`, `GET|POST|DELETE /api/me/saved-deals`, `GET|POST|DELETE /api/me/follows/merchants`, `DELETE /api/me/delete-account`, `POST /api/actions`, `POST /api/actions/search`
 
 ### 어드민
-CRUD: `/api/deals`, `/api/merchants`, `POST /api/upload-logo`, `GET /api/dashboard`, `GET|PATCH /api/members/[id]`, `PATCH|DELETE /api/connectors/:id`, `GET|POST /api/ai-crawl`, `GET /api/cron/crawl`, `GET /api/cron/expire`
+CRUD: `/api/deals`, `/api/merchants`, `POST /api/upload-logo`, `GET /api/dashboard`, `GET|PATCH /api/members/[id]`, `PATCH|DELETE /api/connectors/:id`, `GET|POST /api/ai-crawl`, `GET /api/cron/crawl`, `GET /api/cron/expire`, `GET /api/submissions`, `PATCH /api/submissions/[id]`
 
 ### 트래킹
 `GET /out/:dealId` — 아웃바운드 리다이렉트 (클릭로그 + 302)
@@ -289,6 +293,7 @@ withdrawn_at, withdraw_reason, last_login_at, created_at, updated_at
 - **crawl_runs**: id, connector_id, status, new/updated/expired_count, error_message, started_at, completed_at, tokens_used
 - **deal_actions**: id, deal_id, user_id(nullable), session_id(ppn_sid), action_type, created_at — ⚠️ metadata 컬럼 없음
 - **search_logs**: id, user_id(nullable), session_id, query, category_slug, result_count, created_at
+- **submissions**: id(uuid), user_id, url, comment, parsed_preview(jsonb), status(pending/approved/rejected), admin_note, created_at
 - **outbound_clicks**: deal_id(FK→deals.id)
 
 ### 조인 관계
@@ -335,8 +340,9 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 ### 아키텍처
 ```
 커넥터 URL → Puppeteer (이미지 차단, 15s) → MD5 해시 비교
-  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.2 → hash 저장
+  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.3 → hash 저장
   → 카테고리: merchants.category_ids 직접 조회 (config fallback은 최종 수단)
+  → 딜 변동 시: 해당 머천트 active_deal_count 자동 재계산
 ```
 
 ### 커넥터 타입
@@ -380,14 +386,11 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 ## 🔴 미해결 / 진행 예정
 
 ### 미해결
-- ⚠️ 기존 딜 카테고리 불일치 — v2.1까지 잘못 배정된 딜 (v2.2로 신규는 해결, 기존 일괄 수정 필요)
 - ⚠️ 라네즈 naver_brand 잘못된 딜 hidden + 재크롤 필요
+- ⚠️ 카카오 OAuth 검수 신청 완료 — 승인 대기중 (영업일 3~5일)
 
 ### 즉시 (Phase 1 마무리)
 - **도메인**: 가비아 DNS 설정 (A: @→76.76.21.21, CNAME: www→cname.vercel-dns.com)
-- **기존 딜 카테고리 일괄 수정**: merchants.category_ids 기준 deals.category_id UPDATE
-- **merchants.active_deal_count 자동갱신**: cron/expire 및 save-deals에서 딜 변경 시 카운트 갱신
-- **딜 제보 어드민 승인 UI**: submit된 제보 목록 확인/승인/거부 어드민 페이지
 
 ### 단기 (Phase 2)
 - 링크프라이스 제휴 API, 애플 OAuth, KMC 본인인증, 카카오 알림톡
@@ -407,7 +410,7 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 - deals 삭제 시 FK: outbound_clicks → deal_actions → saved_deals 순서로 먼저 삭제
 - saved_deals.user_id FK: `auth.users(id)` 참조 (public.users 아님, 2/18 수정)
 - followed_merchants.user_id FK: `public.profiles(id)` 참조
-- merchants.active_deal_count: 자동 갱신 없음 → 수동 일괄 UPDATE 필요 (cron 연동 예정)
+- merchants.active_deal_count: save-deals v2.3 + cron/expire에서 자동 갱신 ✅ (2/18)
 - profiles.phone: UNIQUE 해제됨 (KMC 연동 시 재적용)
 - deal_actions 테이블: `metadata` 컬럼 없음
 - Supabase 클라이언트 auth lock: 싱글톤으로 AuthProvider가 잡고 있으면 블로킹 → 서버사이드 우회
@@ -428,7 +431,7 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 - actions API: body user_id null이면 서버 세션에서 자동 추출
 
 ### 크롤러
-- 크롤러 카테고리: save-deals v2.2 — merchants.category_ids 직접 조회
+- 크롤러 카테고리: save-deals v2.3 — merchants.category_ids 직접 조회 + active_deal_count 자동갱신
 - naver_brand: fullPage 모드 + /products/ URL 후처리 차단
 - 프롬프트 v5: 이벤트성 판단 원칙, confidence 75+
 - Puppeteer 서버리스: `puppeteer-core` + `@sparticuz/chromium`
@@ -457,21 +460,20 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 | 팝폰-네이버검수+법적페이지+탈퇴설계 | 2/18 | 네이버OAuth 프로필+법적페이지3종+이메일프로필+탈퇴설계 |
 | 팝폰-회원탈퇴승인+구독+마케팅동의 | 2/18 | 회원탈퇴 어드민승인+구독버튼+마케팅동의+어드민 상세 확장 |
 | 팝폰-회원가입수정+행동로그+페이징 | 2/18 | signUp 지연+완료화면+actions 서버user_id+구독API 복원+어드민 10개 페이징 |
-| **팝폰-딜저장수정+마이페이지개선** | **2/18** | **saved_deals FK수정+저장API 디버깅+마이페이지 환영메시지+구독2열+추천브랜드+홈CTA수정** |
+| 팝폰-딜저장수정+마이페이지개선 | 2/18 | saved_deals FK수정+저장API 디버깅+마이페이지 환영메시지+구독2열+추천브랜드+홈CTA수정 |
+| **팝폰-홈숫자수정+제보관리+카테고리수정** | **2/18** | **홈 실시간수치+save-deals v2.3 active_deal_count+제보관리UI+딜 카테고리 275개 일괄수정** |
 
 ---
 
-### 딜 저장 수정 + 마이페이지 개선 (2/18)
-- [x] **딜 모달 저장 500 에러 수정** — `saved_deals.user_id` FK가 `public.users` 참조 → `auth.users` 참조로 수정 (DB FK 재생성)
-- [x] **saved-deals API 디버깅** — POST/DELETE에 try-catch + console.log 추가 (운영 에러 추적용)
-- [x] **홈 "새딜알림받기" CTA** — `href="/auth"` → `href="/me?tab=follows"` (로그인 상태에서 구독탭 직접 진입)
-- [x] **마이페이지 URL 탭 파라미터** — `useSearchParams`로 `?tab=follows` 직접 진입 지원
-- [x] **마이페이지 환영 메시지** — "사용자" → "nickname/name/email앞부분 + 님, 환영합니다!"
-- [x] **구독 API active_deal_count** — follows API select에 `active_deal_count` 추가 → "활성 딜 N개" 정상 표시
-- [x] **merchants.active_deal_count 일괄 업데이트** — SQL로 전체 머천트 실제 딜 수 반영
-- [x] **구독 탭 2열 그리드** — 1열 → `grid-cols-1 sm:grid-cols-2`, "내 구독 브랜드 (N)" 헤더
-- [x] **추천 브랜드 섹션** — 구독 안 한 인기 브랜드 최대 8개, +버튼 구독 시 자동 리프레시, 빈 상태에서도 표시
+### 홈 숫자 수정 + 제보 관리 + 카테고리 수정 (2/18)
+- [x] **홈 브랜드/딜 숫자 실시간 표시** — 10단위 내림+`개+` 제거 → 정확한 수치로 변경 (신뢰감 향상)
+- [x] **save-deals v2.3** — 딜 변동(신규/만료) 시 해당 머천트 active_deal_count 자동 재계산
+- [x] **제보 관리 어드민 페이지** — submissions 목록 조회(status 탭필터, 20개 페이징) + 승인/거부 + 관리자 메모
+- [x] **제보 API** — `GET /api/submissions` (목록) + `PATCH /api/submissions/[id]` (승인/거부)
+- [x] **어드민 사이드바** — "📩 제보 관리" 메뉴 추가
+- [x] **기존 딜 카테고리 일괄 수정** — merchants.category_ids 기준 275개 딜 category_id UPDATE 완료
+- [x] **카카오 OAuth 검수 신청** — 개인정보 동의항목 제출 완료 (승인 대기중)
 
 ---
 
-*마지막 업데이트: 2026-02-18 (딜 저장 FK 수정 + 마이페이지 환영메시지 + 구독탭 2열 + 추천브랜드)*
+*마지막 업데이트: 2026-02-18 (홈 실시간수치 + save-deals v2.3 + 제보관리 + 카테고리 일괄수정)*

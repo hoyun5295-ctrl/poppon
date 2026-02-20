@@ -80,6 +80,10 @@ export async function GET(request: NextRequest) {
 /**
  * SNS 로그인 후 user_metadata에서 프로필 정보를 추출하여 profiles 테이블에 저장
  * 카카오/구글 등 Supabase 빌트인 provider 공통 처리
+ * 
+ * ✅ v2: app_metadata.providers (복수형 배열)로 linked_providers 동기화
+ *   - 기존: app_metadata.provider (단수) → 최초 가입 provider만 저장됨
+ *   - 수정: app_metadata.providers (복수) → 모든 연동 provider 반영
  */
 async function saveProviderProfile(user: any) {
   try {
@@ -132,7 +136,9 @@ async function saveProviderProfile(user: any) {
     if (birthDate) profileUpdate.birth_date = birthDate;
     if (phone) profileUpdate.phone = phone;
 
-    // ── linked_providers 배열 관리 ──
+    // ── ✅ v2: linked_providers 동기화 (app_metadata.providers 배열 기반) ──
+    const supabaseProviders: string[] = user.app_metadata?.providers || [];
+
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('linked_providers')
@@ -140,9 +146,16 @@ async function saveProviderProfile(user: any) {
       .single();
 
     const currentProviders: string[] = existingProfile?.linked_providers || [];
-    if (!currentProviders.includes(provider)) {
-      profileUpdate.linked_providers = [...currentProviders, provider];
+
+    // DB 기존값 + Supabase providers 배열 합쳐서 중복 제거
+    const mergedProviders = [...new Set([...currentProviders, ...supabaseProviders])];
+
+    // 현재 로그인한 provider도 확실히 포함
+    if (!mergedProviders.includes(provider)) {
+      mergedProviders.push(provider);
     }
+
+    profileUpdate.linked_providers = mergedProviders;
 
     // ── profiles 업데이트 ──
     await supabaseAdmin

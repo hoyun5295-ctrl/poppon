@@ -70,7 +70,7 @@ export default async function HomePage() {
       {/* 히어로 섹션 — 컴팩트 */}
       <section className="pt-6 pb-4 sm:pt-8 sm:pb-6 lg:pt-10 lg:pb-8 text-center">
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-surface-900 tracking-tight leading-tight">
-          한국의 <span className="text-primary-500">모든 할인</span>을{' '}
+          한국의 <span className="text-primary-500">모든 할인&행사</span>를{' '}
           <br className="sm:hidden" />
           한 곳에서
         </h1>

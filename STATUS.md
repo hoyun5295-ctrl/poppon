@@ -14,7 +14,6 @@
 
 - **도메인**: `poppon.kr` (가비아, DNS 설정 필요)
 - **GitHub**: `hoyun5295-ctrl/poppon` + `hoyun5295-ctrl/poppon-admin` (둘 다 private)
-- **설계 참조**: `POPPON_MOBILE_DESIGN.md` (Expo Router 마이그레이션 설계도)
 
 ---
 
@@ -41,10 +40,10 @@
 ### 모바일 (poppon-app) 🚧
 | 영역 | 기술 | 비고 |
 |------|------|------|
-| 프레임워크 | **Expo SDK 52+ / Expo Router v4** | 파일 기반 라우팅 (Next.js와 동일 멘탈모델) |
+| 프레임워크 | **Expo SDK 52+ / Expo Router v4** | 파일 기반 라우팅 |
 | 스타일링 | **NativeWind v4** | Tailwind CSS for React Native |
 | 상태관리 | **Zustand** | 웹과 동일 |
-| DB/Auth | **Supabase** (웹과 동일 인스턴스 공유) | anon key + LargeSecureStore 암호화 |
+| DB/Auth | **Supabase** (웹과 동일 인스턴스 공유) | anon key + AsyncStorage + globalThis 싱글톤 |
 | OAuth | **expo-auth-session + expo-web-browser** | 웹 콜백 중간 페이지 경유 방식 |
 | 배포 | **EAS Build** | App Store + Play Store |
 | 번들 ID | `kr.poppon.app` (iOS/Android 공통) | |
@@ -64,13 +63,16 @@
 | DealDetail.tsx | `src/components/deal/DealDetail.tsx` |
 | DealModal.tsx | `src/components/deal/DealModal.tsx` |
 | CopyCodeButton.tsx | `src/components/deal/CopyCodeButton.tsx` |
+| DealActionBar.tsx | `src/components/deal/DealActionBar.tsx` |
 | DealDetailClient.tsx | `src/components/deal/DealDetailClient.tsx` ⚠️ 레거시 (빌드 호환용) |
 | TopNav.tsx | `src/components/layout/TopNav.tsx` |
 | Footer.tsx | `src/components/layout/Footer.tsx` |
 | SourceProtection.tsx | `src/components/layout/SourceProtection.tsx` |
 | TopProgressBar.tsx | `src/components/layout/TopProgressBar.tsx` |
 | Toast.tsx | `src/components/common/Toast.tsx` |
-| AuthSheet.tsx | `src/components/auth/AuthSheet.tsx` ✅ signUp 마지막 스텝 지연 + 완료 화면 (2/18) |
+| Pagination.tsx | `src/components/common/Pagination.tsx` |
+| SortDropdown.tsx | `src/components/common/SortDropdown.tsx` |
+| AuthSheet.tsx | `src/components/auth/AuthSheet.tsx` |
 | MobileFilterSheet.tsx | `src/components/search/MobileFilterSheet.tsx` |
 | SearchBar.tsx | `src/components/search/SearchBar.tsx` |
 | SearchFilters.tsx | `src/components/search/SearchFilters.tsx` |
@@ -80,28 +82,25 @@
 | CategoryTabBar.tsx | `src/components/category/CategoryTabBar.tsx` |
 | CategoryIcon.tsx | `src/components/category/CategoryIcon.tsx` |
 | MerchantDealTabs.tsx | `src/components/merchant/MerchantDealTabs.tsx` |
-| DealActionBar.tsx | `src/components/deal/DealActionBar.tsx` ✅ 딜 상세 저장/브랜드관/구독 액션 |
-| FollowButton.tsx | `src/components/merchant/FollowButton.tsx` ✅ 구독/해제 클라이언트 컴포넌트 |
-| Pagination.tsx | `src/components/common/Pagination.tsx` |
-| SortDropdown.tsx | `src/components/common/SortDropdown.tsx` |
+| FollowButton.tsx | `src/components/merchant/FollowButton.tsx` |
 
 #### 페이지
 | 파일 | 경로 |
 |------|------|
-| 루트 레이아웃 | `src/app/layout.tsx` (AuthProvider + TopProgressBar + Toast 래핑) |
-| 글로벌 CSS | `src/app/globals.css` (fade-in + toast 애니메이션) |
+| 루트 레이아웃 | `src/app/layout.tsx` |
+| 글로벌 CSS | `src/app/globals.css` |
 | 미들웨어 | `src/middleware.ts` |
-| 홈 | `src/app/page.tsx` ✅ 실시간 브랜드/딜 정확한 수치 + 새딜알림 CTA (2/18) |
-| 홈 로딩 | `src/app/loading.tsx` |
+| 홈 | `src/app/page.tsx` |
 | 검색 | `src/app/search/page.tsx` + `loading.tsx` |
 | 카테고리 | `src/app/c/[categorySlug]/page.tsx` + `loading.tsx` |
 | 브랜드관 | `src/app/m/[merchantSlug]/page.tsx` + `loading.tsx` |
-| 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` ✅ 서버사이드 |
+| 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
-| 마이페이지 | `src/app/me/page.tsx` + `loading.tsx` ✅ 환영메시지+구독2열+추천브랜드 (2/18) |
-| 로그인 | `src/app/auth/page.tsx` + `callback/route.ts` ✅ v2 linked_providers 동기화 (2/20) + `callback/naver/route.ts` |
-| 모바일 OAuth 콜백 | `src/app/auth/callback/mobile/page.tsx` ✅ 앱 OAuth 중간 페이지 (2/20) |
+| 마이페이지 | `src/app/me/page.tsx` + `loading.tsx` |
+| 로그인 | `src/app/auth/page.tsx` + `callback/route.ts` + `callback/naver/route.ts` |
+| 모바일 OAuth 콜백 (카카오) | `src/app/auth/callback/mobile/page.tsx` |
+| 모바일 OAuth 콜백 (네이버) | `src/app/auth/callback/naver/mobile/page.tsx` |
 | 법적 페이지 | `src/app/legal/privacy/`, `terms/`, `marketing/` |
 
 #### 데이터 / 타입 / 유틸 / 인증
@@ -121,37 +120,35 @@
 | 파일 | 경로 |
 |------|------|
 | 제보 API | `src/app/api/submit/route.ts` |
-| 행동추적 API | `src/app/api/actions/route.ts` ✅ createServiceClient + 서버 세션 user_id 자동감지 (2/18) |
-| 클릭 트래킹 | `src/app/out/[dealId]/route.ts` |
-| 딜 저장 API | `src/app/api/me/saved-deals/route.ts` ✅ try-catch 디버깅 로그 (2/18) |
-| 브랜드 구독 API | `src/app/api/me/follows/merchants/route.ts` ✅ active_deal_count 포함 (2/18) |
-| 계정 탈퇴 API | `src/app/api/me/delete-account/route.ts` (pending_withdrawal) |
-| 프로필 조회 API | `src/app/api/me/profile/route.ts` ✅ 전체 프로필 반환 (설정탭용) |
+| 행동추적 API | `src/app/api/actions/route.ts` |
 | 검색 로그 API | `src/app/api/actions/search/route.ts` |
+| 클릭 트래킹 | `src/app/out/[dealId]/route.ts` |
+| 딜 저장 API | `src/app/api/me/saved-deals/route.ts` |
+| 브랜드 구독 API | `src/app/api/me/follows/merchants/route.ts` |
+| 계정 탈퇴 API | `src/app/api/me/delete-account/route.ts` |
+| 프로필 조회 API | `src/app/api/me/profile/route.ts` |
 | 로그아웃 API | `src/app/api/auth/signout/route.ts` |
 | 네이버 OAuth | `src/app/api/auth/naver/route.ts` |
-| 네이버 OAuth (모바일) | `src/app/api/auth/naver/mobile/route.ts` ✅ 앱 전용 (2/20) |
+| 네이버 OAuth (모바일) | `src/app/api/auth/naver/mobile/route.ts` |
 
 ### 🔴 poppon-admin (어드민 앱)
 
 #### 컴포넌트
 | 파일 | 경로 |
 |------|------|
-| MerchantForm.tsx | `src/components/admin/MerchantForm.tsx` ✅ v5 (slug+카테고리+커넥터+로고업로드+커넥터관리) |
+| MerchantForm.tsx | `src/components/admin/MerchantForm.tsx` |
 
 #### 페이지
 | 파일 | 경로 |
 |------|------|
 | 루트 레이아웃 | `src/app/layout.tsx` |
 | 미들웨어 | `src/middleware.ts` (비밀번호 보호) |
-| 대시보드 | `src/app/(dashboard)/page.tsx` + `layout.tsx` ✅ 제보관리 메뉴 추가 (2/18) |
+| 대시보드 | `src/app/(dashboard)/page.tsx` + `layout.tsx` |
 | 딜 목록/생성/수정 | `src/app/(dashboard)/deals/` |
 | 머천트 목록/생성/수정 | `src/app/(dashboard)/merchants/` |
-| 회원 목록 | `src/app/(dashboard)/members/page.tsx` |
-| 회원 상세 | `src/app/(dashboard)/members/[id]/page.tsx` ✅ 10개씩 페이징 (2/18) |
-| 제보 관리 | `src/app/(dashboard)/submissions/page.tsx` ✅ 승인/거부+메모+탭필터+페이징 (2/18) |
-| 크롤 모니터링 | `src/app/(dashboard)/crawls/page.tsx` |
-| 크롤 이력 | `src/app/(dashboard)/crawl-history/page.tsx` |
+| 회원 목록/상세 | `src/app/(dashboard)/members/page.tsx` + `[id]/page.tsx` |
+| 제보 관리 | `src/app/(dashboard)/submissions/page.tsx` |
+| 크롤 모니터링/이력 | `src/app/(dashboard)/crawls/page.tsx` + `crawl-history/page.tsx` |
 
 #### API (어드민 앱)
 | 파일 | 경로 |
@@ -159,12 +156,11 @@
 | 어드민 인증 | `src/app/api/auth/route.ts` |
 | 딜 CRUD | `src/app/api/deals/route.ts` + `[id]/route.ts` |
 | 머천트 | `src/app/api/merchants/route.ts` + `[id]/route.ts` |
-| 커넥터 관리 | `src/app/api/connectors/[id]/route.ts` (PATCH/DELETE) |
+| 커넥터 관리 | `src/app/api/connectors/[id]/route.ts` |
 | 대시보드 | `src/app/api/dashboard/route.ts` |
 | 로고 업로드 | `src/app/api/upload-logo/route.ts` |
-| 회원 | `src/app/api/members/route.ts` + `[id]/route.ts` (GET+PATCH) |
-| 제보 목록 | `src/app/api/submissions/route.ts` ✅ GET status필터+페이징 (2/18) |
-| 제보 승인/거부 | `src/app/api/submissions/[id]/route.ts` ✅ PATCH status+admin_note (2/18) |
+| 회원 | `src/app/api/members/route.ts` + `[id]/route.ts` |
+| 제보 | `src/app/api/submissions/route.ts` + `[id]/route.ts` |
 | AI 크롤 | `src/app/api/ai-crawl/route.ts` + `[connectorId]/route.ts` |
 | Cron | `src/app/api/cron/crawl/route.ts` + `cron/expire/route.ts` |
 | 크롤 이력 | `src/app/api/crawl-history/route.ts` |
@@ -173,162 +169,64 @@
 | 파일 | 경로 |
 |------|------|
 | AI 크롤 엔진 (v5) | `src/lib/crawl/ai-engine.ts` |
-| 딜 저장 (v2.3) | `src/lib/crawl/save-deals.ts` ✅ active_deal_count 자동갱신 (2/18) |
-| 기타 스크립트 | `scripts/` (테스트, 로고수집, OG이미지 등) |
+| 딜 저장 (v2.3) | `src/lib/crawl/save-deals.ts` |
+| 기타 스크립트 | `scripts/` |
 
 ### 🟢 poppon-app (모바일 앱) 🚧
 
 #### 설정 파일
-| 파일 | 경로 | 비고 |
-|------|------|------|
-| app.json | `app.json` | Expo 앱 설정 (번들ID, 스킴, 플러그인) |
-| tailwind.config.js | `tailwind.config.js` | NativeWind 설정 |
-| global.css | `src/global.css` | Tailwind 기본 import |
-| .env | `.env` | EXPO_PUBLIC_ 접두사 환경변수 |
+| 파일 | 경로 |
+|------|------|
+| app.json | `app.json` |
+| tailwind.config.js | `tailwind.config.js` |
+| global.css | `src/global.css` |
+| .env | `.env` |
 
 #### 라우트 (Expo Router)
 | 파일 | 경로 | 비고 |
 |------|------|------|
-| 루트 레이아웃 | `app/_layout.tsx` | ✅ AuthProvider 래핑 + auth 모달 (2/20) |
-| 탭 레이아웃 | `app/(tabs)/_layout.tsx` | ✅ Ionicons 아이콘 + iOS safeArea (2/20) |
-| 홈 | `app/(tabs)/index.tsx` | ✅ Supabase 실데이터 + DealShelf 3섹션 + CTA + 히어로 한줄텍스트+배지확대 (2/20) |
-| 카테고리 | `app/(tabs)/categories.tsx` | ✅ 6개 그리드 + 카테고리별 인기딜 DealShelf (2/20) |
-| 검색 | `app/(tabs)/search.tsx` | ✅ TextInput + 카테고리필터 + 정렬 + 무한스크롤 (2/20) |
-| 마이페이지 | `app/(tabs)/me.tsx` | ✅ 프로필헤더+저장딜+구독브랜드+탭+비로그인유도 (2/20) |
-| 딜 상세 모달 | `app/d/[slug].tsx` | ✅ transparentModal + 콘텐츠 맞춤 높이(maxHeight 85%) (2/20) |
-| 브랜드관 | `app/m/[merchantSlug].tsx` | ✅ 프로필헤더 + 진행중/종료 탭 + 무한스크롤 (2/20) |
-| 카테고리 상세 | `app/c/[categorySlug].tsx` | ✅ 서브카테고리칩 + FlatList 무한스크롤 (2/20) |
-| 로그인 | `app/auth/index.tsx` | ✅ 카카오/네이버/애플 버튼 + 브랜드 비주얼 (2/20) |
-| 로그인 레이아웃 | `app/auth/_layout.tsx` | ✅ headerShown: false (2/20) |
-| 온보딩 | `app/auth/onboarding.tsx` | ✅ 3단계: 카테고리→마케팅→완료 (2/20) |
+| 루트 레이아웃 | `app/_layout.tsx` | AuthProvider 래핑 + auth 모달 + legal 스크린 |
+| 탭 레이아웃 | `app/(tabs)/_layout.tsx` | Ionicons + iOS safeArea |
+| 홈 | `app/(tabs)/index.tsx` | POPPON좌측+알림종우측+히어로중앙정렬 |
+| 카테고리 | `app/(tabs)/categories.tsx` | 6개 그리드(원형+filled) + 인기딜 DealShelf |
+| 검색 | `app/(tabs)/search.tsx` | TextInput + 원형아이콘 카테고리필터 + 무한스크롤 |
+| 마이페이지 | `app/(tabs)/me.tsx` | 프로필+저장딜+구독브랜드+법적페이지링크 |
+| 딜 상세 모달 | `app/d/[slug].tsx` | transparentModal + maxHeight 85% |
+| 브랜드관 | `app/m/[merchantSlug].tsx` | 프로필헤더 + 진행중/종료 탭 + 무한스크롤 |
+| 카테고리 상세 | `app/c/[categorySlug].tsx` | 서브카테고리칩 + FlatList 무한스크롤 |
+| 로그인 | `app/auth/index.tsx` + `_layout.tsx` | 카카오/네이버/애플 버튼 |
+| 온보딩 | `app/auth/onboarding.tsx` | 3단계: 카테고리→마케팅→완료 |
 | 제보 | `app/submit.tsx` | 미구현 (Phase M4) |
-| 법적 페이지 | `app/legal/*.tsx` | 미구현 (Phase M4) |
+| 법적 페이지 | `app/legal/*.tsx` + `_layout.tsx` | WebView로 웹 URL 로딩 |
 
 #### 컴포넌트
 | 파일 | 경로 | 비고 |
 |------|------|------|
-| DealCard.tsx | `src/components/deal/DealCard.tsx` | ✅ 그리드 카드 (쿠폰 점선 특색, brand_color 배지) (2/20) |
-| DealShelf.tsx | `src/components/deal/DealShelf.tsx` | ✅ 수평 스크롤 셸프 (2/20) |
-| DealDetailView.tsx | `src/components/deal/DealDetailView.tsx` | ✅ 딜 상세 콘텐츠 (로고+타이틀+혜택+날짜+조건+CTA) (2/20) |
-| DealListCard.tsx | `src/components/deal/DealListCard.tsx` | ✅ 수평 리스트 카드 (56px 로고+정보) (2/20) |
-| CopyCodeButton.tsx | `src/components/deal/CopyCodeButton.tsx` | ✅ 쿠폰복사 (expo-clipboard + expo-haptics) (2/20) |
-| SaveButton.tsx | `src/components/deal/SaveButton.tsx` | ✅ 딜 저장/해제 + 로그인 체크 + haptics (2/20) |
-| FollowButton.tsx | `src/components/merchant/FollowButton.tsx` | ✅ 브랜드 구독/해제 + compact/default 변형 (2/20) |
-| CategoryGrid.tsx | `src/components/category/CategoryGrid.tsx` | ✅ 카드배경 제거 + filled 아이콘 + 원형 배경 (2/20) |
-| SubCategoryChips.tsx | `src/components/common/SubCategoryChips.tsx` | ✅ 수평 ScrollView 칩 버튼 (2/20) |
-| SortPicker.tsx | `src/components/common/SortPicker.tsx` | ✅ 바텀시트 정렬 모달 (추천/최신/마감임박/인기) (2/20) |
+| DealCard.tsx | `src/components/deal/DealCard.tsx` | 그리드 카드 + resolveLogoUrl |
+| DealShelf.tsx | `src/components/deal/DealShelf.tsx` | 수평 스크롤 + 동적 카드폭(÷2.3) |
+| DealDetailView.tsx | `src/components/deal/DealDetailView.tsx` | 딜 상세 + safeOpenURL + resolveLogoUrl |
+| DealListCard.tsx | `src/components/deal/DealListCard.tsx` | 수평 리스트 카드 (56px 로고) |
+| CopyCodeButton.tsx | `src/components/deal/CopyCodeButton.tsx` | expo-clipboard + expo-haptics |
+| SaveButton.tsx | `src/components/deal/SaveButton.tsx` | 딜 저장/해제 + haptics |
+| FollowButton.tsx | `src/components/merchant/FollowButton.tsx` | 브랜드 구독/해제 + compact/default |
+| CategoryGrid.tsx | `src/components/category/CategoryGrid.tsx` | 원형 배경 + filled 아이콘 |
+| SubCategoryChips.tsx | `src/components/common/SubCategoryChips.tsx` | 수평 ScrollView 칩 |
+| SortPicker.tsx | `src/components/common/SortPicker.tsx` | 바텀시트 정렬 모달 |
 
-#### 라이브러리 (Supabase/인증/유틸)
+#### 라이브러리
 | 파일 | 경로 | 비고 |
 |------|------|------|
-| Supabase 클라이언트 | `src/lib/supabase/client.ts` | ✅ LargeSecureStore + Proxy 지연 초기화 + implicit flow (2/20) |
-| 딜 쿼리 | `src/lib/deals.ts` | ✅ 웹 포팅 + offset 페이지네이션 + dedupeDeals (2/20) |
-| 행동 추적 | `src/lib/tracking.ts` | ✅ Supabase 직접 insert (deal_view/click_out/copy_code/search) (2/20) |
-| 포맷 유틸 | `src/lib/utils/format.ts` | ✅ 웹에서 100% 복사 (2/20) |
-| 타입 정의 | `src/types/database.ts` | ✅ 웹에서 100% 복사 (2/20) |
-| 타입 re-export | `src/types/index.ts` | ✅ (2/20) |
-| 상수 | `src/constants/index.ts` | ✅ 웹에서 포팅 (EXPO_PUBLIC 변환) (2/20) |
-| AuthProvider | `src/lib/auth/AuthProvider.tsx` | ✅ 세션관리+프로필fetch+신규유저감지+onboarding리다이렉트 (2/20) |
-| 카카오 OAuth | `src/lib/auth/kakao.ts` | ✅ 웹 콜백 중간 페이지 경유 + Linking.addEventListener (2/20) |
-| 네이버 OAuth | `src/lib/auth/naver.ts` | ✅ 웹 API 경유 + 코드 준비 완료 (2/20) |
-| 애플 로그인 | `src/lib/auth/apple.ts` | ✅ expo-apple-authentication 코드 준비 (2/20) |
-| 프로필 헬퍼 | `src/lib/auth/profile.ts` | ✅ saveOnboarding/toggleSave/toggleFollow/saveProviderProfile (2/20) |
-
-#### 코드 재사용 (웹에서 복사)
-| 웹 원본 | 앱 대상 | 재사용율 | 상태 |
-|---------|---------|---------|------|
-| `src/types/database.ts` | `src/types/database.ts` | 100% | ✅ 완료 |
-| `src/lib/utils/format.ts` | `src/lib/utils/format.ts` | 100% | ✅ 완료 |
-| `src/lib/constants.ts` | `src/constants/index.ts` | 95% | ✅ 완료 |
-| `src/lib/deals.ts` | `src/lib/deals.ts` | 80% | ✅ 완료 (6개 함수 추가) |
-| `src/lib/tracking.ts` | `src/lib/tracking.ts` | 80% | ✅ 완료 (Supabase 직접 insert, fire-and-forget) |
-
----
-
-## 라우팅 구조
-
-### 메인 앱
-```
-src/app/
-├── layout.tsx               — AuthProvider + TopProgressBar + AuthSheet 래핑
-├── @modal/(.)d/[slug]/      — 인터셉팅 모달 (서버사이드)
-├── d/[slug]/                — SEO 풀 페이지
-├── m/[merchantSlug]/        — 브랜드관
-├── c/[categorySlug]/        — 카테고리 허브
-├── search/                  — 검색 결과
-├── submit/                  — 유저 제보
-├── me/                      — 마이페이지
-├── auth/                    — 로그인 + callback/ (카카오) + callback/naver/ + callback/mobile/ (앱용)
-├── legal/                   — 개인정보처리방침, 이용약관, 마케팅수신동의
-├── api/
-│   ├── submit/, actions/, actions/search/
-│   ├── auth/signout/, auth/naver/, auth/naver/mobile/
-│   └── me/saved-deals/, me/follows/merchants/, me/delete-account/, me/profile/
-└── out/[dealId]/            — 클릭 트래킹
-```
-
-### 어드민 앱
-```
-src/app/
-├── login/
-├── (dashboard)/
-│   ├── deals/, merchants/, members/, submissions/, crawls/, crawl-history/
-├── api/
-│   ├── auth/, deals/, merchants/, dashboard/, members/+[id]/
-│   ├── submissions/+[id]/
-│   ├── connectors/[id]/, ai-crawl/+[connectorId]/
-│   └── cron/crawl/, cron/expire/, crawl-history/, upload-logo/
-```
-
-### 모바일 앱 (Expo Router) 🚧
-```
-app/
-├── _layout.tsx              — Root Stack + AuthProvider 래핑 ✅
-├── (tabs)/
-│   ├── _layout.tsx          — 하단 4탭 (홈/카테고리/검색/마이)
-│   ├── index.tsx            — 홈 ✅
-│   ├── categories.tsx       — 카테고리 ✅
-│   ├── search.tsx           — 검색 ✅
-│   └── me.tsx               — 마이페이지 ✅ (프로필+저장딜+구독)
-├── d/[slug].tsx             — 딜 상세 모달 (transparentModal) ✅
-├── m/[merchantSlug].tsx     — 브랜드관 ✅
-├── c/[categorySlug].tsx     — 카테고리 상세 ✅
-├── auth/
-│   ├── _layout.tsx          — Auth 스택 (헤더 숨김) ✅
-│   ├── index.tsx            — 로그인 (카카오/네이버/애플) ✅
-│   └── onboarding.tsx       — 카테고리+마케팅 온보딩 ✅
-├── submit.tsx               — 제보 (Phase M4)
-└── legal/                   — 법적 페이지 3종 (Phase M4)
-```
-
-### 미들웨어 보호
-- **메인**: `/brand/*` → 로그인 필수
-- **어드민**: 전체 → ADMIN_SECRET 쿠키 필수 (login 제외)
-
----
-
-## API 구조 요약
-
-### 메인 — Public
-`GET /deals`, `GET /deals/:id`, `GET /categories`, `GET /merchants`, `POST /api/submit`
-
-### 메인 — Member (로그인)
-`GET /auth/callback`, `GET /api/auth/signout`, `GET|POST|DELETE /api/me/saved-deals`, `GET|POST|DELETE /api/me/follows/merchants`, `DELETE /api/me/delete-account`, `GET /api/me/profile`, `POST /api/actions`, `POST /api/actions/search`
-
-### 메인 — 모바일 전용
-`POST /api/auth/naver/mobile` — 네이버 OAuth 앱용 (code→token 교환+세션 생성)
-`GET /auth/callback/mobile` — OAuth 콜백 중간 페이지 (토큰 추출→앱 딥링크)
-
-### 어드민
-CRUD: `/api/deals`, `/api/merchants`, `POST /api/upload-logo`, `GET /api/dashboard`, `GET|PATCH /api/members/[id]`, `PATCH|DELETE /api/connectors/:id`, `GET|POST /api/ai-crawl`, `GET /api/cron/crawl`, `GET /api/cron/expire`, `GET /api/submissions`, `PATCH /api/submissions/[id]`
-
-### 트래킹
-`GET /out/:dealId` — 아웃바운드 리다이렉트 (클릭로그 + 302)
-
-### 모바일 앱 🚧
-앱에서는 Next.js API Route를 거치지 않고 **Supabase Client 직접 호출**.
-웹 API 대응: `/api/me/*` → `supabase.from().select/insert/delete`, `/api/actions` → `supabase.from('deal_actions').insert()`, `/out/[dealId]` → `Linking.openURL()` + Supabase insert
-**예외**: 네이버 OAuth만 웹 API (`/api/auth/naver/mobile`) 경유 (client_secret 보호)
+| Supabase 클라이언트 | `src/lib/supabase/client.ts` | AsyncStorage + globalThis 싱글톤 + implicit flow |
+| 딜 쿼리 | `src/lib/deals.ts` | 웹 포팅 + offset 페이지네이션 + dedupeDeals |
+| 행동 추적 | `src/lib/tracking.ts` | Supabase 직접 insert (fire-and-forget) |
+| 포맷 유틸 | `src/lib/utils/format.ts` | 웹에서 100% 복사 |
+| 타입 정의 | `src/types/database.ts` + `index.ts` | 웹에서 100% 복사 |
+| 상수 | `src/constants/index.ts` | 웹에서 포팅 (EXPO_PUBLIC 변환) |
+| AuthProvider | `src/lib/auth/AuthProvider.tsx` | 세션관리 + onboarding_completed 기반 신규유저감지 |
+| 카카오 OAuth | `src/lib/auth/kakao.ts` | 웹 콜백 중간 페이지 경유 + Linking.addEventListener |
+| 네이버 OAuth | `src/lib/auth/naver.ts` | v2 웹 중간 페이지 경유 (카카오 동일 패턴) |
+| 애플 로그인 | `src/lib/auth/apple.ts` | expo-apple-authentication 코드 준비 |
+| 프로필 헬퍼 | `src/lib/auth/profile.ts` | saveOnboarding/toggleSave/toggleFollow/saveProviderProfile |
 
 ---
 
@@ -345,8 +243,6 @@ CRUD: `/api/deals`, `/api/merchants`, `POST /api/upload-logo`, `GET /api/dashboa
 - **채널**: online_only, offline_only, hybrid
 - **긴급**: ending_soon_24h, ending_soon_3d, new_today, updated_today
 
----
-
 ## 카테고리 (6개 활성)
 패션(fashion), 뷰티(beauty), 식품/배달(food), 생활/리빙(living), 여행/레저(travel), 문화/콘텐츠(culture)
 
@@ -354,7 +250,7 @@ CRUD: `/api/deals`, `/api/merchants`, `POST /api/upload-logo`, `GET /api/dashboa
 
 ## DB 스키마
 
-### 데이터 현황 (2/20 기준)
+### 데이터 현황 (2/21 기준)
 | 항목 | 수치 |
 |------|------|
 | 브랜드 (merchants) | ~340개 (전원 로고+brand_color) |
@@ -395,6 +291,7 @@ id(FK→auth.users), phone(nullable), name, nickname, avatar_url,
 gender, birth_date(varchar), ci, di,
 interest_categories(uuid[], DEFAULT '{}'), marketing_agreed(boolean, DEFAULT false),
 marketing_agreed_at, marketing_channel(text[]),
+onboarding_completed(boolean, DEFAULT false),
 provider(DEFAULT 'email'), linked_providers(text[]),
 role(user/admin/super_admin), status(active/pending_withdrawal/withdrawn/banned),
 withdrawn_at, withdraw_reason, last_login_at, created_at, updated_at
@@ -422,7 +319,7 @@ saved_deals → auth.users + deals
 followed_merchants → auth.users + merchants
 outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 ```
-⚠️ Supabase 조인 시 FK 명시 필수: `categories!deals_category_id_fkey (name)`
+⚠️ Supabase 조인 FK 명시 필수: `categories!deals_category_id_fkey (name)`
 ⚠️ deals 삭제 시 outbound_clicks → deal_actions → saved_deals FK 먼저 삭제
 
 ### RLS 정책
@@ -430,48 +327,50 @@ outbound_clicks.deal_id → deals.id (FK: outbound_clicks_deal_id_fkey)
 - merchants/categories: SELECT 전체
 - profiles: SELECT/UPDATE auth.uid()=id
 - saved_deals/followed_merchants: ALL auth.uid()=user_id
-- ✅ RLS 전체 활성화 완료 (2/20): crawl_connectors, crawl_runs, outbound_clicks, deal_feedbacks, ad_campaigns, affiliate_merchant_map, affiliate_networks, affiliate_offers, batch_reports, consent_logs, users — 정책 없이 RLS만 ON (service_role 전용, anon 차단)
-- ⚠️ **앱 전용**: deal_actions에 anon INSERT 정책 추가 필요 (웹은 createServiceClient로 RLS 우회, 앱은 anon key 사용)
+- 기타 (crawl_connectors, crawl_runs, outbound_clicks 등): 정책 없이 RLS ON (service_role 전용)
+- ⚠️ **앱 전용**: deal_actions에 anon INSERT 정책 추가 필요
 
 ---
 
 ## 회원가입/인증 시스템
 
-### 아키텍처
+### 웹 인증 플로우
 ```
-[이메일 가입] AuthSheet: signup(검증만) → identity(프로필) → categories → marketing → 최종 signUp + profile 일괄 저장 → complete 화면
-[카카오 로그인] signInWithOAuth → 카카오 동의 → Supabase 콜백 → saveProviderProfile v2 → 신규? → /?onboarding=sns → categories → marketing
-[네이버 로그인] 수동 OAuth → admin.createUser+generateLink+verifyOtp → 프로필 저장
-[탈퇴] 마이페이지 → pending_withdrawal → 어드민 승인(withdrawn) / 거부(active 복원)
-[로그아웃] <a href="/api/auth/signout"> → sb- 쿠키 삭제 + 302 → sessionStorage 토스트
+[이메일] AuthSheet: signup(검증만) → identity(프로필) → categories → marketing → 최종 signUp + profile 일괄 저장
+[카카오] signInWithOAuth → Supabase 콜백 → saveProviderProfile v2 → 신규? → 온보딩
+[네이버] 수동 OAuth → admin.createUser+generateLink+verifyOtp → 프로필 저장
+[탈퇴] 마이페이지 → pending_withdrawal → 어드민 승인(withdrawn) / 거부(active)
+[로그아웃] <a href="/api/auth/signout"> → sb- 쿠키 삭제 + 302
 ```
 
-### 앱 인증 플로우 ✅ (2/20)
+### 앱 인증 플로우 ✅
 ```
-[카카오] ✅ 동작 확인 완료
-  앱 → Linking.openURL(Supabase OAuth URL, redirect_to=웹 콜백 중간 페이지)
-  → 카카오 로그인 → Supabase → 웹 콜백 페이지(/auth/callback/mobile)
-  → "앱으로 돌아가기" 버튼 → poppon:// 또는 exp:// 딥링크
-  → Linking.addEventListener로 토큰 수신 → setSession
-[네이버] 코드 준비 완료 (EXPO_PUBLIC_NAVER_CLIENT_ID 환경변수 + 네이버 포털 설정 필요)
-  앱 → expo-web-browser → 네이버 로그인 → 웹 API(/api/auth/naver/mobile) 경유 → setSession
-[애플] 코드 준비 완료 (Apple Developer 계정 $99 + Supabase Apple Provider 설정 필요)
-  expo-apple-authentication → signInWithIdToken
+[카카오] ✅ 동작 확인
+  앱 → Linking.openURL(Supabase OAuth URL) → 카카오 로그인 → 웹 콜백 페이지(/auth/callback/mobile)
+  → "앱으로 돌아가기" 버튼 → 딥링크 → Linking.addEventListener로 토큰 수신 → setSession
+[네이버] ✅ 동작 확인
+  앱 → Linking.openURL(네이버 로그인) → 웹 콜백 페이지(/auth/callback/naver/mobile)
+  → /api/auth/naver/mobile 호출(토큰 교환) → 앱으로 딥링크 → setSession
+[애플] 코드 준비 완료 (Apple Developer DUNS 대기 중)
 [로그아웃] supabase.auth.signOut() → router.replace('/(tabs)')
 ```
 
 ### 환경변수 (이름만)
-**메인**: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
-**어드민**: 위 + ADMIN_SECRET, ANTHROPIC_API_KEY, CRON_SECRET, NEXT_PUBLIC_MAIN_URL
-**모바일**: EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_NAVER_CLIENT_ID, EXPO_PUBLIC_APP_SCHEME (⚠️ SERVICE_ROLE_KEY 절대 넣지 않음)
-**카카오**: Supabase Provider에 REST API Key 설정, 도메인 변경 시 카카오 포털 동기화
+- **메인**: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
+- **어드민**: 위 + ADMIN_SECRET, ANTHROPIC_API_KEY, CRON_SECRET, NEXT_PUBLIC_MAIN_URL
+- **모바일**: EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY, EXPO_PUBLIC_NAVER_CLIENT_ID, EXPO_PUBLIC_APP_SCHEME (⚠️ SERVICE_ROLE_KEY 절대 넣지 않음)
+- **카카오**: Supabase Provider에 REST API Key 설정
 
-### Supabase Redirect URLs (2/20 기준)
+### Supabase Redirect URLs
 ```
 exp://192.168.219.116:8081/--/auth/callback   ← Expo Go 개발용
 https://poppon.vercel.app/auth/callback/mobile ← 앱 OAuth 웹 콜백 중간 페이지
-poppon://auth/callback                         ← 프로덕션 빌드용 (EAS Build 후)
+poppon://auth/callback                         ← 프로덕션 빌드용
 ```
+
+### Supabase 설정
+- Site URL: `https://poppon.vercel.app` (localhost 아님)
+- saveProviderProfile v2: `app_metadata.providers` 기반 linked_providers 동기화
 
 ---
 
@@ -480,19 +379,118 @@ poppon://auth/callback                         ← 프로덕션 빌드용 (EAS B
 ### 아키텍처
 ```
 커넥터 URL → Puppeteer (이미지 차단, 15s) → MD5 해시 비교
-  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.3 → hash 저장
-  → 카테고리: merchants.category_ids 직접 조회 (config fallback은 최종 수단)
+  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.3
+  → 카테고리: merchants.category_ids 직접 조회
   → 딜 변동 시: 해당 머천트 active_deal_count 자동 재계산
 ```
 
 ### 커넥터 타입
-| 타입 | 설명 | Cron | 성공 후 | 해시 | DOM | 프롬프트 |
-|------|------|------|--------|------|-----|---------|
-| `list` | 이벤트 목록 | ✅ 매일 | active 유지 | ✅ | main 영역 | 이벤트성 딜 추출 |
-| `single` | 개별 이벤트 | ❌ 제외 | auto disabled | ❌ | main 영역 | 딜 1개 분석 |
-| `naver_brand` | 네이버 브랜드스토어 | ✅ 매일 | active 유지 | ✅ | fullPage(body) | 기획전 탭만 |
+| 타입 | 설명 | Cron | 성공 후 | 해시 |
+|------|------|------|--------|------|
+| `list` | 이벤트 목록 | ✅ 매일 | active 유지 | ✅ |
+| `single` | 개별 이벤트 | ❌ 제외 | auto disabled | ❌ |
+| `naver_brand` | 네이버 브랜드스토어 | ✅ 매일 | active 유지 | ✅ |
 
-핵심 판단: "이벤트성 혜택인가, 상시 판매인가?" → 이벤트성만 수집, confidence 75+
+---
+
+## 푸시 알림 설계 (미구현, Phase M4~M5)
+
+### 아키텍처
+```
+[앱 설치/로그인]
+  → expo-notifications로 ExpoPushToken 발급
+  → profiles.push_token에 저장
+  → 서버(Supabase Edge Function)에서 토큰 기반 푸시 발송
+
+[알림 유형]
+  1. 구독 브랜드 새 딜 알림   ← followed_merchants + 새 딜 감지
+  2. 관심 카테고리 인기 딜     ← interest_categories + trending_score
+  3. 저장한 딜 만료 임박 알림  ← saved_deals + ends_at 24시간 전
+  4. 마케팅 알림              ← marketing_agreed=true인 유저만
+```
+
+### DB 스키마 변경 (필요)
+```sql
+-- profiles 테이블에 추가
+ALTER TABLE profiles ADD COLUMN push_token text;
+ALTER TABLE profiles ADD COLUMN push_token_updated_at timestamptz;
+ALTER TABLE profiles ADD COLUMN push_enabled boolean DEFAULT true;
+
+-- 디바이스 정보 (선택, 분석용)
+ALTER TABLE profiles ADD COLUMN device_os text;        -- 'ios' | 'android'
+ALTER TABLE profiles ADD COLUMN app_version text;
+
+-- deal_actions에 platform 구분 (웹/앱 행동 분리 분석)
+ALTER TABLE deal_actions ADD COLUMN platform text DEFAULT 'web';
+```
+
+### 토큰 등록 코드 (참고)
+```tsx
+// src/lib/push/notifications.ts
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true, shouldPlaySound: true, shouldSetBadge: true,
+  }),
+});
+
+export async function registerPushToken(userId: string) {
+  if (!Device.isDevice) return null;
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('deals', {
+      name: '딜 알림',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250],
+      lightColor: '#FF6B35',
+    });
+  }
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== 'granted') return null;
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  await supabase.from('profiles').update({
+    push_token: token,
+    push_token_updated_at: new Date().toISOString(),
+  }).eq('id', userId);
+  return token;
+}
+```
+
+### 알림 탭 → 딥링크 처리 (app/_layout.tsx에 추가)
+```tsx
+useEffect(() => {
+  const sub = Notifications.addNotificationResponseReceivedListener(response => {
+    const data = response.notification.request.content.data;
+    if (data.dealSlug) router.push(`/d/${data.dealSlug}`);
+    else if (data.merchantSlug) router.push(`/m/${data.merchantSlug}`);
+  });
+  return () => sub.remove();
+}, []);
+```
+
+---
+
+## 앱스토어 심사 체크리스트 (Phase M5)
+
+### iOS (Apple)
+- [ ] 애플 로그인 필수 포함 (소셜 로그인 제공 시)
+- [ ] 개인정보처리방침 URL (앱 내 + App Store Connect)
+- [ ] 이용약관 URL
+- [ ] 스크린샷 6.7" + 6.5" + 5.5" (최소)
+- [ ] 앱 설명 한국어
+- [ ] 데이터 수집 항목 정확히 기재 (App Privacy)
+- [ ] 심사용 테스트 계정 제공
+
+### Android (Google)
+- [ ] 개인정보처리방침 URL
+- [ ] 콘텐츠 등급 설문
+- [ ] 데이터 안전 섹션 (Data Safety)
+- [ ] 타겟 연령 설정
+- [ ] 스크린샷 + 기능 그래픽
 
 ---
 
@@ -505,24 +503,29 @@ poppon://auth/callback                         ← 프로덕션 빌드용 (EAS B
 ---
 
 ## 개발 Phase
-- **Phase 0** ✅: DB 18테이블+RLS, 전체 페이지, 어드민, AI 크롤러 v3, Vercel 배포
-- **Phase 1** ✅: 크롤러 v5, 회원 시스템, 브랜드 확장, 어드민 분리, 딜 정리, 커넥터 관리, 인증 완성, 행동추적
-- **Phase 2** 미착수: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯 / 성과 정산
 
-### 모바일 앱 Phase 🚧
-- **Phase M1** ✅: Expo 프로젝트 생성 + Supabase 연결 + 홈 화면 실데이터 + DealCard/DealShelf/CategoryGrid
-- **Phase M2** ✅: 딜 상세 모달 + 카테고리 상세 + 검색 + 브랜드관 + 행동추적 + 무한스크롤
-- **Phase M3** ✅: 카카오 OAuth 성공 + 인증 시스템 구축 (AuthProvider/온보딩/마이페이지/저장·구독 버튼/웹콜백중간페이지)
-- **Phase M4** 🔄 진행중: 디자인 수정 (히어로+카테고리+로고시안) + 로고 확정 대기 + 네이버/애플 OAuth + 푸시 알림 + 법적 페이지 + 심사 준비
-- **Phase M5** 미착수: App Store / Play Store 심사 대응
+### 완료
+- **Phase 0** ✅: DB 18테이블+RLS, 전체 페이지, 어드민, AI 크롤러 v3, Vercel 배포
+- **Phase 1** ✅: 크롤러 v5, 회원 시스템, 브랜드 확장, 어드민 분리, 인증 완성, 행동추적
+- **Phase M1** ✅: Expo 프로젝트 생성 + Supabase 연결 + 타입/상수/유틸 포팅 + DealCard/DealShelf/CategoryGrid + 홈 실데이터
+- **Phase M2** ✅: 딜 상세 모달 + 카테고리/검색/브랜드관 + DealListCard + CopyCode + tracking + 무한스크롤
+- **Phase M3** ✅: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
+
+### 진행 중
+- **Phase M4** 🔄: 앱 디자인 통일 완료 + 법적 페이지 완료 + 로고 확정 대기 + 애플 DUNS 대기 + 푸시 알림 + 제보화면 + 심사 준비
+
+### 미착수
+- **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
+- **Phase M5**: App Store / Play Store 심사 대응
+- **Phase 3+**: TargetUP-AI CRM 연동, Docker Compose, 앱 푸시 발송 서버
 
 ---
 
-## 🖥️ 인프라 (확정 2/17)
+## 🖥️ 인프라
 - **현재**: Vercel Pro ($20×2) + Supabase Pro ($25) = **$65/월**
-  - 메인+어드민: Vercel 서울(icn1), DB: Supabase Pro (서울 ap-northeast-2, Storage: merchant-logos 버킷)
+  - 메인+어드민: Vercel 서울(icn1), DB: Supabase Pro (서울, Storage: merchant-logos 버킷)
 - **이관 트리거**: Supabase 비용 월 $100+ 시 자체 서버 검토
-- **모바일**: EAS Build (Expo 무료 티어로 시작, 빌드 30회/월)
+- **모바일**: EAS Build (Expo 무료 티어, 빌드 30회/월)
 
 ## 배치 스케줄 (어드민 Vercel Cron)
 - 23:00/23:20/23:40 KST: 3-batch 크롤 (커넥터 1/3씩, single 제외)
@@ -533,28 +536,23 @@ poppon://auth/callback                         ← 프로덕션 빌드용 (EAS B
 
 ## 🔴 미해결 / 진행 예정
 
-### 미해결
+### 즉시 (Phase M4 남은 작업)
+- **앱**: 🎨 로고 확정 대기 → 확정 후 앱 전체 컬러/히어로/배경색 통일
+- **앱**: 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
+- **앱**: 푸시 알림 (expo-notifications + profiles.push_token)
+- **앱**: 제보 화면 (submit.tsx)
+- **앱**: SaveButton/FollowButton 딜 상세·브랜드관에 연결
 - ⚠️ 라네즈 naver_brand 잘못된 딜 hidden + 재크롤 필요
 
-### 즉시 (Phase M4)
-- **앱**: 🎨 로고 확정 대기 중 (쿠폰 티켓 스타일 시안 → 전문 디자이너 의뢰)
-- **앱**: 로고 확정 후 앱 전체 컬러/히어로/배경색 통일
-- **앱**: 네이버 OAuth 환경설정 (.env + 네이버 포털 콜백 URL 등록)
-- **앱**: 애플 로그인 환경설정 (Apple Developer $99 + Supabase Apple Provider)
-- **앱**: 온보딩 플로우 세부 테스트 (카테고리 선택 → 마케팅 동의 → DB 저장)
-- **앱**: 마이페이지 저장딜/구독브랜드 실데이터 동작 테스트
-- **앱**: SaveButton/FollowButton 딜 상세·브랜드관에 연결
-- **앱**: 법적 페이지 3종 (WebView로 웹 URL 로딩)
-
-### 단기 (Phase 2 + Phase M4)
+### 단기 (Phase 2 + Phase M5)
 - **웹**: 도메인 연결, 링크프라이스 제휴 API, KMC 본인인증, 카카오 알림톡
-- **웹**: 탈퇴 승인 후 30일 자동 완전삭제 Cron, single 타입 검증
-- **앱**: 푸시 알림 + 제보화면 + 법적페이지 + 앱스토어 심사 준비
+- **웹**: 탈퇴 승인 후 30일 자동삭제 Cron
 - **앱**: 카카오 개발자 포털에 iOS/Android 네이티브 플랫폼 등록 (프로덕션 빌드 시)
+- **앱**: 앱스토어 심사 준비 (위 체크리스트 참조)
 
-### 중기 (Phase 3 + Phase M5)
+### 중기 (Phase 3+)
 - TargetUP-AI CRM 연동 (건당 60~70원 타겟 마케팅)
-- Docker Compose (트래픽 증가 대비), 브랜드 포털
+- Docker Compose (트래픽 증가 대비)
 - 앱 푸시 알림 발송 서버 (Supabase Edge Function)
 
 ---
@@ -563,39 +561,33 @@ poppon://auth/callback                         ← 프로덕션 빌드용 (EAS B
 
 ### DB / Supabase
 - Supabase 조인 FK 명시 필수: `categories!deals_category_id_fkey`
-- deals 삭제 시 FK: outbound_clicks → deal_actions → saved_deals 순서로 먼저 삭제
-- saved_deals.user_id FK: `auth.users(id)` 참조 (public.users 아님, 2/18 수정)
+- deals 삭제 시 FK 순서: outbound_clicks → deal_actions → saved_deals
+- saved_deals.user_id FK: `auth.users(id)` 참조 (public.users 아님)
 - followed_merchants.user_id FK: `public.profiles(id)` 참조
-- merchants.active_deal_count: save-deals v2.3 + cron/expire에서 자동 갱신 ✅ (2/18)
 - profiles.phone: UNIQUE 해제됨 (KMC 연동 시 재적용)
-- deal_actions 테이블: `metadata` 컬럼 없음
-- Supabase 클라이언트 auth lock: 싱글톤으로 AuthProvider가 잡고 있으면 블로킹 → 서버사이드 우회
-- Supabase client.ts 싱글톤: `createClient()` 함수 사용 필수
+- deal_actions: `metadata` 컬럼 없음
 - server.ts exports: `createServerSupabaseClient` (anon) + `createServiceClient` (service role)
-- ✅ Supabase URL Configuration: Site URL = `https://poppon.vercel.app` (localhost 아님! OAuth 리다이렉트에 영향)
 
 ### 보안
-- ✅ SourceProtection: 우클릭/F12/Ctrl+U 차단 (1차 방어)
-- ✅ RLS 전체 활성화 (2/20): 정책 없는 테이블도 RLS ON → anon key로 접근 차단 (2차 방어)
-- ⚠️ anon key는 프론트엔드에 노출됨 → RLS가 실제 보안 방벽. SourceProtection은 보조 수단
+- SourceProtection: 우클릭/F12/Ctrl+U 차단 (1차 방어)
+- RLS 전체 활성화 완료 (2차 방어)
+- anon key는 프론트엔드 노출됨 → RLS가 실제 보안 방벽
 
 ### 인증 / 회원
-- AuthSheet signUp 지연: signup 스텝에서 signUp 안 함 → marketing 스텝 "가입 완료"에서 signUp + profile 한꺼번에 저장
+- AuthSheet signUp 지연: marketing 스텝에서 signUp + profile 한꺼번에 저장
 - AuthProvider TOKEN_REFRESHED: fetchProfile 절대 금지 → 무한루프
-- 로그아웃: 서버 사이드 API (`/api/auth/signout`) 필수. `<a>` 태그 사용
+- 로그아웃(웹): 서버 사이드 API 필수, `<a>` 태그 사용
 - Toast: sessionStorage('poppon_pending_toast') → layout mount 시 표시
-- 네이버 OAuth: 수동 플로우. `updateUserById` 필수 (updateUser 아님). 환경변수 poppon만
-- 회원탈퇴 2단계: 유저→pending_withdrawal → 어드민 승인→withdrawn / 거부→active
-- FollowButton: 클라이언트 컴포넌트 분리 필수 (서버 컴포넌트에서 onClick 불가)
-- ✅ 카카오 OAuth 검수 승인 완료 (2/20): 비즈니스 정보 + 개인정보 동의항목 승인
-- ✅ saveProviderProfile v2 (2/20): `app_metadata.providers` (복수 배열) 기반 linked_providers 동기화 — 기존 DB값 + Supabase providers 합쳐서 중복 제거
+- 네이버 OAuth: 수동 플로우, `updateUserById` 필수 (updateUser 아님), 환경변수 poppon만
+- 회원탈퇴: pending_withdrawal → 어드민 승인(withdrawn) / 거부(active)
+- FollowButton: 클라이언트 컴포넌트 분리 필수
+- 카카오 OAuth 검수 승인 완료
 
 ### 행동추적
-- actions API: `createServiceClient` 사용 (RLS 우회, 비로그인도 insert)
+- actions API(웹): `createServiceClient` 사용 (RLS 우회, 비로그인도 insert)
 - actions API: body user_id null이면 서버 세션에서 자동 추출
 
 ### 크롤러
-- 크롤러 카테고리: save-deals v2.3 — merchants.category_ids 직접 조회 + active_deal_count 자동갱신
 - naver_brand: fullPage 모드 + /products/ URL 후처리 차단
 - 프롬프트 v5: 이벤트성 판단 원칙, confidence 75+
 - Puppeteer 서버리스: `puppeteer-core` + `@sparticuz/chromium`
@@ -607,40 +599,27 @@ poppon://auth/callback                         ← 프로덕션 빌드용 (EAS B
 - DealModal 스크롤: `position: fixed` + `top: -scrollY` 패턴
 - 모달 내부 링크 → `<a>` hard navigation
 - Vercel 빌드: `.rpc()` → `.then(() => {}, () => {})`
-- CategoryGrid/CategoryTabBar: 'use client', CategoryIcon은 color prop만
 
-### 모바일 앱 (Expo) 🚧
-- `detectSessionInUrl: false` 반드시 설정 (앱에서 URL 기반 세션 감지 불가)
-- 웹의 `createServerSupabaseClient` / `createServiceClient` → 앱에서 사용 불가. 앱용 싱글톤만 사용
-- `<Image>`에 width/height 필수 (웹과 달리 auto-sizing 안 됨)
-- `<Text>`는 반드시 `<Text>` 안에만 텍스트 → `<View>` 안에 직접 문자열 불가
-- 한글 slug: `decodeURIComponent` 웹과 동일하게 필요
-- `expo-image` 권장 (기본 `<Image>`보다 캐싱/성능 우수)
-- 웹 Pagination → FlatList `onEndReached` 무한스크롤로 전환
-- 웹 sessionStorage → AsyncStorage로 전환
-- 웹 navigator.clipboard → `expo-clipboard`으로 전환
-- ✅ Supabase `window is not defined` 해결 (2/20): Proxy 기반 지연 초기화 (`getSupabase()`) — 모듈 로딩 시점에 AsyncStorage가 window 접근하는 문제 우회
-- ✅ NativeWind className → style 객체 전환 (2/20): Expo Web에서 className 렌더링 불안정 → inline style로 통일
-- ✅ 카테고리 그리드 3열 (2/20): `width: '31%'`가 Expo Web flex-wrap 미작동 → `Dimensions.get('window').width` 기반 픽셀 정확 계산
-- `app/_layout.tsx`에서 Supabase 직접 import 금지 → 중복 초기화 에러 발생
-- ✅ 딜 상세 모달 높이 (2/20): 고정 88% → `maxHeight: 85%` 콘텐츠 맞춤 (짧은 딜은 작게, 긴 딜은 스크롤)
-- ✅ duplicate key 에러 (2/20): Supabase 쿼리가 동일 딜 중복 반환 → `dedupeDeals()` 유틸로 ID 기반 중복 제거
-- ✅ offset 페이지네이션 (2/20): cursor(created_at) 방식은 DealCardType에 노출 안 됨 → `.range(offset, offset+limit-1)` offset 방식 채택
-- ✅ 앱 행동추적 (2/20): 웹 `/api/actions` 대신 Supabase 직접 insert (fire-and-forget) — deal_actions RLS에 anon INSERT 정책 추가 필요
-- expo-clipboard + expo-haptics: 쿠폰 복사 시 네이티브 클립보드 + 진동 피드백
-- ✅ **Expo Go OAuth 핵심 이슈 (2/20)**: `openAuthSessionAsync`가 Supabase JS 리다이렉트 + `exp://` 커스텀 스킴 조합에서 동작 안 함 → **웹 콜백 중간 페이지 패턴**으로 해결
-- ✅ **앱 OAuth 최종 방식 (2/20)**: `Linking.openURL` + `Linking.addEventListener` + 웹 중간 페이지(`/auth/callback/mobile`) — Supabase redirect_to를 웹 중간 페이지로 설정, 중간 페이지에서 "앱으로 돌아가기" 버튼으로 딥링크
-- ⚠️ Expo Go에서 `exp://` 스킴은 iOS Safari 자동 리다이렉트 차단됨 → 유저가 버튼 탭 필요 (프로덕션 `poppon://`에서는 자동 리다이렉트 가능성 높음)
-- ⚠️ WebCrypto API 미지원: PKCE `flowType: 'pkce'` 사용 시 `code_challenge_method`가 `plain`으로 폴백 → implicit flow(flowType 미지정) 사용 중
-- ✅ **홈 히어로 섹션 수정 (2/20)**: POPPON 로고 확대 + 텍스트 한 줄 + 배지 확대
-- ✅ **카테고리 그리드 수정 (2/20)**: 흰색 카드 배경 제거 → 원형 아이콘만 + outline→filled 아이콘
-- ⚠️ **로고 확정 전**: 앱 전체 컬러/배경 최종 결정 보류. 로고 확정 후 히어로+탭바+배경색 통일 예정
-- 🎨 **로고 시안**: 쿠폰 티켓 스타일 (바코드+POPPON+반원컷아웃) SVG 6종 제작 → 전문 디자이너 의뢰
+### 모바일 앱 (Expo)
+- `detectSessionInUrl: false` 반드시 설정
+- 웹의 `createServerSupabaseClient` / `createServiceClient` → 앱에서 사용 불가
+- `<Image>`에 width/height 필수, `<Text>` 안에만 텍스트
+- 한글 slug: `decodeURIComponent` 필요
+- `expo-image` 권장 (캐싱/성능 우수)
+- 웹 Pagination → FlatList `onEndReached` 무한스크롤
+- `app/_layout.tsx`에서 Supabase 직접 import 금지 → 중복 초기화 에러
+- Supabase: AsyncStorage + globalThis 싱글톤 (LargeSecureStore aes-js race condition 해결)
+- 온보딩: `onboarding_completed` boolean 기반 (interest_categories 길이 기반 → 무한루프)
+- Expo Go OAuth: `openAuthSessionAsync` 미작동 → 웹 콜백 중간 페이지 패턴으로 해결
+- Expo Go `exp://` 스킴: iOS Safari 자동 리다이렉트 차단 → 유저 버튼 탭 필요 (프로덕션은 `poppon://`)
+- WebCrypto API 미지원: PKCE 불가 → implicit flow 사용 중
+- 로고 상대경로: `resolveLogoUrl()` 헬퍼로 절대 URL 변환
+- 외부 URL 열기: `safeOpenURL()` 헬퍼 (try-catch + Alert)
 
 ### 어드민
-- 어드민 N+1 쿼리: 회원 목록 `auth.admin.listUsers()` 배치 필수
-- 머천트 PUT API: event_page_url/connector_type 필드 분리 (merchants 컬럼 오염 방지)
-- edit 페이지 null 처리: 필드별 타입 맞춤 (배열→[], boolean→false). 일괄 `null→''` 금지
+- 회원 목록 `auth.admin.listUsers()` 배치 필수
+- 머천트 PUT: event_page_url/connector_type 필드 분리 (merchants 컬럼 오염 방지)
+- edit 페이지 null 처리: 필드별 타입 맞춤 (배열→[], boolean→false), 일괄 `null→''` 금지
 - 브랜드 수정 후 필터 유지: URL param `?category=xxx`
 
 ---
@@ -648,67 +627,12 @@ poppon://auth/callback                         ← 프로덕션 빌드용 (EAS B
 ## 최근 채팅 히스토리
 | 채팅 | 날짜 | 주요 내용 |
 |------|------|-----------|
-| 팝폰-모달렌더링수정+actions수정 | 2/18 | 모달 서버사이드 전환+actions metadata 제거 |
-| 팝폰-네이버검수+법적페이지+탈퇴설계 | 2/18 | 네이버OAuth 프로필+법적페이지3종+이메일프로필+탈퇴설계 |
-| 팝폰-회원탈퇴승인+구독+마케팅동의 | 2/18 | 회원탈퇴 어드민승인+구독버튼+마케팅동의+어드민 상세 확장 |
-| 팝폰-회원가입수정+행동로그+페이징 | 2/18 | signUp 지연+완료화면+actions 서버user_id+구독API 복원+어드민 10개 페이징 |
-| 팝폰-딜저장수정+마이페이지개선 | 2/18 | saved_deals FK수정+저장API 디버깅+마이페이지 환영메시지+구독2열+추천브랜드+홈CTA수정 |
-| 팝폰-홈숫자수정+제보관리+카테고리수정 | 2/18 | 홈 실시간수치+save-deals v2.3 active_deal_count+제보관리UI+딜 카테고리 275개 일괄수정 |
-| 팝폰-카카오검수+보안+연동수정 | 2/20 | 카카오OAuth 검수승인+Site URL수정+RLS 11테이블 활성화+linked_providers v2 동기화 |
-| 팝폰-모바일앱설계+Phase M1 착수 | 2/20 | Expo Router 설계도 작성+프로젝트 생성+Tab Navigator 스켈레톤 완성 |
-| 팝폰-모바일앱 Phase M1 완료 | 2/20 | Supabase 연결+타입/상수/유틸 포팅+DealCard/DealShelf/CategoryGrid+홈 실데이터+Expo Go 테스트 |
-| 팝폰-모바일앱 Phase M2 완료 | 2/20 | 딜상세모달+카테고리상세+브랜드관+검색+DealListCard+CopyCode+tracking+무한스크롤+Expo Go 테스트 |
-| **팝폰-모바일앱 Phase M3 OAuth** | **2/20** | **카카오OAuth 성공+AuthProvider+로그인화면+온보딩+마이페이지+SaveButton+FollowButton+웹콜백중간페이지+네이버모바일API** |
-| **팝폰-앱 디자인수정+로고시안** | **2/20** | **히어로 한줄텍스트+배지확대+카테고리 카드배경제거+filled아이콘+쿠폰티켓 로고시안 6종 제작** |
+| 팝폰-앱 Phase M3 OAuth | 2/20 | 카카오OAuth 성공+AuthProvider+웹콜백중간페이지+네이버모바일API |
+| 팝폰-앱 디자인수정+로고시안 | 2/20 | 히어로+카테고리 디자인수정+쿠폰티켓 로고시안 6종 |
+| 팝폰-앱 세션버그수정+네이버OAuth | 2/20 | AsyncStorage 세션수정+onboarding루프수정+네이버OAuth완료 |
+| 팝폰-앱 법적페이지+홈리디자인 | 2/20 | 법적페이지3종(WebView)+홈히어로리디자인 |
+| 팝폰-앱 UI통일+로고수정+에러핸들링 | 2/21 | 카테고리/검색 아이콘통일+로고절대URL+DealShelf동적폭+safeOpenURL |
 
 ---
 
-### 모바일 앱 Phase M1 완료 (2/20)
-- [x] **Supabase 클라이언트 활성화** — LargeSecureStore + Proxy 지연 초기화 (`window is not defined` 해결)
-- [x] **타입/상수/유틸 복사** — database.ts (100%), format.ts (100%), constants/index.ts (95%), types/index.ts
-- [x] **deals.ts 포팅** — 웹 쿼리 로직 + 앱용 6개 함수 추가 (getTrendingDeals, getLatestDeals, getEndingSoonDeals 등)
-- [x] **DealCard 컴포넌트** — expo-image 로고 + brand_color 배지 + 쿠폰 점선 컷아웃 + Ionicons
-- [x] **DealShelf 컴포넌트** — 수평 ScrollView + 섹션 헤더
-- [x] **CategoryGrid 컴포넌트** — 3×2 그리드 (Dimensions 기반 정확 계산) + Ionicons 카테고리 아이콘
-- [x] **Tab Navigator** — Ionicons (filled/outline 토글) + iOS safeArea
-- [x] **홈 화면 실데이터** — Supabase fetch (344개 브랜드, 937개 딜) + dedupeByMerchant + Pull-to-refresh
-- [x] **Expo Go 테스트** — iPhone 실기기 확인 완료
-
-### 모바일 앱 Phase M2 완료 (2/20)
-- [x] **딜 상세 모달** — transparentModal + 콘텐츠 맞춤 높이(maxHeight 85%) + 드래그핸들 + 배경탭 닫기
-- [x] **DealDetailView** — 브랜드 로고/이름 + 타이틀 + 혜택요약 + 날짜범위 + 이용조건 + 딜타입별 CTA (A1:쿠폰복사+이동 / A2:가격딜 / B:앱쿠폰)
-- [x] **CopyCodeButton** — expo-clipboard 복사 + expo-haptics 진동 피드백 + 복사완료 상태
-- [x] **카테고리 허브 (탭)** — 6개 카테고리 그리드 + 카테고리별 인기딜 DealShelf 미리보기
-- [x] **카테고리 상세** — 서브카테고리 칩 필터 + FlatList offset 무한스크롤 + 정렬(SortPicker)
-- [x] **브랜드관** — 프로필 헤더(로고+이름+카테고리+딜수) + 진행중/종료 탭 + FlatList 무한스크롤
-- [x] **검색** — TextInput + 6개 카테고리 필터칩 + 정렬 + 트렌딩 초기표시 + 무한스크롤
-- [x] **DealListCard** — 수평 리스트 카드 (56px 로고 + 브랜드/타이틀/할인/마감일)
-- [x] **tracking.ts** — Supabase 직접 insert (deal_view, click_out, copy_code, search) + AsyncStorage 세션ID
-- [x] **dedupeDeals** — FlatList duplicate key 에러 방지용 ID 기반 중복 제거
-- [x] **Expo Go 테스트** — iPhone 실기기 전체 동선 확인 완료
-
-### 모바일 앱 Phase M3 완료 (2/20)
-- [x] **AuthProvider** — 세션 관리 컨텍스트 + onAuthStateChange + 프로필 fetch + 신규 유저 감지 → 온보딩 리다이렉트
-- [x] **로그인 화면** — 카카오/네이버/애플 3개 소셜 버튼 + 브랜드 비주얼 + 로딩 상태 + 에러 알림
-- [x] **카카오 OAuth ✅ 동작 확인** — 웹 콜백 중간 페이지 경유 방식 (`Linking.openURL` + `Linking.addEventListener`)
-- [x] **네이버 OAuth 코드 준비** — 웹 API(`/api/auth/naver/mobile`) 배포 완료, .env 설정 남음
-- [x] **애플 로그인 코드 준비** — expo-apple-authentication 코드 완성, Apple Developer 계정 설정 남음
-- [x] **온보딩 화면** — 3단계 (카테고리 6개 선택 → 마케팅 동의 → 완료)
-- [x] **마이페이지 실데이터** — 비로그인 유도화면 / 로그인 시 프로필헤더+저장딜+구독브랜드+탭UI+Pull-to-refresh
-- [x] **SaveButton** — 딜 저장/해제 + 로그인 체크 + haptic 피드백
-- [x] **FollowButton** — 브랜드 구독/해제 + compact/default 변형
-- [x] **profile.ts 헬퍼** — saveOnboarding, toggleSaveDeal, toggleFollowMerchant, getSavedDeals, getFollowedMerchants, saveProviderProfile
-- [x] **웹 콜백 중간 페이지** — poppon 웹에 `/auth/callback/mobile` 배포 (토큰 추출 → 앱 딥링크 → "앱으로 돌아가기" 버튼)
-- [x] **네이버 모바일 API** — poppon 웹에 `/api/auth/naver/mobile` 배포 (code→token 교환 + 세션 생성)
-- [x] **Expo Go 카카오 로그인 테스트** — iPhone 실기기 확인 완료
-- [ ] **다음 Phase M4**: 로고 확정 → 앱 디자인 통일 + 네이버/애플 환경설정 + 푸시 알림 + 제보 + 법적 페이지 + 심사 준비
-
-### 모바일 앱 Phase M4 디자인 수정 (2/20)
-- [x] **히어로 섹션 수정** — POPPON 로고 확대 (fontSize 20, letterSpacing 3) + "한국의 모든 할인을 한 곳에서" 한 줄 + 배지 크기 확대 (fontSize 14)
-- [x] **카테고리 그리드 수정** — 흰색 카드 배경 제거 → 원형 아이콘+텍스트만 (쿠팡/배민 스타일) + outline→filled 아이콘 전환
-- [x] **POPPON 로고 시안 제작** — 쿠폰 티켓 스타일 (왼쪽 바코드 + POPPON + 오른쪽 반원 컷아웃/펀치홀) 6종 색상 변형
-- [ ] **로고 확정 대기** — 시안 기반 전문 디자이너 의뢰 중, 확정 후 앱 전체 컬러 통일 예정
-
----
-
-*마지막 업데이트: 2026-02-20 (앱 디자인 수정 — 히어로 한줄텍스트+카테고리 filled아이콘+쿠폰티켓 로고시안 제작+디자이너 의뢰)*
+*마지막 업데이트: 2026-02-21*

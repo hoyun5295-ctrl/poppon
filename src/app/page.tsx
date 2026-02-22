@@ -11,23 +11,26 @@ export default async function HomePage() {
   const now = new Date().toISOString();
   const threeDaysLater = new Date(Date.now() + 1000 * 60 * 60 * 72).toISOString();
 
-  // 병렬로 4개 섹션 데이터 가져오기
+  // 병렬로 데이터 가져오기
   const [trendingRes, newRes, endingSoonRes, merchantCountRes, dealCountRes] = await Promise.all([
+    // 🔥 지금 뜨는 딜: quality_score 기준 (v5.2 AI 매력도)
     filterActiveDeals(
       supabase.from('deals').select(DEAL_CARD_SELECT),
       now
     )
-      .order('trending_score', { ascending: false })
       .order('quality_score', { ascending: false })
+      .order('trending_score', { ascending: false })
       .limit(48),
 
+    // ✨ 새로 올라온 딜: 최근 등록순
     filterActiveDeals(
       supabase.from('deals').select(DEAL_CARD_SELECT),
       now
     )
       .order('created_at', { ascending: false })
-      .limit(48),
+      .limit(80),
 
+    // ⏰ 마감 임박
     supabase
       .from('deals')
       .select(DEAL_CARD_SELECT)
@@ -57,6 +60,7 @@ export default async function HomePage() {
   const merchantCount = merchantCountRes.count || 0;
   const dealCount = dealCountRes.count || 0;
 
+  // 브랜드 중복 제거 (브랜드당 최대 N개)
   function dedupeByMerchant(deals: DealCard[], maxPerMerchant = 1): DealCard[] {
     const count: Record<string, number> = {};
     return deals.filter((d) => {
@@ -64,6 +68,23 @@ export default async function HomePage() {
       return count[d.merchant_name] <= maxPerMerchant;
     });
   }
+
+  // ✅ 항상 최소 12개 보장: 부족하면 브랜드당 2개까지 허용
+  function ensureMinDeals(deals: DealCard[], minCount = 12): DealCard[] {
+    const strict = dedupeByMerchant(deals, 1);
+    if (strict.length >= minCount) return strict;
+    // 브랜드당 2개까지 허용해서 채우기
+    const relaxed = dedupeByMerchant(deals, 2);
+    return relaxed;
+  }
+
+  // 🔥 지금 뜨는 딜: 트렌딩과 새로 올라온 딜 중복 방지
+  const trendingResult = dedupeByMerchant(trendingDeals);
+  const trendingIds = new Set(trendingResult.map((d) => d.id));
+
+  // ✨ 새로 올라온 딜: 트렌딩에 이미 나온 딜 제외 → 항상 꽉 채우기
+  const newDealsFiltered = newDeals.filter((d) => !trendingIds.has(d.id));
+  const newResult = ensureMinDeals(newDealsFiltered);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -87,23 +108,23 @@ export default async function HomePage() {
       {/* 카테고리 그리드 */}
       <CategoryGrid />
 
-      {/* 트렌딩 딜 */}
+      {/* 🔥 지금 뜨는 딜 — quality_score 기준 */}
       <DealShelf
         title="지금 뜨는 딜"
         subtitle="인기 딜 모아보기"
-        deals={dedupeByMerchant(trendingDeals)}
+        deals={trendingResult}
         viewAllHref="/search?sort=popular"
       />
 
-      {/* 신규 딜 */}
+      {/* ✨ 새로 올라온 딜 — 항상 꽉 채우기 */}
       <DealShelf
         title="새로 올라온 딜"
         subtitle="최근 등록된 딜"
-        deals={dedupeByMerchant(newDeals)}
+        deals={newResult}
         viewAllHref="/search?sort=new"
       />
 
-      {/* 마감 임박 */}
+      {/* ⏰ 마감 임박 */}
       {endingSoonDeals.length > 0 && (
         <DealShelf
           title="마감 임박"

@@ -130,7 +130,12 @@
 
 > **규칙:** AI는 아래 목표에만 100% 리소스를 집중한다.
 
-_(현재 집중 작업 없음 — 다음 세션에서 브랜드 조사 매칭 + 미등록 브랜드 정리 예정)_
+**기존 딜 875개 배치 재평가 (quality_score 일괄 산출)**
+- [ ] DB에 저장된 title, benefit_summary, discount_value 등 기반으로 AI가 quality_score 산출
+- [ ] Haiku API 배치 호출 → deals.quality_score UPDATE
+- [ ] 23:00 크롤 결과 확인 (신규 딜에 qualityScore 정상 반영 여부)
+- [ ] 홈 "지금 뜨는 딜" quality_score 정렬 결과 확인
+- [ ] 완료 후 → 브랜드 조사 매칭 + 미등록 브랜드 정리
 
 ---
 
@@ -363,8 +368,8 @@ _(현재 집중 작업 없음 — 다음 세션에서 브랜드 조사 매칭 + 
 #### 크롤러 / 스크립트
 | 파일 | 경로 |
 |------|------|
-| AI 크롤러 엔진 (v5.1) | `src/lib/crawl/ai-engine.ts` |
-| 딜 저장 (v2.4) | `src/lib/crawl/save-deals.ts` |
+| AI 크롤러 엔진 (v5.2) | `src/lib/crawl/ai-engine.ts` |
+| 딜 저장 (v2.5) | `src/lib/crawl/save-deals.ts` |
 | 기타 스크립트 | `scripts/` |
 
 ### 🟢 poppon-app (모바일 앱) 🚧
@@ -440,6 +445,7 @@ AI는 매 응답을 아래 순서로 작성한다.
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동, 본 문서에 1줄 요약만 남긴다.
 
 - ADR-20260222-01: merchants DELETE cascade 추가 (v4.4) — FK 연관 데이터 순서 삭제
+- ADR-20260222-02: AI quality_score 도입 — confidence(이벤트 확신도)와 qualityScore(딜 매력도) 분리, 크롤 시 자동 산출
 
 ---
 
@@ -461,8 +467,6 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
-| 2/20 | Phase M3 OAuth | 앱 | 카카오 OAuth 성공 | 웹 콜백 중간 페이지 패턴 |
-| 2/20 | 디자인수정+로고시안 | 앱 | 히어로+카테고리 디자인수정 | 쿠폰티켓 로고시안 6종 |
 | 2/20 | 세션버그수정+네이버 | 앱 | AsyncStorage 세션수정+네이버OAuth | onboarding_completed boolean 기반 |
 | 2/20 | 법적페이지+홈리디자인 | 앱 | 법적페이지 3종(WebView) | 웹 URL 로딩 방식 |
 | 2/21 | UI통일+에러핸들링 | 앱 | 아이콘통일+resolveLogoUrl+safeOpenURL | DealShelf 동적 카드폭(÷2.3) |
@@ -472,7 +476,8 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 2/21 | 푸시 발송 시스템 | 어드민 | Step 1~4 전체 완료 | save-deals v2.4, e2e 테스트 필수 |
 | 2/21 | 제보화면+naver_brand | 앱+어드민 | 제보화면 포팅 + ai-engine v5.1 | 인라인 style 패턴, 제목+혜택 조합 판단 |
 | 2/22 | 머천트 DELETE+PUT 수정 | 어드민 | DELETE cascade 추가 + PUT 롤백 | **SCHEMA.md 컬럼 확인 필수 — 추측 금지** |
+| 2/22 | AI quality_score | 어드민+메인 | ai-engine v5.2 + save-deals v2.5 + 홈 정렬 개선 | confidence≠qualityScore 분리, 새딜 섹션 꽉채우기 |
 
 ---
 
-*마지막 업데이트: 2026-02-22 (하니스 엔지니어링 표준 적용, 3파일 분리)*
+*마지막 업데이트: 2026-02-22 야간 (ai-engine v5.2 + save-deals v2.5 + 홈 quality_score 정렬)*

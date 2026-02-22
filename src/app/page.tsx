@@ -83,7 +83,7 @@ export default async function HomePage() {
   const trendingIds = new Set(trendingResult.map((d) => d.id));
 
   // ✨ 새로 올라온 딜: 트렌딩에 이미 나온 딜 제외 → 항상 꽉 채우기
-  const newDealsFiltered = newDeals.filter((d) => !trendingIds.has(d.id));
+  const newDealsFiltered = newDeals.filter((d: DealCard) => !trendingIds.has(d.id));
   const newResult = ensureMinDeals(newDealsFiltered);
 
   return (

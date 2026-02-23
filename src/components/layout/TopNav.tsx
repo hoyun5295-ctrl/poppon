@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight, LogOut, Settings } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
 import { useAuth, setPendingToast } from '@/lib/auth/AuthProvider';
+
+/* ✅ POPPON 로고 (Supabase Storage) */
+const LOGO_URL = 'https://beniaypzlnygtoqmbvnx.supabase.co/storage/v1/object/public/merchant-logos/Artboard%202-100.jpg';
 
 const MOBILE_MENU_LINKS = [
   { href: '/me', icon: Heart, label: '저장한 딜', authRequired: true },
@@ -56,11 +60,16 @@ export function TopNav() {
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-200 pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* 로고 */}
-          <Link href="/" className="flex items-center gap-2 shrink-0 select-none-touch">
-            <span className="text-2xl font-extrabold text-primary-500 tracking-tight">
-              POPPON
-            </span>
+          {/* ✅ 로고 — 이미지 */}
+          <Link href="/" className="flex items-center shrink-0 select-none-touch">
+            <Image
+              src={LOGO_URL}
+              alt="POPPON"
+              width={120}
+              height={41}
+              className="h-8 sm:h-9 w-auto"
+              priority
+            />
           </Link>
 
           {/* 데스크톱 검색바 */}
@@ -125,7 +134,6 @@ export function TopNav() {
                         설정
                       </Link>
                       <div className="h-px bg-surface-100 my-1" />
-                      {/* ✅ <a> 태그 — JS 상태 무관하게 서버에서 쿠키 삭제 후 리다이렉트 */}
                       <a
                         href="/api/auth/signout"
                         onClick={() => setPendingToast('로그아웃되었습니다', 'success')}
@@ -257,7 +265,6 @@ export function TopNav() {
 
               <div className="mt-4 pt-4 border-t border-surface-100">
                 {isLoggedIn ? (
-                  /* ✅ <a> 태그 — JS 상태 무관하게 서버에서 쿠키 삭제 후 리다이렉트 */
                   <a
                     href="/api/auth/signout"
                     onClick={() => setPendingToast('로그아웃되었습니다', 'success')}

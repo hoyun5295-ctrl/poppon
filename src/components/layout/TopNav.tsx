@@ -8,8 +8,8 @@ import { Search, Menu, X, User, Heart, Bell, Send, ChevronRight, LogOut, Setting
 import { SearchBar } from '@/components/search/SearchBar';
 import { useAuth, setPendingToast } from '@/lib/auth/AuthProvider';
 
-/* ✅ POPPON 로고 (Supabase Storage) */
-const LOGO_URL = 'https://beniaypzlnygtoqmbvnx.supabase.co/storage/v1/object/public/merchant-logos/Artboard%202-100.jpg';
+/* ✅ POPPON 로고 (Supabase Storage — 투명 PNG) */
+const LOGO_URL = 'https://beniaypzlnygtoqmbvnx.supabase.co/storage/v1/object/public/merchant-logos/Artboard%202@2x.png';
 
 const MOBILE_MENU_LINKS = [
   { href: '/me', icon: Heart, label: '저장한 딜', authRequired: true },
@@ -60,7 +60,7 @@ export function TopNav() {
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-surface-200 pt-safe">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* ✅ 로고 — 이미지 */}
+          {/* ✅ 로고 — 투명 PNG 이미지 */}
           <Link href="/" className="flex items-center shrink-0 select-none-touch">
             <Image
               src={LOGO_URL}

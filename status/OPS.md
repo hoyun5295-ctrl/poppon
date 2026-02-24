@@ -59,7 +59,8 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ### 웹 인증 플로우
 ```
-[이메일] AuthSheet: signup(검증만) → identity(프로필) → categories → marketing → 최종 signUp + profile 일괄 저장
+[이메일] AuthSheet: signup(검증만) → identity(프로필) → categories → marketing → signUp → 인증 메일 발송 → email_sent 화면
+  → 유저 메일 인증 → 돌아와서 로그인 → localStorage pending profile 자동 적용 → 홈
 [카카오] signInWithOAuth → Supabase 콜백 → saveProviderProfile v2 → 신규? → 온보딩
 [네이버] 수동 OAuth → admin.createUser+generateLink+verifyOtp → 프로필 저장
 [탈퇴] 마이페이지 → pending_withdrawal → 어드민 승인(withdrawn) / 거부(active)
@@ -74,6 +75,9 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 [네이버] ✅ 동작 확인
   앱 → Linking.openURL(네이버 로그인) → 웹 콜백 페이지(/auth/callback/naver/mobile)
   → /api/auth/naver/mobile 호출(토큰 교환) → 앱으로 딥링크 → setSession
+[이메일] ✅ 신규
+  앱 → auth/email.tsx → 로그인 모드(signInWithPassword) / 회원가입 모드(signUp + 인증 메일)
+  → 인증 메일 확인 → 돌아와서 로그인 → user_metadata.nickname → profiles 저장 → 온보딩
 [애플] 코드 준비 완료 (Apple Developer DUNS 대기 중)
 [로그아웃] supabase.auth.signOut() → clearPushToken() → router.replace('/(tabs)')
 ```
@@ -159,6 +163,9 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ### 인증 / 회원
 - AuthSheet signUp 지연: marketing 스텝에서 signUp + profile 한꺼번에 저장
+- **이메일 인증**: signUp 후 session null → `poppon_pending_profile` localStorage에 프로필 임시 저장 → 인증 후 첫 로그인 시 자동 적용
+- **앱 이메일**: signUp 시 닉네임을 user_metadata에 저장 → 첫 로그인 시 profiles에 반영
+- **Supabase 설정 필수**: Auth → Settings → "Enable email confirmations" ON
 - AuthProvider TOKEN_REFRESHED: fetchProfile 절대 금지 → 무한루프
 - 로그아웃(웹): 서버 사이드 API 필수, `<a>` 태그 사용
 - Toast: sessionStorage('poppon_pending_toast') → layout mount 시 표시
@@ -213,4 +220,4 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ---
 
-*마지막 업데이트: 2026-02-22 (STATUS.md에서 분리)*
+*마지막 업데이트: 2026-02-24 (이메일 인증 플로우 추가)*

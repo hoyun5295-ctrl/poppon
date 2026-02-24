@@ -133,10 +133,11 @@
 ### Phase M4 마무리 + 심사 준비
 
 **DoD (완료 기준):**
-- [ ] 어드민 `(dashboard)/layout.tsx` 로고 적용
+- [x] 어드민 `(dashboard)/layout.tsx` 로고 적용 ✅
 - [ ] 앱 아이콘(1024×1024) + favicon 수령 후 적용
 - [ ] 푸시 알림 EAS 개발 빌드 e2e 테스트 (토큰 발급 → 실제 수신)
 - [ ] 브랜드 조사 매칭: 미등록 브랜드 정리
+- [ ] Supabase "Enable email confirmations" ON 확인 (이메일 인증 플로우 전제)
 
 ---
 
@@ -194,7 +195,7 @@
 - **Phase M3**: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
 
 #### 🔄 진행 중
-- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + 애플 DUNS 대기 + 심사 준비
+- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **이메일 가입+인증(웹+앱)** + 애플 DUNS 대기 + 심사 준비
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -206,8 +207,10 @@
 #### 즉시 (Phase M4 남은 작업)
 - ✅ ~~로고 확정 대기~~ → 로고 확정 완료 (레드/코랄 투명 PNG, 웹 TopNav + 앱 홈 헤더 적용)
 - ✅ ~~스플래시 스크린~~ → 커스텀 스플래시 완료 (다크 + 팝콘 파티클 + DB 실시간 숫자)
-- 🔲 어드민 `(dashboard)/layout.tsx` 로고 적용
+- ✅ ~~어드민 로고 적용~~ → `(dashboard)/layout.tsx` 로고 이미지 적용 완료
+- ✅ ~~이메일 가입~~ → 웹(AuthSheet email_sent 스텝) + 앱(email.tsx 신규) 이메일 인증 플로우 추가
 - 🔲 디자이너에게 수령 대기: 앱 아이콘(1024×1024 정사각), favicon(정사각)
+- ⚠️ Supabase Auth → Settings → "Enable email confirmations" ON 확인 필수
 - 🍎 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
 - ⚠️ 푸시 알림 EAS 개발 빌드 후 end-to-end 테스트 필수 (토큰 발급 → 실제 수신 확인)
 - 📋 브랜드 조사 매칭: 조사 완료된 브랜드 목록 vs 현재 POPPON 등록 브랜드 비교 → 미등록 브랜드 정리
@@ -397,7 +400,8 @@
 | 딜 상세 모달 | `app/d/[slug].tsx` | transparentModal + maxHeight 85% |
 | 브랜드관 | `app/m/[merchantSlug].tsx` | 프로필헤더 + 진행중/종료 탭 + 무한스크롤 |
 | 카테고리 상세 | `app/c/[categorySlug].tsx` | 서브카테고리칩 + FlatList 무한스크롤 |
-| 로그인 | `app/auth/index.tsx` + `_layout.tsx` | 카카오/네이버/애플 버튼 |
+| 로그인 | `app/auth/index.tsx` + `_layout.tsx` | 카카오/네이버/애플 + 이메일 버튼 |
+| 이메일 가입/로그인 | `app/auth/email.tsx` | 통합 플로우 + 이메일 인증 ✅ |
 | 온보딩 | `app/auth/onboarding.tsx` | 3단계: 카테고리→마케팅→완료 |
 | 제보 | `app/submit.tsx` | 웹 API 호출 + 인라인 style ✅ |
 | 법적 페이지 | `app/legal/*.tsx` + `_layout.tsx` | WebView로 웹 URL 로딩 |
@@ -451,6 +455,7 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 - ADR-20260222-01: merchants DELETE cascade 추가 (v4.4) — FK 연관 데이터 순서 삭제
 - ADR-20260224-01: 앱 로그인 게이트 전략 — 웹은 SEO 유지(열람 허용), 앱은 딜 카드 탭 시 로그인 필수 (LoginPromptModal 바텀시트)
+- ADR-20260224-02: 이메일 인증 플로우 — signUp 후 인증 메일 발송 필수. 웹은 localStorage에 pending profile 임시 저장→인증 후 첫 로그인 시 자동 적용. 앱은 user_metadata에 닉네임 저장→첫 로그인 시 profiles 반영.
 
 ---
 
@@ -469,11 +474,10 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 ## 12) DONE LOG (완료 기록)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동.
-> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인 → `ARCHIVE.md` 참조
+> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링 → `ARCHIVE.md` 참조
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
-| 2/21 | UI통일+에러핸들링 | 앱 | 아이콘통일+resolveLogoUrl+safeOpenURL | DealShelf 동적 카드폭(÷2.3) |
 | 2/21 | 홈히어로제거+이모지 | 앱 | 히어로 제거+카테고리 이모지 통일 | 3곳 이모지 통일 |
 | 2/21 | 푸시알림+platform | 앱+DB | 앱 푸시 인프라 완료 + platform 컬럼 | AuthProvider v10 |
 | 2/21 | SaveButton+FollowButton | 앱 | 딜상세·브랜드관에 저장/구독 버튼 연결 | — |
@@ -483,7 +487,8 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 2/23 | 로고 확정+적용 | 웹+앱 | 로고 확정(투명PNG) + 웹 TopNav 배포 + 앱 홈 헤더 적용 | JPG→투명PNG 필수, Storage Dashboard 직접 업로드 |
 | 2/24 | UX수정+로그인게이트 | 앱 | SafeArea bottom + 전탭 검색바 + 브랜드검색 + LoginPromptModal | 웹 SEO 유지 vs 앱 가입률 극대화 전략 분리 |
 | 2/24 | 커스텀 스플래시 | 앱 | 다크 테마 + 팝콘 파티클 + DB 실시간 숫자 + _layout 통합 | "팝콘처럼 터지는 쿠폰" 브랜드 컨셉 반영 |
+| 2/24 | 이메일인증+어드민로고 | 웹+앱+어드민 | 어드민 로고 적용 + 앱 로고 교체 + 이메일 가입/인증 플로우(웹+앱) | RLS 때문에 미인증 상태에서 profiles 업데이트 불가 → localStorage 임시 저장 패턴 |
 
 ---
 
-*마지막 업데이트: 2026-02-24 (UX수정+로그인게이트+스플래시 완료)*
+*마지막 업데이트: 2026-02-24 (이메일인증+어드민로고 완료)*

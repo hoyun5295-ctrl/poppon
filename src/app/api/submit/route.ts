@@ -9,11 +9,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
-  const supabase = await createServerSupabaseClient();
-
   let body: { url?: string; comment?: string };
   try {
     body = await request.json();
@@ -34,8 +32,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '올바른 URL 형식이 아닙니다' }, { status: 400 });
   }
 
+  // service role로 submissions 접근 (RLS 우회)
+  const serviceClient = createServiceClient();
+
   // 2. 중복 체크 (같은 URL이 이미 pending 상태로 있는지)
-  const { data: existing } = await supabase
+  const { data: existing } = await serviceClient
     .from('submissions')
     .select('id')
     .eq('url', url.trim())
@@ -49,11 +50,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. 현재 로그인 유저 확인 (없으면 null)
+  // 3. 현재 로그인 유저 확인 (없으면 null) — anon client로 세션 확인
+  const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 4. 제보 저장
-  const { data: submission, error } = await supabase
+  // 4. 제보 저장 (service role)
+  const { data: submission, error } = await serviceClient
     .from('submissions')
     .insert({
       url: url.trim(),
@@ -67,7 +69,6 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error('[Submit] 저장 실패:', error.message);
 
-    // submissions 테이블이 없으면 deals에 직접 메모로 남김
     if (error.message.includes('does not exist') || error.code === '42P01') {
       return NextResponse.json(
         { error: '제보 기능 준비 중입니다. 곧 사용 가능해요!' },

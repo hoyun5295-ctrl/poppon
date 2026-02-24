@@ -10,7 +10,7 @@ import {
 import { useAuth, type AuthSheetStep } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
 
-type AuthStep = AuthSheetStep | 'complete';
+type AuthStep = AuthSheetStep | 'complete' | 'email_sent';
 
 interface CategoryOption {
   id: string;
@@ -73,6 +73,9 @@ export function AuthSheet() {
 
   // SNS 온보딩 모드 (뒤로가기 없이 categories→marketing만)
   const [isSNSOnboarding, setIsSNSOnboarding] = useState(false);
+
+  // 이메일 인증 발송 완료
+  const [sentEmail, setSentEmail] = useState('');
 
   // 공통
   const [loading, setLoading] = useState(false);
@@ -288,6 +291,39 @@ export function AuthSheet() {
         return;
       }
 
+      // ✅ 이메일 인증 필요 시 session이 null → 프로필 데이터를 임시 저장 후 인증 안내
+      if (!signUpData.session) {
+        console.log('[AuthSheet] signup success, email confirmation required');
+
+        // RLS 때문에 세션 없이는 profiles 업데이트 불가 → localStorage에 임시 저장
+        const hasConsent = marketingKakao || marketingPush || marketingEmail;
+        const rawPhone = profilePhone.replace(/[^0-9]/g, '');
+        const formattedPhone = rawPhone.length === 11
+          ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
+          : rawPhone;
+
+        try {
+          localStorage.setItem('poppon_pending_profile', JSON.stringify({
+            name: profileName.trim(),
+            phone: formattedPhone || null,
+            gender: profileGender || null,
+            birth_date: profileBirthDate || null,
+            provider: 'email',
+            interest_categories: selectedCategories.length > 0 ? selectedCategories : [],
+            marketing_agreed: hasConsent,
+            marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
+            onboarding_completed: true,
+          }));
+          if (rememberEmail) localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+          else localStorage.removeItem(REMEMBER_EMAIL_KEY);
+        } catch { /* ignore */ }
+
+        setSentEmail(email.trim().toLowerCase());
+        setStep('email_sent');
+        setLoading(false);
+        return;
+      }
+
       // 프로필 트리거가 profiles row를 만들 때까지 약간 대기
       await new Promise(r => setTimeout(r, 500));
 
@@ -365,12 +401,34 @@ export function AuthSheet() {
       });
 
       if (loginError) {
-        if (loginError.message.includes('Invalid login')) {
+        if (loginError.message.includes('Email not confirmed')) {
+          setSentEmail(email.trim().toLowerCase());
+          setStep('email_sent');
+        } else if (loginError.message.includes('Invalid login')) {
           setError('이메일 또는 비밀번호가 올바르지 않습니다');
         } else {
           setError(loginError.message);
         }
       } else {
+        // ✅ 로그인 성공 → pending profile 데이터 적용
+        try {
+          const pendingRaw = localStorage.getItem('poppon_pending_profile');
+          if (pendingRaw) {
+            const pendingData = JSON.parse(pendingRaw);
+            const { data: { user: loggedInUser } } = await supabase.auth.getUser();
+            if (loggedInUser) {
+              await supabase
+                .from('profiles')
+                .update(pendingData)
+                .eq('id', loggedInUser.id);
+              console.log('[AuthSheet] pending profile data applied');
+            }
+            localStorage.removeItem('poppon_pending_profile');
+          }
+        } catch (e) {
+          console.error('[AuthSheet] pending profile apply error:', e);
+        }
+
         try {
           if (rememberEmail) {
             localStorage.setItem(REMEMBER_EMAIL_KEY, email);
@@ -390,6 +448,26 @@ export function AuthSheet() {
   };
 
   // ── SNS 로그인 (카카오 등 Supabase 빌트인) ──
+  const handleResendEmail = async () => {
+    if (!sentEmail) return;
+    setLoading(true);
+    setError('');
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: sentEmail,
+      });
+      if (resendError) throw resendError;
+      setError('');
+      // 성공 시 간단 알림 (error state 재활용)
+      setError('✅ 인증 메일을 다시 보냈습니다');
+    } catch {
+      setError('메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSNSLogin = async (provider: 'kakao' | 'google') => {
     setLoading(true);
     setError('');
@@ -453,6 +531,7 @@ export function AuthSheet() {
     setMarketingPush(false);
     setMarketingEmail(false);
     setIsSNSOnboarding(false);
+    setSentEmail('');
     try {
       const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
       if (!saved) setEmail('');
@@ -1069,6 +1148,55 @@ export function AuthSheet() {
                     건너뛰기
                   </button>
                 )}
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════
+                STEP: email_sent — 인증 메일 발송 완료
+               ═══════════════════════════════════════════ */}
+            {step === 'email_sent' && (
+              <>
+                <div className="pt-8 pb-4 text-center">
+                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <Mail className="w-10 h-10 text-green-500" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    인증 메일을 보냈습니다
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                    <span className="font-semibold text-gray-700">{sentEmail}</span>
+                    <br />메일함을 확인하고 인증 링크를 클릭해주세요.
+                  </p>
+                  <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+                    메일이 보이지 않으면 스팸 폴더를 확인해주세요.
+                  </p>
+                </div>
+
+                {error && (
+                  <p className={`text-sm text-center mt-2 ${error.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  onClick={() => {
+                    setStep('login');
+                    setPassword('');
+                    setError('');
+                  }}
+                  className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
+                             hover:bg-red-600 transition-colors"
+                >
+                  인증 완료 후 로그인하기
+                </button>
+
+                <button
+                  onClick={handleResendEmail}
+                  disabled={loading}
+                  className="w-full mt-2 py-3 text-sm text-red-500 font-medium hover:text-red-600 transition-colors disabled:text-gray-400"
+                >
+                  {loading ? '발송 중...' : '인증 메일 다시 보내기'}
+                </button>
               </>
             )}
 

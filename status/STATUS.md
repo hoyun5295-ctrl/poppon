@@ -130,19 +130,20 @@
 
 > **규칙:** AI는 아래 목표에만 100% 리소스를 집중한다.
 
-**기존 딜 875개 배치 재평가 (quality_score 일괄 산출)**
-- [ ] DB에 저장된 title, benefit_summary, discount_value 등 기반으로 AI가 quality_score 산출
-- [ ] Haiku API 배치 호출 → deals.quality_score UPDATE
-- [ ] 23:00 크롤 결과 확인 (신규 딜에 qualityScore 정상 반영 여부)
-- [ ] 홈 "지금 뜨는 딜" quality_score 정렬 결과 확인
-- [ ] 완료 후 → 브랜드 조사 매칭 + 미등록 브랜드 정리
+### Phase M4 마무리 + 심사 준비
+
+**DoD (완료 기준):**
+- [ ] 어드민 `(dashboard)/layout.tsx` 로고 적용
+- [ ] 앱 아이콘(1024×1024) + favicon 수령 후 적용
+- [ ] 푸시 알림 EAS 개발 빌드 e2e 테스트 (토큰 발급 → 실제 수신)
+- [ ] 브랜드 조사 매칭: 미등록 브랜드 정리
 
 ---
 
 ## 6) 📌 PROJECT STATUS (진실의 원천)
 
 ### 6-1. 프로젝트 개요
-- **프로젝트명**: POPPON (K-RetailMeNot)
+- **프로젝트명**: POPPON (K-RetailMeNot) — 팝콘처럼 터지는 쿠폰
 - **한 줄 정의**: 한국의 모든 할인/쿠폰/프로모션을 한 곳에 모아 탐색 → 저장/구독/알림으로 DB 축적 → TargetUP-AI CRM 고단가 타겟마케팅으로 수익화하는 딜 플랫폼
 - **MVP 우선순위**: A(온라인 쿠폰/프로모션 코드) → B(앱쿠폰/링크형) → C(오프라인 이벤트)
 - **범위 밖**: TargetUP-AI CRM 연동 (Phase 3+), Docker 마이그레이션 (트래픽 증가 전)
@@ -193,7 +194,7 @@
 - **Phase M3**: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
 
 #### 🔄 진행 중
-- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + 로고 확정 대기 + 애플 DUNS 대기 + 스플래시 + 심사 준비
+- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + 애플 DUNS 대기 + 심사 준비
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -203,9 +204,11 @@
 ### 6-5. 미해결 / 진행 예정
 
 #### 즉시 (Phase M4 남은 작업)
-- 🎨 로고 확정 대기 → 확정 후 앱 전체 컬러/히어로/배경색 통일
+- ✅ ~~로고 확정 대기~~ → 로고 확정 완료 (레드/코랄 투명 PNG, 웹 TopNav + 앱 홈 헤더 적용)
+- ✅ ~~스플래시 스크린~~ → 커스텀 스플래시 완료 (다크 + 팝콘 파티클 + DB 실시간 숫자)
+- 🔲 어드민 `(dashboard)/layout.tsx` 로고 적용
+- 🔲 디자이너에게 수령 대기: 앱 아이콘(1024×1024 정사각), favicon(정사각)
 - 🍎 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
-- 🚀 스플래시 스크린 — "한국의 모든 할인&행사를 한곳에서" + 브랜드/딜 카운트 (로고 확정 후)
 - ⚠️ 푸시 알림 EAS 개발 빌드 후 end-to-end 테스트 필수 (토큰 발급 → 실제 수신 확인)
 - 📋 브랜드 조사 매칭: 조사 완료된 브랜드 목록 vs 현재 POPPON 등록 브랜드 비교 → 미등록 브랜드 정리
 
@@ -368,8 +371,8 @@
 #### 크롤러 / 스크립트
 | 파일 | 경로 |
 |------|------|
-| AI 크롤러 엔진 (v5.2) | `src/lib/crawl/ai-engine.ts` |
-| 딜 저장 (v2.5) | `src/lib/crawl/save-deals.ts` |
+| AI 크롤러 엔진 (v5.1) | `src/lib/crawl/ai-engine.ts` |
+| 딜 저장 (v2.4) | `src/lib/crawl/save-deals.ts` |
 | 기타 스크립트 | `scripts/` |
 
 ### 🟢 poppon-app (모바일 앱) 🚧
@@ -385,12 +388,12 @@
 #### 라우트 (Expo Router)
 | 파일 | 경로 | 비고 |
 |------|------|------|
-| 루트 레이아웃 | `app/_layout.tsx` | AuthProvider + 푸시 알림 핸들러 + 딥링크 리스너 |
-| 탭 레이아웃 | `app/(tabs)/_layout.tsx` | Ionicons + iOS safeArea |
-| 홈 | `app/(tabs)/index.tsx` | POPPON좌측+알림종우측+히어로중앙정렬 |
-| 카테고리 | `app/(tabs)/categories.tsx` | 6개 그리드(원형+filled) + 인기딜 DealShelf |
-| 검색 | `app/(tabs)/search.tsx` | TextInput + 원형아이콘 카테고리필터 + 무한스크롤 |
-| 마이페이지 | `app/(tabs)/me.tsx` | 프로필+저장딜+구독브랜드+법적페이지링크 |
+| 루트 레이아웃 | `app/_layout.tsx` | AuthProvider + 커스텀 스플래시 + 푸시 알림 핸들러 + 딥링크 리스너 |
+| 탭 레이아웃 | `app/(tabs)/_layout.tsx` | Ionicons + SafeArea bottom 동적 패딩 |
+| 홈 | `app/(tabs)/index.tsx` | 로고이미지좌측+알림종우측 + 가짜검색바 ✅ |
+| 카테고리 | `app/(tabs)/categories.tsx` | 6개 그리드(원형+filled) + 인기딜 DealShelf + 가짜검색바 ✅ |
+| 검색 | `app/(tabs)/search.tsx` | 딜/브랜드 토글 탭 + autoFocus + 무한스크롤 ✅ |
+| 마이페이지 | `app/(tabs)/me.tsx` | 프로필+저장딜+구독브랜드+법적페이지링크 + 가짜검색바 ✅ |
 | 딜 상세 모달 | `app/d/[slug].tsx` | transparentModal + maxHeight 85% |
 | 브랜드관 | `app/m/[merchantSlug].tsx` | 프로필헤더 + 진행중/종료 탭 + 무한스크롤 |
 | 카테고리 상세 | `app/c/[categorySlug].tsx` | 서브카테고리칩 + FlatList 무한스크롤 |
@@ -402,22 +405,24 @@
 #### 컴포넌트
 | 파일 | 경로 | 비고 |
 |------|------|------|
-| DealCard.tsx | `src/components/deal/DealCard.tsx` | 그리드 카드 + resolveLogoUrl |
+| DealCard.tsx | `src/components/deal/DealCard.tsx` | 그리드 카드 + resolveLogoUrl + **로그인 게이트** ✅ |
 | DealShelf.tsx | `src/components/deal/DealShelf.tsx` | 수평 스크롤 + 동적 카드폭(÷2.3) |
 | DealDetailView.tsx | `src/components/deal/DealDetailView.tsx` | 딜 상세 + safeOpenURL + resolveLogoUrl |
-| DealListCard.tsx | `src/components/deal/DealListCard.tsx` | 수평 리스트 카드 (56px 로고) |
+| DealListCard.tsx | `src/components/deal/DealListCard.tsx` | 수평 리스트 카드 (56px 로고) + **로그인 게이트** ✅ |
 | CopyCodeButton.tsx | `src/components/deal/CopyCodeButton.tsx` | expo-clipboard + expo-haptics |
 | SaveButton.tsx | `src/components/deal/SaveButton.tsx` | 딜 저장/해제 + haptics |
 | FollowButton.tsx | `src/components/merchant/FollowButton.tsx` | 브랜드 구독/해제 + compact/default |
 | CategoryGrid.tsx | `src/components/category/CategoryGrid.tsx` | 원형 배경 + filled 아이콘 |
 | SubCategoryChips.tsx | `src/components/common/SubCategoryChips.tsx` | 수평 ScrollView 칩 |
 | SortPicker.tsx | `src/components/common/SortPicker.tsx` | 바텀시트 정렬 모달 |
+| LoginPromptModal.tsx | `src/components/common/LoginPromptModal.tsx` | 비로그인 딜 탭 시 바텀시트 로그인 유도 ✅ |
+| CustomSplash.tsx | `src/components/common/CustomSplash.tsx` | 다크 스플래시 + 팝콘 파티클 + DB 숫자 ✅ |
 
 #### 라이브러리
 | 파일 | 경로 | 비고 |
 |------|------|------|
 | Supabase 클라이언트 | `src/lib/supabase/client.ts` | AsyncStorage + globalThis 싱글톤 + implicit flow |
-| 딜 쿼리 | `src/lib/deals.ts` | 웹 포팅 + offset 페이지네이션 + dedupeDeals |
+| 딜 쿼리 | `src/lib/deals.ts` | 웹 포팅 + offset 페이지네이션 + dedupeDeals + **searchMerchants()** ✅ |
 | 행동 추적 | `src/lib/tracking.ts` | Supabase 직접 insert (fire-and-forget) + platform:'app' |
 | 포맷 유틸 | `src/lib/utils/format.ts` | 웹에서 100% 복사 |
 | 타입 정의 | `src/types/database.ts` + `index.ts` | 웹에서 100% 복사 |
@@ -445,7 +450,7 @@ AI는 매 응답을 아래 순서로 작성한다.
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동, 본 문서에 1줄 요약만 남긴다.
 
 - ADR-20260222-01: merchants DELETE cascade 추가 (v4.4) — FK 연관 데이터 순서 삭제
-- ADR-20260222-02: AI quality_score 도입 — confidence(이벤트 확신도)와 qualityScore(딜 매력도) 분리, 크롤 시 자동 산출
+- ADR-20260224-01: 앱 로그인 게이트 전략 — 웹은 SEO 유지(열람 허용), 앱은 딜 카드 탭 시 로그인 필수 (LoginPromptModal 바텀시트)
 
 ---
 
@@ -464,11 +469,10 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 ## 12) DONE LOG (완료 기록)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동.
+> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인 → `ARCHIVE.md` 참조
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
-| 2/20 | 세션버그수정+네이버 | 앱 | AsyncStorage 세션수정+네이버OAuth | onboarding_completed boolean 기반 |
-| 2/20 | 법적페이지+홈리디자인 | 앱 | 법적페이지 3종(WebView) | 웹 URL 로딩 방식 |
 | 2/21 | UI통일+에러핸들링 | 앱 | 아이콘통일+resolveLogoUrl+safeOpenURL | DealShelf 동적 카드폭(÷2.3) |
 | 2/21 | 홈히어로제거+이모지 | 앱 | 히어로 제거+카테고리 이모지 통일 | 3곳 이모지 통일 |
 | 2/21 | 푸시알림+platform | 앱+DB | 앱 푸시 인프라 완료 + platform 컬럼 | AuthProvider v10 |
@@ -476,8 +480,10 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 2/21 | 푸시 발송 시스템 | 어드민 | Step 1~4 전체 완료 | save-deals v2.4, e2e 테스트 필수 |
 | 2/21 | 제보화면+naver_brand | 앱+어드민 | 제보화면 포팅 + ai-engine v5.1 | 인라인 style 패턴, 제목+혜택 조합 판단 |
 | 2/22 | 머천트 DELETE+PUT 수정 | 어드민 | DELETE cascade 추가 + PUT 롤백 | **SCHEMA.md 컬럼 확인 필수 — 추측 금지** |
-| 2/22 | AI quality_score | 어드민+메인 | ai-engine v5.2 + save-deals v2.5 + 홈 정렬 개선 | confidence≠qualityScore 분리, 새딜 섹션 꽉채우기 |
+| 2/23 | 로고 확정+적용 | 웹+앱 | 로고 확정(투명PNG) + 웹 TopNav 배포 + 앱 홈 헤더 적용 | JPG→투명PNG 필수, Storage Dashboard 직접 업로드 |
+| 2/24 | UX수정+로그인게이트 | 앱 | SafeArea bottom + 전탭 검색바 + 브랜드검색 + LoginPromptModal | 웹 SEO 유지 vs 앱 가입률 극대화 전략 분리 |
+| 2/24 | 커스텀 스플래시 | 앱 | 다크 테마 + 팝콘 파티클 + DB 실시간 숫자 + _layout 통합 | "팝콘처럼 터지는 쿠폰" 브랜드 컨셉 반영 |
 
 ---
 
-*마지막 업데이트: 2026-02-22 야간 (ai-engine v5.2 + save-deals v2.5 + 홈 quality_score 정렬)*
+*마지막 업데이트: 2026-02-24 (UX수정+로그인게이트+스플래시 완료)*

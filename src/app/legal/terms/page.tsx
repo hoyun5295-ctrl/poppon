@@ -13,7 +13,7 @@ export default function TermsPage() {
       </Link>
 
       <h1 className="text-2xl font-bold text-surface-900 mb-2">서비스 이용약관</h1>
-      <p className="text-sm text-surface-400 mb-10">시행일: 2026년 2월 18일 | 최종 수정일: 2026년 2월 18일</p>
+      <p className="text-sm text-surface-400 mb-10">시행일: 2026년 2월 18일 | 최종 수정일: 2026년 2월 24일</p>
 
       <div className="space-y-10 text-[15px] text-surface-700 leading-relaxed">
 
@@ -81,6 +81,10 @@ export default function TermsPage() {
             <li>
               서비스에 게시된 딜 정보의 출처는 해당 브랜드/판매자에게 있으며, 
               회사는 정보의 정확성을 위해 노력하되, 실시간 변경 사항이 즉시 반영되지 않을 수 있습니다.
+            </li>
+            <li>
+              해당 브랜드/판매자가 자사 프로모션 정보의 게시 중단을 요청하는 경우, 
+              회사는 확인 후 지체 없이 해당 정보를 삭제 또는 비공개 처리합니다.
             </li>
           </ul>
         </section>

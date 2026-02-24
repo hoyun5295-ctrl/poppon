@@ -134,6 +134,9 @@
 
 **DoD (완료 기준):**
 - [x] 어드민 `(dashboard)/layout.tsx` 로고 적용 ✅
+- [x] 제보 API RLS 수정 (createServiceClient) ✅
+- [x] 어드민 브랜드 수정 후 카테고리 필터 유지 ✅
+- [x] 커스텀 스플래시 개선 (파티클 강화 + 글씨/로고 크기) ✅
 - [ ] 앱 아이콘(1024×1024) + favicon 수령 후 적용
 - [ ] 푸시 알림 EAS 개발 빌드 e2e 테스트 (토큰 발급 → 실제 수신)
 - [ ] 브랜드 조사 매칭: 미등록 브랜드 정리
@@ -195,7 +198,7 @@
 - **Phase M3**: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
 
 #### 🔄 진행 중
-- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **이메일 가입+인증(웹+앱)** + 애플 DUNS 대기 + 심사 준비
+- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **이메일 가입+인증(웹+앱)** + **제보 API RLS 수정** + **어드민 브랜드 필터 유지** + **스플래시 비주얼 강화** + 애플 DUNS 대기 + 심사 준비
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -206,9 +209,11 @@
 
 #### 즉시 (Phase M4 남은 작업)
 - ✅ ~~로고 확정 대기~~ → 로고 확정 완료 (레드/코랄 투명 PNG, 웹 TopNav + 앱 홈 헤더 적용)
-- ✅ ~~스플래시 스크린~~ → 커스텀 스플래시 완료 (다크 + 팝콘 파티클 + DB 실시간 숫자)
+- ✅ ~~스플래시 스크린~~ → 커스텀 스플래시 완료 (다크 + 팝콘 파티클 + DB 실시간 숫자) + 비주얼 강화 (파티클28개+글씨+로고크기)
 - ✅ ~~어드민 로고 적용~~ → `(dashboard)/layout.tsx` 로고 이미지 적용 완료
 - ✅ ~~이메일 가입~~ → 웹(AuthSheet email_sent 스텝) + 앱(email.tsx 신규) 이메일 인증 플로우 추가
+- ✅ ~~제보 API 저장 실패~~ → createServiceClient로 변경 (submissions RLS 우회)
+- ✅ ~~어드민 브랜드 수정 후 필터 초기화~~ → searchParams useEffect 동기화 추가
 - 🔲 디자이너에게 수령 대기: 앱 아이콘(1024×1024 정사각), favicon(정사각)
 - ⚠️ Supabase Auth → Settings → "Enable email confirmations" ON 확인 필수
 - 🍎 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
@@ -420,7 +425,7 @@
 | SubCategoryChips.tsx | `src/components/common/SubCategoryChips.tsx` | 수평 ScrollView 칩 |
 | SortPicker.tsx | `src/components/common/SortPicker.tsx` | 바텀시트 정렬 모달 |
 | LoginPromptModal.tsx | `src/components/common/LoginPromptModal.tsx` | 비로그인 딜 탭 시 바텀시트 로그인 유도 ✅ |
-| CustomSplash.tsx | `src/components/common/CustomSplash.tsx` | 다크 스플래시 + 팝콘 파티클 + DB 숫자 ✅ |
+| CustomSplash.tsx | `src/components/common/CustomSplash.tsx` | 다크 스플래시 + 팝콘 파티클28개 + DB 숫자 + 강화 비주얼 ✅ |
 
 #### 라이브러리
 | 파일 | 경로 | 비고 |
@@ -474,11 +479,10 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 ## 12) DONE LOG (완료 기록)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동.
-> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링 → `ARCHIVE.md` 참조
+> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링, 2/21 홈히어로제거+이모지 → `ARCHIVE.md` 참조
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
-| 2/21 | 홈히어로제거+이모지 | 앱 | 히어로 제거+카테고리 이모지 통일 | 3곳 이모지 통일 |
 | 2/21 | 푸시알림+platform | 앱+DB | 앱 푸시 인프라 완료 + platform 컬럼 | AuthProvider v10 |
 | 2/21 | SaveButton+FollowButton | 앱 | 딜상세·브랜드관에 저장/구독 버튼 연결 | — |
 | 2/21 | 푸시 발송 시스템 | 어드민 | Step 1~4 전체 완료 | save-deals v2.4, e2e 테스트 필수 |
@@ -488,7 +492,8 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 2/24 | UX수정+로그인게이트 | 앱 | SafeArea bottom + 전탭 검색바 + 브랜드검색 + LoginPromptModal | 웹 SEO 유지 vs 앱 가입률 극대화 전략 분리 |
 | 2/24 | 커스텀 스플래시 | 앱 | 다크 테마 + 팝콘 파티클 + DB 실시간 숫자 + _layout 통합 | "팝콘처럼 터지는 쿠폰" 브랜드 컨셉 반영 |
 | 2/24 | 이메일인증+어드민로고 | 웹+앱+어드민 | 어드민 로고 적용 + 앱 로고 교체 + 이메일 가입/인증 플로우(웹+앱) | RLS 때문에 미인증 상태에서 profiles 업데이트 불가 → localStorage 임시 저장 패턴 |
+| 2/25 | 버그수정+스플래시강화 | 웹+앱+어드민 | 제보 API RLS 수정 + 어드민 브랜드 필터 유지 + 스플래시 비주얼 강화(파티클28개+글씨+로고크기) | submissions RLS=service_role 전용 → createServiceClient 필수 |
 
 ---
 
-*마지막 업데이트: 2026-02-24 (이메일인증+어드민로고 완료)*
+*마지막 업데이트: 2026-02-25 (버그수정+스플래시강화)*

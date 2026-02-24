@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   // service role로 submissions 접근 (RLS 우회)
-  const serviceClient = createServiceClient();
+  const serviceClient = await createServiceClient();
 
   // 2. 중복 체크 (같은 URL이 이미 pending 상태로 있는지)
   const { data: existing } = await serviceClient

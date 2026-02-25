@@ -208,6 +208,7 @@ function DealCardGrid({
   return (
     <Link
       href={`/d/${deal.slug}`}
+      scroll={false}
       className="deal-card group block bg-white rounded-xl overflow-hidden transition-all duration-200"
       style={{
         border: `1.5px solid ${hoverBorder || '#E5E7EB'}`,
@@ -320,6 +321,7 @@ function DealCardList({
   return (
     <Link
       href={`/d/${deal.slug}`}
+      scroll={false}
       className="deal-card group flex bg-white rounded-xl overflow-hidden transition-all duration-200"
       style={{
         border: `1.5px solid ${hoverBorder || '#E5E7EB'}`,

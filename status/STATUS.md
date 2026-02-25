@@ -130,17 +130,24 @@
 
 > **규칙:** AI는 아래 목표에만 100% 리소스를 집중한다.
 
-### Phase M4 마무리 + 심사 준비
+### KMC 휴대폰 본인인증 연동 + 이메일 가입 제거
+
+**배경:**
+- 이메일 인증(확인 메일) + 휴대폰 인증 두 개는 UX 과부하
+- 핵심 자산은 실명+휴대폰번호 (TargetUP-AI 타겟 메시징)
+- 이메일 가입 자체를 제거하고 인증은 KMC 본인인증으로 통일
 
 **DoD (완료 기준):**
-- [x] 어드민 `(dashboard)/layout.tsx` 로고 적용 ✅
-- [x] 제보 API RLS 수정 (createServiceClient) ✅
-- [x] 어드민 브랜드 수정 후 카테고리 필터 유지 ✅
-- [x] 커스텀 스플래시 개선 (파티클 강화 + 글씨/로고 크기) ✅
-- [ ] 앱 아이콘(1024×1024) + favicon 수령 후 적용
-- [ ] 푸시 알림 EAS 개발 빌드 e2e 테스트 (토큰 발급 → 실제 수신)
-- [ ] 브랜드 조사 매칭: 미등록 브랜드 정리
-- [ ] Supabase "Enable email confirmations" ON 확인 (이메일 인증 플로우 전제)
+- [ ] 이메일 가입 플로우 제거 (웹 AuthSheet + 앱 email.tsx)
+- [ ] Supabase "Enable email confirmations" OFF (이메일 인증 메일 비활성화)
+- [ ] KMC 본인인증 API 연동 (팝업/웹뷰 방식)
+- [ ] 인증 완료 시 profiles에 phone, name(실명), ci, di 저장
+- [ ] 웹 + 앱 양쪽에서 KMC 인증 플로우 동작 확인
+- [ ] 푸시 알림 EAS 개발 빌드 e2e 테스트 (기존 미완료)
+
+**참조:**
+- KMC 기존 계약: 월 55,000원
+- profiles 컬럼: phone, name, ci, di 이미 존재 (SCHEMA.md 확인)
 
 ---
 
@@ -174,7 +181,7 @@
 | 배포 | **Vercel Pro ×2** | Git push 자동 배포, 서울(icn1) |
 | 검색 | **PostgreSQL 풀텍스트 (pg_trgm)** | 초기 1만건 충분 |
 | AI 크롤러 | **Puppeteer + Claude Haiku** | 커넥터 타입별 (어드민 앱) |
-| 본인인증 | **KMC** (월 55,000원 기존 계약) | 연동 대기 |
+| 본인인증 | **KMC** (월 55,000원 기존 계약) | 연동 예정 |
 
 #### 모바일 (poppon-app) 🚧
 | 영역 | 기술 | 비고 |
@@ -198,7 +205,8 @@
 - **Phase M3**: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
 
 #### 🔄 진행 중
-- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **이메일 가입+인증(웹+앱)** + **제보 API RLS 수정** + **어드민 브랜드 필터 유지** + **스플래시 비주얼 강화** + 애플 DUNS 대기 + 심사 준비
+- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + 애플 DUNS 대기 + 심사 준비
+- **Phase M4+**: KMC 휴대폰 본인인증 연동 + 이메일 가입 제거 🚧
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -207,21 +215,15 @@
 
 ### 6-5. 미해결 / 진행 예정
 
-#### 즉시 (Phase M4 남은 작업)
-- ✅ ~~로고 확정 대기~~ → 로고 확정 완료 (레드/코랄 투명 PNG, 웹 TopNav + 앱 홈 헤더 적용)
-- ✅ ~~스플래시 스크린~~ → 커스텀 스플래시 완료 (다크 + 팝콘 파티클 + DB 실시간 숫자) + 비주얼 강화 (파티클28개+글씨+로고크기)
-- ✅ ~~어드민 로고 적용~~ → `(dashboard)/layout.tsx` 로고 이미지 적용 완료
-- ✅ ~~이메일 가입~~ → 웹(AuthSheet email_sent 스텝) + 앱(email.tsx 신규) 이메일 인증 플로우 추가
-- ✅ ~~제보 API 저장 실패~~ → createServiceClient로 변경 (submissions RLS 우회)
-- ✅ ~~어드민 브랜드 수정 후 필터 초기화~~ → searchParams useEffect 동기화 추가
-- 🔲 디자이너에게 수령 대기: 앱 아이콘(1024×1024 정사각), favicon(정사각)
-- ⚠️ Supabase Auth → Settings → "Enable email confirmations" ON 확인 필수
-- 🍎 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
+#### 즉시 (Phase M4+ 작업)
+- 🚧 **KMC 휴대폰 본인인증 연동** (기존 계약 월 55,000원, API 연동 필요)
+- 🚧 **이메일 가입 플로우 제거** (웹 AuthSheet + 앱 email.tsx)
+- 🚧 **Supabase email confirmation OFF** (이메일 인증 메일 비활성화)
 - ⚠️ 푸시 알림 EAS 개발 빌드 후 end-to-end 테스트 필수 (토큰 발급 → 실제 수신 확인)
-- 📋 브랜드 조사 매칭: 조사 완료된 브랜드 목록 vs 현재 POPPON 등록 브랜드 비교 → 미등록 브랜드 정리
+- 🍎 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
 
 #### 단기 (Phase 2 + Phase M5)
-- **웹**: 도메인 연결, 링크프라이스 제휴 API, KMC 본인인증, 카카오 알림톡
+- **웹**: 도메인 연결, 링크프라이스 제휴 API, 카카오 알림톡
 - **웹**: 탈퇴 승인 후 30일 자동삭제 Cron
 - **앱**: 카카오 개발자 포털에 iOS/Android 네이티브 플랫폼 등록 (프로덕션 빌드 시)
 - **앱**: 앱스토어 심사 준비 (OPS.md 체크리스트 참조)
@@ -406,7 +408,7 @@
 | 브랜드관 | `app/m/[merchantSlug].tsx` | 프로필헤더 + 진행중/종료 탭 + 무한스크롤 |
 | 카테고리 상세 | `app/c/[categorySlug].tsx` | 서브카테고리칩 + FlatList 무한스크롤 |
 | 로그인 | `app/auth/index.tsx` + `_layout.tsx` | 카카오/네이버/애플 + 이메일 버튼 |
-| 이메일 가입/로그인 | `app/auth/email.tsx` | 통합 플로우 + 이메일 인증 ✅ |
+| 이메일 가입/로그인 | `app/auth/email.tsx` | 통합 플로우 + 이메일 인증 ← ⚠️ 제거 예정 |
 | 온보딩 | `app/auth/onboarding.tsx` | 3단계: 카테고리→마케팅→완료 |
 | 제보 | `app/submit.tsx` | 웹 API 호출 + 인라인 style ✅ |
 | 법적 페이지 | `app/legal/*.tsx` + `_layout.tsx` | WebView로 웹 URL 로딩 |
@@ -425,7 +427,7 @@
 | SubCategoryChips.tsx | `src/components/common/SubCategoryChips.tsx` | 수평 ScrollView 칩 |
 | SortPicker.tsx | `src/components/common/SortPicker.tsx` | 바텀시트 정렬 모달 |
 | LoginPromptModal.tsx | `src/components/common/LoginPromptModal.tsx` | 비로그인 딜 탭 시 바텀시트 로그인 유도 ✅ |
-| CustomSplash.tsx | `src/components/common/CustomSplash.tsx` | 다크 스플래시 + 팝콘 파티클28개 + DB 숫자 + 강화 비주얼 ✅ |
+| CustomSplash.tsx | `src/components/common/CustomSplash.tsx` | 다크 스플래시 + 팝콘 파티클 + DB 숫자 ✅ |
 
 #### 라이브러리
 | 파일 | 경로 | 비고 |
@@ -461,11 +463,14 @@ AI는 매 응답을 아래 순서로 작성한다.
 - ADR-20260222-01: merchants DELETE cascade 추가 (v4.4) — FK 연관 데이터 순서 삭제
 - ADR-20260224-01: 앱 로그인 게이트 전략 — 웹은 SEO 유지(열람 허용), 앱은 딜 카드 탭 시 로그인 필수 (LoginPromptModal 바텀시트)
 - ADR-20260224-02: 이메일 인증 플로우 — signUp 후 인증 메일 발송 필수. 웹은 localStorage에 pending profile 임시 저장→인증 후 첫 로그인 시 자동 적용. 앱은 user_metadata에 닉네임 저장→첫 로그인 시 profiles 반영.
+- ADR-20260225-01: 앱 아이콘/파비콘 전략 — 앱 아이콘: 빨간 배경(홈 화면 가시성), 파비콘: 흰 배경(브라우저 탭 깔끔). PDF 벡터에서 600dpi 렌더링→1024×1024 추출.
+- ADR-20260225-02: 인증 체계 전환 — 이메일 가입 제거 + 이메일 인증(확인 메일) 제거 → KMC 휴대폰 본인인증으로 통일. 실명+폰번호+CI/DI 한방 확보. TargetUP-AI 타겟 메시징 기반.
 
 ---
 
 ## 10) ASSUMPTION LEDGER (가정 목록)
 - ~~A1: event_page_url이 merchants 테이블 컬럼이다~~ → **거짓 확인 (2/22). 커넥터 자동 생성 트리거용 필드일 뿐, merchants 컬럼 아님.**
+- A2: KMC API 업체코드 + 암호화 키 발급 완료 상태인지 미확인 → **다음 세션에서 주인님 확인 필요**
 
 ---
 
@@ -474,12 +479,13 @@ AI는 매 응답을 아래 순서로 작성한다.
 |----|--------|------|------|------|------|
 | R1 | DUNS 번호 지연으로 애플 로그인/앱스토어 일정 지연 | 3 | 4 | 12 | 웹+Android 우선 출시 |
 | R2 | EAS 빌드 후 푸시 알림 미작동 | 2 | 3 | 6 | 개발 빌드 e2e 테스트 필수 |
+| R3 | KMC 연동 시 팝업 차단/웹뷰 호환 이슈 | 2 | 3 | 6 | 웹+앱 별도 플로우 설계 |
 
 ---
 
 ## 12) DONE LOG (완료 기록)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동.
-> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링, 2/21 홈히어로제거+이모지 → `ARCHIVE.md` 참조
+> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링 → `ARCHIVE.md` 참조
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
@@ -492,8 +498,8 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 2/24 | UX수정+로그인게이트 | 앱 | SafeArea bottom + 전탭 검색바 + 브랜드검색 + LoginPromptModal | 웹 SEO 유지 vs 앱 가입률 극대화 전략 분리 |
 | 2/24 | 커스텀 스플래시 | 앱 | 다크 테마 + 팝콘 파티클 + DB 실시간 숫자 + _layout 통합 | "팝콘처럼 터지는 쿠폰" 브랜드 컨셉 반영 |
 | 2/24 | 이메일인증+어드민로고 | 웹+앱+어드민 | 어드민 로고 적용 + 앱 로고 교체 + 이메일 가입/인증 플로우(웹+앱) | RLS 때문에 미인증 상태에서 profiles 업데이트 불가 → localStorage 임시 저장 패턴 |
-| 2/25 | 버그수정+스플래시강화 | 웹+앱+어드민 | 제보 API RLS 수정 + 어드민 브랜드 필터 유지 + 스플래시 비주얼 강화(파티클28개+글씨+로고크기) | submissions RLS=service_role 전용 → createServiceClient 필수 |
+| 2/25 | 제보버그+인증전략 | DB+기획 | submissions.user_id nullable 수정 + 인증 전략 전환 결정(이메일→KMC) | 가입 허들 최소화, 인증은 KMC 한방으로 |
 
 ---
 
-*마지막 업데이트: 2026-02-25 (버그수정+스플래시강화)*
+*마지막 업데이트: 2026-02-25 (인증 전략 전환: 이메일 가입 제거 + KMC 본인인증 연동 결정)*

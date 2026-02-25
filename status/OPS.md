@@ -153,6 +153,7 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 - profiles.phone: UNIQUE 해제됨 (KMC 연동 시 재적용)
 - deal_actions: `metadata` 컬럼 없음, `platform` 컬럼 있음 (DEFAULT 'web')
 - server.ts exports: `createServerSupabaseClient` (anon) + `createServiceClient` (service role)
+- **`createServiceClient()`는 async 함수 — 반드시 `await` 필요** (빠뜨리면 `.from()` 타입 에러)
 - **event_page_url은 merchants 컬럼이 아님** — 커넥터 자동 생성 트리거용 필드 (edit 페이지에서 빈칸 초기화가 정상)
 - **DB 컬럼 수정/추가 전 반드시 SCHEMA.md에서 컬럼 존재 확인. 추측 금지.**
 
@@ -163,7 +164,6 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ### 인증 / 회원
 - AuthSheet signUp 지연: marketing 스텝에서 signUp + profile 한꺼번에 저장
-- **제보 API**: submissions 테이블은 RLS ON + INSERT 정책 없음 → `createServiceClient` 필수 (anon key로 insert 불가)
 - **이메일 인증**: signUp 후 session null → `poppon_pending_profile` localStorage에 프로필 임시 저장 → 인증 후 첫 로그인 시 자동 적용
 - **앱 이메일**: signUp 시 닉네임을 user_metadata에 저장 → 첫 로그인 시 profiles에 반영
 - **Supabase 설정 필수**: Auth → Settings → "Enable email confirmations" ON
@@ -217,8 +217,8 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 - 회원 목록 `auth.admin.listUsers()` 배치 필수
 - 머천트 PUT: event_page_url/connector_type 필드 분리 (merchants 컬럼 오염 방지)
 - edit 페이지 null 처리: 필드별 타입 맞춤 (배열→[], boolean→false), 일괄 `null→''` 금지
-- 브랜드 수정 후 필터 유지: URL param `?category=xxx` + `useEffect([searchParams])` 동기화 필수
+- 브랜드 수정 후 필터 유지: URL param `?category=xxx`
 
 ---
 
-*마지막 업데이트: 2026-02-25 (제보 API RLS + 어드민 필터 유지 추가)*
+*마지막 업데이트: 2026-02-25 (createServiceClient await 주의사항 추가)*

@@ -117,9 +117,10 @@ id, user_id(nullable), session_id, query, category_slug, result_count, created_a
 
 ### submissions
 ```
-id(uuid), user_id, url, comment, parsed_preview(jsonb),
+id(uuid), user_id(nullable), url, comment, parsed_preview(jsonb),
 status(pending/approved/rejected), admin_note, created_at
 ```
+⚠️ **user_id는 nullable** — 비로그인 유저도 제보 가능 (2/25 변경)
 
 ### outbound_clicks
 ```
@@ -181,7 +182,8 @@ push_logs.user_id → auth.users.id (ON DELETE SET NULL)
 - deal_actions: `metadata` 컬럼 없음, `platform` 컬럼 있음 (DEFAULT 'web')
 - server.ts exports: `createServerSupabaseClient` (anon) + `createServiceClient` (service role)
 - event_page_url은 merchants 컬럼이 아님 — 커넥터 자동 생성 트리거용 필드
+- submissions.user_id: nullable (비로그인 제보 허용, 2/25 변경)
 
 ---
 
-*마지막 업데이트: 2026-02-22 (STATUS.md에서 분리)*
+*마지막 업데이트: 2026-02-25 (submissions.user_id nullable 반영)*

@@ -14,6 +14,8 @@ export function DealModal({ children }: DealModalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragY, setDragY] = useState(0);
   const startYRef = useRef(0);
+  // ✅ scrollY를 ref로 관리 (클로저 캡처 문제 방지)
+  const scrollYRef = useRef(0);
 
   // 열림 애니메이션 상태
   const [isVisible, setIsVisible] = useState(false);
@@ -39,21 +41,26 @@ export function DealModal({ children }: DealModalProps) {
     };
     document.addEventListener('keydown', handleKeyDown);
 
-    // 스크롤 위치 고정 (점프 방지)
-    const scrollY = window.scrollY;
+    // ✅ 스크롤 위치 고정 (ref에 저장 + overflow hidden 추가)
+    scrollYRef.current = window.scrollY;
     document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
+    document.body.style.top = `-${scrollYRef.current}px`;
     document.body.style.left = '0';
     document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+    document.body.style.width = '100%';
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      // 원래 스크롤 위치 복원
+      // ✅ 원래 스크롤 위치 복원 (ref에서 읽기)
+      const savedY = scrollYRef.current;
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.left = '';
       document.body.style.right = '';
-      window.scrollTo(0, scrollY);
+      document.body.style.overflow = '';
+      document.body.style.width = '';
+      window.scrollTo(0, savedY);
     };
   }, [handleClose]);
 

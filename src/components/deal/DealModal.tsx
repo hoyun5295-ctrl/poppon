@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useLayoutEffect, useEffect, useCallback, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 
 interface DealModalProps {
@@ -14,7 +14,6 @@ export function DealModal({ children }: DealModalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragY, setDragY] = useState(0);
   const startYRef = useRef(0);
-  // ✅ scrollY를 ref로 관리 (클로저 캡처 문제 방지)
   const scrollYRef = useRef(0);
 
   // 열림 애니메이션 상태
@@ -28,20 +27,29 @@ export function DealModal({ children }: DealModalProps) {
     });
   }, []);
 
+  // ✅ body 스타일 복원 헬퍼 (중복 호출 안전)
+  const restoreBodyScroll = useCallback(() => {
+    const savedY = scrollYRef.current;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.overflow = '';
+    document.body.style.width = '';
+    window.scrollTo(0, savedY);
+  }, []);
+
   const handleClose = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => {
+      // ✅ router.back() 전에 body 먼저 복원 (Next.js 스크롤 복원과 경합 방지)
+      restoreBodyScroll();
       router.back();
     }, 200);
-  }, [router]);
+  }, [router, restoreBodyScroll]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-
-    // ✅ 스크롤 위치 고정 (ref에 저장 + overflow hidden 추가)
+  // ✅ useLayoutEffect: paint 전에 즉시 body 고정 (스크롤 점프 방지)
+  useLayoutEffect(() => {
     scrollYRef.current = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollYRef.current}px`;
@@ -51,17 +59,20 @@ export function DealModal({ children }: DealModalProps) {
     document.body.style.width = '100%';
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      // ✅ 원래 스크롤 위치 복원 (ref에서 읽기)
-      const savedY = scrollYRef.current;
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      document.body.style.width = '';
-      window.scrollTo(0, savedY);
+      // 안전망: handleClose에서 이미 복원했으면 no-op
+      if (document.body.style.position === 'fixed') {
+        restoreBodyScroll();
+      }
     };
+  }, [restoreBodyScroll]);
+
+  // ESC 키 핸들러 (별도 useEffect)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleClose]);
 
   // 모바일 스와이프 다운 to close
@@ -112,7 +123,7 @@ export function DealModal({ children }: DealModalProps) {
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* ✅ X 버튼 별도 행 */}
+          {/* X 버튼 별도 행 */}
           <div className="flex justify-end px-3 pt-3">
             <button
               onClick={handleClose}
@@ -149,7 +160,7 @@ export function DealModal({ children }: DealModalProps) {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          {/* ✅ 드래그 핸들 + X 버튼 같은 행 */}
+          {/* 드래그 핸들 + X 버튼 같은 행 */}
           <div
             data-drag-handle
             className="flex items-center justify-between px-3 pt-3 pb-1 cursor-grab active:cursor-grabbing"

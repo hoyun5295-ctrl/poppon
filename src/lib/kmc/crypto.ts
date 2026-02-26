@@ -140,6 +140,9 @@ export function generateCertNum(): { certNum: string; date: string } {
 /**
  * tr_cert 생성 (KMC 인증 요청용)
  * 개발가이드 p.5 참조
+ *
+ * plainText 규격 (7필드, 6슬래시):
+ *   cpId / urlCode / certNum / date / certMet / plusInfo / extendVar
  */
 export async function encryptTrCert(params: {
   cpId: string;
@@ -155,15 +158,15 @@ export async function encryptTrCert(params: {
     urlCode,
     certNum,
     date,
-    certMet = '',
+    certMet = 'M',
     plusInfo = '',
     extendVar = '0000000000000000',
   } = params;
 
-  // 1차 암호화 대상 문자열 (개발가이드 형식)
-  const plainText = `${cpId}/${urlCode}/${certNum}/${date}/${certMet}///////${plusInfo}/${extendVar}`;
+  // 1차 암호화 대상 문자열 (개발가이드 p.5 — 7필드, 구분자 "/")
+  const plainText = `${cpId}/${urlCode}/${certNum}/${date}/${certMet}/${plusInfo}/${extendVar}`;
 
-  console.log(`[KMC] plainText length=${plainText.length}`);
+  console.log(`[KMC] plainText length=${plainText.length}, fields=7`);
 
   // 1차 암호화
   const tmpEnc = await encrypt(plainText);
@@ -182,7 +185,13 @@ export async function encryptTrCert(params: {
 
 /**
  * rec_cert 복호화 (KMC 인증 결과 수신용)
- * 개발가이드 p.6 참조
+ * 개발가이드 p.8~9 참조
+ *
+ * 결과 plainText 규격 (19필드):
+ *   1:certNum / 2:date / 3:CI / 4:phoneNo / 5:phoneCorp / 6:birthDay /
+ *   7:gender / 8:nation / 9:name / 10:result / 11:certMet / 12:ip /
+ *   13:reserve1 / 14:reserve2 / 15:reserve3 / 16:reserve4 /
+ *   17:plusInfo / 18:DI / 19:extendVar
  */
 export interface KmcVerifyResult {
   certNum: string;

@@ -16,13 +16,14 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   // Powered by 헤더 제거
   poweredByHeader: false,
+  // KmcCrypto 바이너리를 서버리스 함수에 포함
+  outputFileTracingIncludes: {
+    '/api/kmc/*': ['./bin/KmcCrypto'],
+  },
   // 실험적 기능
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
-    },
-    outputFileTracingIncludes: {
-      '/api/kmc/*': ['./bin/KmcCrypto'],
     },
   },
 };

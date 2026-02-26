@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { encryptTrCert, generateCertNum } from '@/lib/kmc/crypto';
 
 const KMC_CP_ID = 'IVTT1001';
-const KMC_URL_CODE = '003001';
+const KMC_URL_CODE = '003002';
 const KMC_FORM_URL = 'https://www.kmcert.com/kmcis/web/kmcisReq.jsp';
 
 export async function GET(req: NextRequest) {

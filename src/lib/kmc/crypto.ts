@@ -122,6 +122,28 @@ export function hash(input: string): Promise<string> {
   return execBinary('msg', input);
 }
 
+/** 하위 호환: callback route에서 사용 */
+export async function kmcExec(
+  mode: 'enc' | 'dec' | 'msg',
+  input: string
+): Promise<string> {
+  return execBinary(mode, input);
+}
+
+/** KST 날짜 문자열 (YYYYMMDDHHmmss) */
+export function getKstDateString(): string {
+  const now = new Date();
+  now.setHours(now.getHours() + 9);
+  return now.toISOString().replace(/[-T:\.Z]/g, '').slice(0, 14);
+}
+
+/** 요청번호 생성 */
+export function generateCertNum(): { certNum: string; date: string } {
+  const date = getKstDateString();
+  const random = Math.floor(100000 + Math.random() * 900000);
+  return { certNum: date + random, date };
+}
+
 /**
  * tr_cert 생성 (KMC 인증 요청용)
  * 개발가이드 p.5 참조
@@ -169,48 +191,61 @@ export async function encryptTrCert(params: {
  * rec_cert 복호화 (KMC 인증 결과 수신용)
  * 개발가이드 p.6 참조
  */
-export async function decryptRecCert(apiRecCert: string): Promise<{
+export interface KmcVerifyResult {
   certNum: string;
   date: string;
   ci: string;
   phoneNo: string;
-  name: string;
-  birthday: string;
+  phoneCorp: string;
+  birthDay: string;
   gender: string;
   nation: string;
-  carrier: string;
-  di: string;
+  name: string;
   result: string;
-}> {
+  certMet: string;
+  ip: string;
+  plusInfo: string;
+  di: string;
+}
+
+export async function decryptRecCert(apiRecCert: string): Promise<KmcVerifyResult> {
   // 1차 복호화
   const tmpDec1 = await decrypt(apiRecCert);
-  const [tmpDec2, tmpMsg1] = tmpDec1.split('/');
+
+  const inf1 = tmpDec1.indexOf('/');
+  const inf2 = tmpDec1.indexOf('/', inf1 + 1);
+
+  const tmpDec2 = tmpDec1.substring(0, inf1);
+  const tmpMsg1 = tmpDec1.substring(inf1 + 1, inf2);
 
   // 위변조 검증
   const tmpMsg2 = await hash(tmpDec2);
   if (tmpMsg1 !== tmpMsg2) {
-    throw new Error('KMC 위변조 검증 실패');
+    throw new Error('KMC 위변조 검증 실패 (해시 불일치)');
   }
 
-  // 2차 복호화
+  // 2차 복호화 → 최종 평문
   const recCert = await decrypt(tmpDec2);
-  const fields = recCert.split('/');
+  const arr = recCert.split('/');
 
-  // CI/DI 추가 복호화
-  const ci = await decrypt(fields[2] || '');
-  const di = await decrypt(fields[17] || '');
+  // CI, DI 추가 복호화
+  const ci = arr[2] ? await decrypt(arr[2]) : '';
+  const di = arr[17] ? await decrypt(arr[17]) : '';
 
   return {
-    certNum: fields[0] || '',
-    date: fields[1] || '',
+    certNum: arr[0] || '',
+    date: arr[1] || '',
     ci,
-    phoneNo: fields[3] || '',
-    name: fields[4] || '',
-    birthday: fields[5] || '',
-    gender: fields[6] || '',
-    nation: fields[7] || '',
-    carrier: fields[8] || '',
+    phoneNo: arr[3] || '',
+    phoneCorp: arr[4] || '',
+    birthDay: arr[5] || '',
+    gender: arr[6] || '',
+    nation: arr[7] || '',
+    name: arr[8] || '',
+    result: arr[9] || '',
+    certMet: arr[10] || '',
+    ip: arr[11] || '',
+    plusInfo: arr[16] || '',
     di,
-    result: fields[16] || '',
   };
 }

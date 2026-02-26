@@ -103,7 +103,7 @@ export async function GET() {
 
   // 7. 최소 환경 테스트 (PATH만)
   results['enc_minimal_env'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { PATH: '/usr/bin:/bin' } as NodeJS.ProcessEnv);
+    { PATH: '/usr/bin:/bin' } as unknown as NodeJS.ProcessEnv);
 
   // 8. file 명령
   results['file_info'] = shellExec(`file ${TMP_PATH} 2>&1`);

@@ -1,16 +1,16 @@
 /**
- * KMC 디버그 v2 - Vercel 환경 상세 분석
+ * KMC 디버그 v3 - cwd + stderr + exit code 집중 분석
  * GET /api/kmc/debug
  */
 
 import { NextResponse } from 'next/server';
-import { execSync, spawn } from 'child_process';
-import { copyFileSync, chmodSync, existsSync, statSync, readFileSync } from 'fs';
-import { createHash } from 'crypto';
+import { spawn } from 'child_process';
+import { copyFileSync, chmodSync, existsSync, statSync, readdirSync } from 'fs';
 import path from 'path';
 
 const TMP_PATH = '/tmp/KmcCrypto';
-const SRC_PATH = path.join(process.cwd(), 'bin', 'KmcCrypto');
+const SRC_DIR = path.join(process.cwd(), 'bin');
+const SRC_PATH = path.join(SRC_DIR, 'KmcCrypto');
 
 function ensureBin() {
   if (!existsSync(TMP_PATH)) {
@@ -19,94 +19,103 @@ function ensureBin() {
   }
 }
 
-function sha256(filePath: string): string {
-  const buf = readFileSync(filePath);
-  return createHash('sha256').update(buf).digest('hex');
-}
-
-function shellExec(cmd: string): string {
-  try {
-    return execSync(cmd, { timeout: 5000, encoding: 'utf-8' }).trim();
-  } catch (e: any) {
-    return `ERROR: ${e.message?.substring(0, 200)}`;
-  }
-}
-
-function spawnWithEnv(binPath: string, mode: string, input: string, env?: NodeJS.ProcessEnv): Promise<string> {
+function runBinary(
+  binPath: string,
+  mode: string,
+  input: string,
+  cwd?: string
+): Promise<{ code: number | null; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
-    const proc = spawn(binPath, [], { env: env ?? process.env });
-    const chunks: Buffer[] = [];
+    const opts: { cwd?: string } = {};
+    if (cwd) opts.cwd = cwd;
+
+    const proc = spawn(binPath, [], opts);
+    const outChunks: Buffer[] = [];
+    const errChunks: Buffer[] = [];
 
     const timer = setTimeout(() => {
-      proc.kill();
-      resolve('TIMEOUT');
+      proc.kill('SIGKILL');
+      resolve({
+        code: -999,
+        stdout: Buffer.concat(outChunks).toString('utf-8').trim(),
+        stderr: 'TIMEOUT (5s)',
+      });
     }, 5000);
 
-    proc.stdout.on('data', (c: Buffer) => chunks.push(c));
-    proc.stderr.on('data', (c: Buffer) => console.error('stderr:', c.toString()));
+    proc.stdout.on('data', (c: Buffer) => outChunks.push(c));
+    proc.stderr.on('data', (c: Buffer) => errChunks.push(c));
 
-    proc.on('close', () => {
+    proc.on('close', (code) => {
       clearTimeout(timer);
-      resolve(Buffer.concat(chunks).toString('utf-8').trim());
+      resolve({
+        code,
+        stdout: Buffer.concat(outChunks).toString('utf-8').trim(),
+        stderr: Buffer.concat(errChunks).toString('utf-8').trim(),
+      });
     });
 
-    proc.stdin.write(`${mode}:0^*${input}\n`);
-    proc.stdin.end();
+    proc.on('error', (e) => {
+      clearTimeout(timer);
+      resolve({ code: -1, stdout: '', stderr: `SPAWN_ERROR: ${e.message}` });
+    });
+
+    proc.stdin.end(`${mode}:0^*${input}\n`);
   });
 }
 
 export async function GET() {
   ensureBin();
 
-  const testInput = 'IVTT1001/003001/20260226120000123456/20260226120000////////0000000000000000';
-  const results: Record<string, string> = {};
+  const testInput =
+    'IVTT1001/003001/20260226120000123456/20260226120000////////0000000000000000';
 
-  // 1. 바이너리 해시 비교
-  results['src_sha256'] = sha256(SRC_PATH);
-  results['tmp_sha256'] = sha256(TMP_PATH);
-  results['expect_sha256'] = 'e6cd3f84d6dc5963011daa275342606729386c0f95d5dceac84d9c83b15c365c';
-  results['hash_match'] = results['src_sha256'] === results['expect_sha256'] ? 'YES' : 'NO';
+  const results: Record<string, unknown> = {};
 
-  // 2. 환경 정보
-  results['env_LANG'] = process.env.LANG || '(not set)';
-  results['env_LC_ALL'] = process.env.LC_ALL || '(not set)';
-  results['env_LC_CTYPE'] = process.env.LC_CTYPE || '(not set)';
-  results['locale'] = shellExec('locale 2>&1 || echo no_locale');
-  results['node_version'] = process.version;
-  results['platform'] = process.platform;
-  results['arch'] = process.arch;
-  results['cwd'] = process.cwd();
+  // 1. 바이너리 정보
+  results['binary_size'] = statSync(TMP_PATH).size;
+  results['src_dir'] = SRC_DIR;
+  results['src_dir_files'] = (() => {
+    try { return readdirSync(SRC_DIR); } catch { return 'READ_ERROR'; }
+  })();
+  results['tmp_dir_files'] = (() => {
+    try { return readdirSync('/tmp').filter(f => f.includes('Kmc') || f.includes('kmc')); } catch { return 'READ_ERROR'; }
+  })();
 
-  // 3. glibc 버전
-  results['ldd'] = shellExec(`ldd ${TMP_PATH} 2>&1`);
-  results['glibc'] = shellExec('ldd --version 2>&1 | head -1');
+  // 2. cwd 없이 (현재 방식)
+  results['no_cwd'] = await runBinary(TMP_PATH, 'enc', testInput);
 
-  // 4. enc 테스트 - /tmp 경로
-  results['tmp_enc'] = await spawnWithEnv(TMP_PATH, 'enc', testInput);
-  results['tmp_msg'] = await spawnWithEnv(TMP_PATH, 'msg', testInput);
+  // 3. cwd = /tmp (바이너리 위치)
+  results['cwd_tmp'] = await runBinary(TMP_PATH, 'enc', testInput, '/tmp');
 
-  // 5. enc 테스트 - 원본 경로 직접 실행
+  // 4. cwd = bin 폴더 (원본 위치)
+  results['cwd_bin'] = await runBinary(TMP_PATH, 'enc', testInput, SRC_DIR);
+
+  // 5. 원본 경로에서 직접 실행 + cwd = bin
   try {
     chmodSync(SRC_PATH, 0o755);
-    results['src_enc'] = await spawnWithEnv(SRC_PATH, 'enc', testInput);
-  } catch (e: any) {
-    results['src_enc'] = `CHMOD_ERROR: ${e.message}`;
+    results['src_cwd_bin'] = await runBinary(SRC_PATH, 'enc', testInput, SRC_DIR);
+  } catch (e: unknown) {
+    results['src_cwd_bin'] = `ERROR: ${e instanceof Error ? e.message : String(e)}`;
   }
 
-  // 6. locale 설정 후 테스트
-  results['enc_LANG_C'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { ...process.env, LANG: 'C' });
-  results['enc_LANG_UTF8'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { ...process.env, LANG: 'en_US.UTF-8' });
-  results['enc_LANG_EUCKR'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { ...process.env, LANG: 'ko_KR.euckr' });
+  // 6. msg 테스트 (비교용 - 이건 항상 성공)
+  results['msg_test'] = await runBinary(TMP_PATH, 'msg', testInput);
 
-  // 7. 최소 환경 테스트 (PATH만)
-  results['enc_minimal_env'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { PATH: '/usr/bin:/bin' } as unknown as NodeJS.ProcessEnv);
+  // 7. stdin hex dump 확인
+  const cmd = `enc:0^*${testInput}\n`;
+  results['stdin_hex_first20'] = Buffer.from(cmd, 'utf-8')
+    .slice(0, 40)
+    .toString('hex');
+  results['stdin_hex_last10'] = Buffer.from(cmd, 'utf-8')
+    .slice(-20)
+    .toString('hex');
+  results['stdin_length'] = cmd.length;
 
-  // 8. file 명령
-  results['file_info'] = shellExec(`file ${TMP_PATH} 2>&1`);
+  // 8. 환경 정보
+  results['platform'] = process.platform;
+  results['arch'] = process.arch;
+  results['node'] = process.version;
+  results['cwd'] = process.cwd();
 
   return NextResponse.json(results, { status: 200 });
 }

@@ -1,22 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X, Mail, ChevronLeft, Eye, EyeOff,
   Check, Bell, MessageCircle, Sparkles,
-  Shirt, UtensilsCrossed, Home, Plane, LayoutGrid, User, PartyPopper
+  Shirt, UtensilsCrossed, Home, Plane, LayoutGrid, Shield, PartyPopper
 } from 'lucide-react';
 import { useAuth, type AuthSheetStep } from '@/lib/auth/AuthProvider';
 import { createClient } from '@/lib/supabase/client';
 
-type AuthStep = AuthSheetStep | 'complete' | 'email_sent';
+/**
+ * 새 가입 플로우 (2026-02-26):
+ *
+ * 이메일 가입: main → kmc_verify → signup(이메일+비번) → categories → marketing → signUp → complete
+ * SNS 신규:   카카오/네이버 OAuth → callback → /?onboarding=sns → categories → marketing → 완료
+ * 로그인:     main → login → 완료
+ *
+ * ✅ 변경점:
+ * - identity 스텝 제거 (KMC 본인인증으로 대체)
+ * - email_sent 스텝 제거 (이메일 확인 메일 비활성화)
+ * - kmc_verify 스텝 추가
+ * - signUp 후 바로 session 반환 (email confirmation OFF)
+ */
+
+type AuthStep = AuthSheetStep | 'kmc_verify' | 'complete';
 
 interface CategoryOption {
   id: string;
   name: string;
   slug: string;
   icon: React.ReactNode;
+}
+
+interface KmcData {
+  name: string;
+  phoneNo: string;
+  ci: string;
+  di: string;
+  gender: string;
+  birthDay: string;
 }
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -30,15 +53,6 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 
 const REMEMBER_EMAIL_KEY = 'poppon_remember_email';
 
-/**
- * AuthSheet — 가입/로그인 바텀시트
- *
- * 이메일 신규가입: main → signup → identity → categories → marketing → signUp + profile 저장 → complete
- * SNS 신규가입:   카카오/네이버 OAuth → callback → /?onboarding=sns → categories → marketing → 완료
- * 로그인:         main → login → 완료
- *
- * ✅ 핵심 수정: signUp은 마지막 스텝에서만 실행 (중간 이탈 시 반쪽 계정 방지)
- */
 export function AuthSheet() {
   const {
     isAuthSheetOpen, closeAuthSheet, refreshProfile, showToast,
@@ -46,7 +60,7 @@ export function AuthSheet() {
   } = useAuth();
   const [step, setStep] = useState<AuthStep>('main');
 
-  // 회원가입 폼 (state에만 저장, signUp은 마지막에)
+  // 회원가입 폼
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -55,11 +69,9 @@ export function AuthSheet() {
   // 아이디 저장
   const [rememberEmail, setRememberEmail] = useState(false);
 
-  // 프로필 정보 (이메일 가입 시)
-  const [profileName, setProfileName] = useState('');
-  const [profilePhone, setProfilePhone] = useState('');
-  const [profileGender, setProfileGender] = useState('');
-  const [profileBirthDate, setProfileBirthDate] = useState('');
+  // KMC 본인인증 결과
+  const [kmcData, setKmcData] = useState<KmcData | null>(null);
+  const [kmcLoading, setKmcLoading] = useState(false);
 
   // 카테고리 선택
   const [categories, setCategories] = useState<CategoryOption[]>([]);
@@ -71,11 +83,8 @@ export function AuthSheet() {
   const [marketingPush, setMarketingPush] = useState(false);
   const [marketingEmail, setMarketingEmail] = useState(false);
 
-  // SNS 온보딩 모드 (뒤로가기 없이 categories→marketing만)
+  // SNS 온보딩 모드
   const [isSNSOnboarding, setIsSNSOnboarding] = useState(false);
-
-  // 이메일 인증 발송 완료
-  const [sentEmail, setSentEmail] = useState('');
 
   // 공통
   const [loading, setLoading] = useState(false);
@@ -152,10 +161,65 @@ export function AuthSheet() {
     }
   }, [marketingKakao, marketingPush, marketingEmail]);
 
+  // ── KMC postMessage 수신 ──
+  const handleKmcMessage = useCallback((event: MessageEvent) => {
+    if (event.data?.type !== 'KMC_RESULT') return;
+    const { payload } = event.data;
+
+    if (payload.success && payload.data) {
+      setKmcData({
+        name: payload.data.name,
+        phoneNo: payload.data.phoneNo,
+        ci: payload.data.ci || '',
+        di: payload.data.di || '',
+        gender: payload.data.gender || '',
+        birthDay: payload.data.birthDay || '',
+      });
+      setKmcLoading(false);
+      setError('');
+      setStep('signup');
+    } else {
+      setKmcLoading(false);
+      setError(payload.error || '본인인증에 실패했습니다.');
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('message', handleKmcMessage);
+    return () => window.removeEventListener('message', handleKmcMessage);
+  }, [handleKmcMessage]);
+
   if (!isAuthSheetOpen) return null;
 
   // ═══════════════════════════════════════════
-  // ✅ 이메일 가입 Step 1: 이메일/비밀번호 검증만 (signUp 안 함!)
+  // KMC 본인인증 팝업 열기
+  // ═══════════════════════════════════════════
+  const openKmcVerify = () => {
+    setKmcLoading(true);
+    setError('');
+    const popup = window.open(
+      '/api/kmc/verify',
+      'kmc_popup',
+      'width=430,height=640,scrollbars=yes,resizable=yes'
+    );
+
+    // 팝업이 닫혔는데 결과 안 온 경우 처리
+    if (popup) {
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          // kmcData가 아직 없으면 취소 처리
+          setKmcLoading(false);
+        }
+      }, 500);
+    } else {
+      setKmcLoading(false);
+      setError('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+    }
+  };
+
+  // ═══════════════════════════════════════════
+  // 이메일 가입 (KMC 완료 후)
   // ═══════════════════════════════════════════
   const handleSignupNext = async () => {
     if (!email || !password || !passwordConfirm) {
@@ -168,52 +232,6 @@ export function AuthSheet() {
     }
     if (password !== passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다');
-      return;
-    }
-
-    // 이메일 중복만 체크 (실제 가입은 안 함)
-    setLoading(true);
-    setError('');
-    try {
-      // signInWithPassword로 기존 계정 여부 확인
-      // 실패 = 이메일 없거나 비번 틀림 → 신규 가능
-      // 성공 = 이미 가입됨
-      const { error: loginErr } = await supabase.auth.signInWithPassword({
-        email, password: '__check_only_' + Date.now()
-      });
-      // "Invalid login credentials" = 계정이 없거나 비번 틀림 → OK
-      // 그 외 에러도 OK (계속 진행)
-      // 만약 로그인 성공하면? 그건 비번이 맞은 거라 이론적으로 불가능 (__check_only_ prefix)
-      
-      // 추가 체크: 실제 이메일 중복은 최종 signUp에서 잡힘
-      // 여기서는 폼 검증만 하고 다음 스텝으로
-      setStep('identity');
-    } catch {
-      setError('확인 중 오류가 발생했습니다');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ═══════════════════════════════════════════
-  // ✅ 이메일 가입 Step 2: 프로필 정보 검증 (저장 안 함!)
-  // ═══════════════════════════════════════════
-  const handleProfileNext = () => {
-    if (!profileName.trim()) {
-      setError('이름을 입력해주세요');
-      return;
-    }
-    const rawPhone = profilePhone.replace(/[^0-9]/g, '');
-    if (!rawPhone || !/^01[016789]\d{7,8}$/.test(rawPhone)) {
-      setError('올바른 휴대전화번호를 입력해주세요');
-      return;
-    }
-    if (!profileGender) {
-      setError('성별을 선택해주세요');
-      return;
-    }
-    if (!profileBirthDate) {
-      setError('생년월일을 입력해주세요');
       return;
     }
     setError('');
@@ -241,7 +259,6 @@ export function AuthSheet() {
         }
       }
     }
-    // 이메일 가입: state에만 저장, 최종 스텝에서 한꺼번에 저장
     setStep('marketing');
   };
 
@@ -263,12 +280,12 @@ export function AuthSheet() {
           if (authUser) await saveMarketingData(authUser.id);
         }
         await refreshProfile();
-        showToast('SNS 로그인이 완료되었습니다', 'success');
+        showToast('로그인이 완료되었습니다', 'success');
         handleComplete();
         return;
       }
 
-      // ✅ 이메일 가입: 여기서 signUp 실행!
+      // ✅ 이메일 가입: signUp 실행 (email confirmation OFF → 바로 session)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -291,67 +308,52 @@ export function AuthSheet() {
         return;
       }
 
-      // ✅ 이메일 인증 필요 시 session이 null → 프로필 데이터를 임시 저장 후 인증 안내
+      // signUp 후 session이 없으면 (이메일 확인 ON 상태) → 자동 로그인
       if (!signUpData.session) {
-        console.log('[AuthSheet] signup success, email confirmation required');
-
-        // RLS 때문에 세션 없이는 profiles 업데이트 불가 → localStorage에 임시 저장
-        const hasConsent = marketingKakao || marketingPush || marketingEmail;
-        const rawPhone = profilePhone.replace(/[^0-9]/g, '');
-        const formattedPhone = rawPhone.length === 11
-          ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
-          : rawPhone;
-
-        try {
-          localStorage.setItem('poppon_pending_profile', JSON.stringify({
-            name: profileName.trim(),
-            phone: formattedPhone || null,
-            gender: profileGender || null,
-            birth_date: profileBirthDate || null,
-            provider: 'email',
-            interest_categories: selectedCategories.length > 0 ? selectedCategories : [],
-            marketing_agreed: hasConsent,
-            marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
-            onboarding_completed: true,
-          }));
-          if (rememberEmail) localStorage.setItem(REMEMBER_EMAIL_KEY, email);
-          else localStorage.removeItem(REMEMBER_EMAIL_KEY);
-        } catch { /* ignore */ }
-
-        setSentEmail(email.trim().toLowerCase());
-        setStep('email_sent');
-        setLoading(false);
-        return;
+        const { error: loginErr } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (loginErr) {
+          setError('가입은 완료되었으나 자동 로그인에 실패했습니다. 로그인해주세요.');
+          setStep('login');
+          setLoading(false);
+          return;
+        }
       }
 
-      // 프로필 트리거가 profiles row를 만들 때까지 약간 대기
+      // 프로필 트리거가 profiles row를 만들 때까지 잠시 대기
       await new Promise(r => setTimeout(r, 500));
 
-      // ✅ 프로필 + 카테고리 + 마케팅 한꺼번에 저장
-      const rawPhone = profilePhone.replace(/[^0-9]/g, '');
+      // ✅ KMC 데이터 + 카테고리 + 마케팅 한꺼번에 저장
+      const hasConsent = marketingKakao || marketingPush || marketingEmail;
+
+      const rawPhone = kmcData?.phoneNo?.replace(/[^0-9]/g, '') || '';
       const formattedPhone = rawPhone.length === 11
         ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
         : rawPhone;
 
-      const hasConsent = marketingKakao || marketingPush || marketingEmail;
+      const kmcGender = kmcData?.gender === '0' ? '남성' : kmcData?.gender === '1' ? '여성' : '';
 
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          name: profileName.trim(),
-          phone: formattedPhone,
-          gender: profileGender,
-          birth_date: profileBirthDate,
+          name: kmcData?.name || '',
+          phone: formattedPhone || null,
+          ci: kmcData?.ci || null,
+          di: kmcData?.di || null,
+          gender: kmcGender || null,
+          birth_date: kmcData?.birthDay || null,
           provider: 'email',
           interest_categories: selectedCategories.length > 0 ? selectedCategories : [],
           marketing_agreed: hasConsent,
           marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
+          onboarding_completed: true,
         })
         .eq('id', newUserId);
 
       if (updateError) {
         console.error('Profile update error:', updateError);
-        // 가입은 됐으니 에러 무시하고 완료 처리
       }
 
       // 아이디 저장
@@ -364,8 +366,6 @@ export function AuthSheet() {
       } catch { /* ignore */ }
 
       await refreshProfile();
-
-      // ✅ 완료 화면으로
       setStep('complete');
     } catch {
       setError('회원가입 중 오류가 발생했습니다');
@@ -381,6 +381,7 @@ export function AuthSheet() {
       .update({
         marketing_agreed: hasConsent,
         marketing_agreed_at: hasConsent ? new Date().toISOString() : null,
+        onboarding_completed: true,
       })
       .eq('id', userId);
   };
@@ -401,34 +402,12 @@ export function AuthSheet() {
       });
 
       if (loginError) {
-        if (loginError.message.includes('Email not confirmed')) {
-          setSentEmail(email.trim().toLowerCase());
-          setStep('email_sent');
-        } else if (loginError.message.includes('Invalid login')) {
+        if (loginError.message.includes('Invalid login')) {
           setError('이메일 또는 비밀번호가 올바르지 않습니다');
         } else {
           setError(loginError.message);
         }
       } else {
-        // ✅ 로그인 성공 → pending profile 데이터 적용
-        try {
-          const pendingRaw = localStorage.getItem('poppon_pending_profile');
-          if (pendingRaw) {
-            const pendingData = JSON.parse(pendingRaw);
-            const { data: { user: loggedInUser } } = await supabase.auth.getUser();
-            if (loggedInUser) {
-              await supabase
-                .from('profiles')
-                .update(pendingData)
-                .eq('id', loggedInUser.id);
-              console.log('[AuthSheet] pending profile data applied');
-            }
-            localStorage.removeItem('poppon_pending_profile');
-          }
-        } catch (e) {
-          console.error('[AuthSheet] pending profile apply error:', e);
-        }
-
         try {
           if (rememberEmail) {
             localStorage.setItem(REMEMBER_EMAIL_KEY, email);
@@ -447,27 +426,7 @@ export function AuthSheet() {
     }
   };
 
-  // ── SNS 로그인 (카카오 등 Supabase 빌트인) ──
-  const handleResendEmail = async () => {
-    if (!sentEmail) return;
-    setLoading(true);
-    setError('');
-    try {
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
-        email: sentEmail,
-      });
-      if (resendError) throw resendError;
-      setError('');
-      // 성공 시 간단 알림 (error state 재활용)
-      setError('✅ 인증 메일을 다시 보냈습니다');
-    } catch {
-      setError('메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ── SNS 로그인 ──
   const handleSNSLogin = async (provider: 'kakao' | 'google') => {
     setLoading(true);
     setError('');
@@ -486,27 +445,24 @@ export function AuthSheet() {
     }
   };
 
-  // ── 네이버 로그인 (수동 OAuth 플로우) ──
   const handleNaverLogin = () => {
     setLoading(true);
     window.location.href = '/api/auth/naver';
   };
 
-  // ── 카테고리 토글 ──
+  // ── 유틸 ──
   const toggleCategory = (id: string) => {
     setSelectedCategories((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
     );
   };
 
-  // ── 완료 / 닫기 ──
   const handleComplete = () => {
     resetForm();
     closeAuthSheet();
   };
 
   const handleClose = () => {
-    // 완료 화면에서 닫기
     if (step === 'complete') {
       handleComplete();
       return;
@@ -521,17 +477,14 @@ export function AuthSheet() {
     setPasswordConfirm('');
     setShowPassword(false);
     setError('');
-    setProfileName('');
-    setProfilePhone('');
-    setProfileGender('');
-    setProfileBirthDate('');
+    setKmcData(null);
+    setKmcLoading(false);
     setSelectedCategories([]);
     setMarketingAll(false);
     setMarketingKakao(false);
     setMarketingPush(false);
     setMarketingEmail(false);
     setIsSNSOnboarding(false);
-    setSentEmail('');
     try {
       const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
       if (!saved) setEmail('');
@@ -540,32 +493,26 @@ export function AuthSheet() {
     }
   };
 
-  // ── 뒤로가기 핸들러 (이메일 가입 플로우) ──
+  // ── 뒤로가기 ──
   const handleBack = () => {
     setError('');
-    if (step === 'signup') setStep('main');
-    else if (step === 'identity') setStep('signup');
-    else if (step === 'categories' && !isSNSOnboarding) setStep('identity');
+    if (step === 'kmc_verify') setStep('main');
+    else if (step === 'signup') setStep('kmc_verify');
+    else if (step === 'categories' && !isSNSOnboarding) setStep('signup');
     else if (step === 'marketing' && !isSNSOnboarding) setStep('categories');
   };
 
-  // 뒤로가기 가능 여부
-  const canGoBack = !isSNSOnboarding && ['signup', 'identity', 'categories', 'marketing'].includes(step);
+  const canGoBack = !isSNSOnboarding && ['kmc_verify', 'signup', 'categories', 'marketing'].includes(step);
 
-  // 진행률 (이메일 가입용)
-  const progressSteps = ['signup', 'identity', 'categories', 'marketing'];
+  // 진행률
+  const progressSteps = ['kmc_verify', 'signup', 'categories', 'marketing'];
   const currentProgress = progressSteps.indexOf(step);
   const showProgress = !isSNSOnboarding && currentProgress >= 0;
 
   return createPortal(
     <>
-      {/* 오버레이 */}
-      <div
-        className="fixed inset-0 z-[60] bg-black/40"
-        onClick={handleClose}
-      />
+      <div className="fixed inset-0 z-[60] bg-black/40" onClick={handleClose} />
 
-      {/* 바텀시트 (모바일) / 센터 모달 (데스크톱) */}
       <div className="fixed inset-0 z-[61] flex items-end sm:items-center sm:justify-center pb-safe">
         <div className="absolute inset-0" onClick={handleClose} />
 
@@ -586,7 +533,7 @@ export function AuthSheet() {
 
           <div className="px-6 pb-8">
 
-            {/* ✅ 진행률 표시 (이메일 가입 플로우) */}
+            {/* 진행률 표시 */}
             {showProgress && (
               <div className="flex gap-1.5 mb-4">
                 {progressSteps.map((s, i) => (
@@ -614,7 +561,6 @@ export function AuthSheet() {
                   </p>
                 </div>
 
-                {/* SNS 로그인 버튼 */}
                 <div className="space-y-2.5">
                   <button
                     onClick={() => handleSNSLogin('kakao')}
@@ -655,7 +601,7 @@ export function AuthSheet() {
                 </div>
 
                 <button
-                  onClick={() => { setStep('signup'); setError(''); }}
+                  onClick={() => { setStep('kmc_verify'); setError(''); }}
                   className="flex items-center justify-center gap-2 w-full h-12 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <Mail className="w-4 h-4" />
@@ -683,7 +629,80 @@ export function AuthSheet() {
             )}
 
             {/* ═══════════════════════════════════════════
-                STEP: signup — 이메일/비밀번호 입력 (signUp 안 함!)
+                STEP: kmc_verify — 본인인증 (이메일 가입 첫 단계)
+               ═══════════════════════════════════════════ */}
+            {step === 'kmc_verify' && (
+              <>
+                <div className="pt-2 mb-6">
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    뒤로
+                  </button>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Shield className="w-8 h-8 text-blue-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900">본인인증</h2>
+                    <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+                      안전한 서비스 이용을 위해<br />
+                      본인인증이 필요합니다
+                    </p>
+                  </div>
+                </div>
+
+                {kmcData ? (
+                  /* 인증 완료 상태 */
+                  <div className="space-y-3">
+                    <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Check className="w-5 h-5 text-green-600" />
+                        <span className="text-sm font-bold text-green-700">인증 완료</span>
+                      </div>
+                      <p className="text-sm text-green-600">
+                        {kmcData.name}님, 본인인증이 완료되었습니다.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setStep('signup')}
+                      className="w-full h-12 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+                    >
+                      다음
+                    </button>
+                  </div>
+                ) : (
+                  /* 인증 전 상태 */
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-xl">
+                      <p className="text-sm text-gray-600 leading-relaxed">
+                        • 휴대폰 번호로 본인인증을 진행합니다<br />
+                        • 인증 후 이메일과 비밀번호를 설정합니다<br />
+                        • 입력된 정보는 안전하게 보호됩니다
+                      </p>
+                    </div>
+
+                    {error && (
+                      <p className="text-sm text-red-500 text-center">{error}</p>
+                    )}
+
+                    <button
+                      onClick={openKmcVerify}
+                      disabled={kmcLoading}
+                      className="w-full h-12 rounded-xl bg-red-500 text-white font-semibold
+                                 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+                    >
+                      {kmcLoading ? '인증 진행 중...' : '본인인증 하기'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════
+                STEP: signup — 이메일/비밀번호 설정 (KMC 완료 후)
                ═══════════════════════════════════════════ */}
             {step === 'signup' && (
               <>
@@ -695,11 +714,21 @@ export function AuthSheet() {
                     <ChevronLeft className="w-4 h-4" />
                     뒤로
                   </button>
-                  <h2 className="text-xl font-bold text-gray-900">회원가입</h2>
+                  <h2 className="text-xl font-bold text-gray-900">계정 설정</h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    이메일과 비밀번호를 입력해주세요
+                    로그인에 사용할 이메일과 비밀번호를 설정해주세요
                   </p>
                 </div>
+
+                {/* KMC 인증 정보 표시 */}
+                {kmcData && (
+                  <div className="flex items-center gap-2 p-3 bg-green-50 rounded-xl mb-4">
+                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <span className="text-sm text-green-700">
+                      {kmcData.name}님 본인인증 완료
+                    </span>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <div>
@@ -722,7 +751,7 @@ export function AuthSheet() {
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="6자 이상"
+                        placeholder="6자 이상 입력해주세요"
                         className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm pr-12
                                    focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
                       />
@@ -859,133 +888,11 @@ export function AuthSheet() {
                 </button>
 
                 <button
-                  onClick={() => { setStep('signup'); setError(''); }}
+                  onClick={() => { setStep('kmc_verify'); setError(''); }}
                   className="w-full mt-2 py-2 text-sm text-gray-500"
                 >
                   아직 회원이 아니신가요? <span className="font-semibold text-red-500">회원가입</span>
                 </button>
-              </>
-            )}
-
-            {/* ═══════════════════════════════════════════
-                STEP: identity — 회원 정보 입력 (저장 안 함, state만)
-               ═══════════════════════════════════════════ */}
-            {step === 'identity' && (
-              <>
-                <div className="pt-2 mb-5">
-                  {canGoBack && (
-                    <button
-                      onClick={handleBack}
-                      className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                      뒤로
-                    </button>
-                  )}
-                  <div className="text-center">
-                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <User className="w-8 h-8 text-blue-500" />
-                    </div>
-                    <h2 className="text-xl font-bold text-gray-900">회원 정보 입력</h2>
-                    <p className="text-sm text-gray-500 mt-1.5">
-                      맞춤 할인 정보를 위해 기본 정보를 입력해주세요
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      이름 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      placeholder="실명을 입력해주세요"
-                      className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
-                                 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                      autoFocus
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      연락처 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      value={profilePhone}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/[^0-9]/g, '');
-                        if (val.length <= 11) {
-                          if (val.length <= 3) setProfilePhone(val);
-                          else if (val.length <= 7) setProfilePhone(`${val.slice(0, 3)}-${val.slice(3)}`);
-                          else setProfilePhone(`${val.slice(0, 3)}-${val.slice(3, 7)}-${val.slice(7)}`);
-                        }
-                      }}
-                      placeholder="010-0000-0000"
-                      className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
-                                 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      성별 <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex gap-2">
-                      {[{ value: '남성', label: '남성' }, { value: '여성', label: '여성' }].map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setProfileGender(option.value)}
-                          className={`flex-1 h-12 rounded-xl border-2 text-sm font-medium transition-all ${
-                            profileGender === option.value
-                              ? 'border-red-500 bg-red-50 text-red-600'
-                              : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      생년월일 <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={profileBirthDate}
-                      onChange={(e) => setProfileBirthDate(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                      min="1920-01-01"
-                      className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
-                                 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <p className="text-sm text-red-500 text-center mt-3">{error}</p>
-                )}
-
-                <button
-                  onClick={handleProfileNext}
-                  className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
-                             hover:bg-red-600 transition-colors"
-                >
-                  다음
-                </button>
-
-                <p className="text-[11px] text-gray-400 text-center mt-3 leading-relaxed">
-                  입력된 정보는 맞춤형 할인 정보 제공 및 마케팅 활용에 사용됩니다.
-                  <br />
-                  자세한 내용은{' '}
-                  <a href="/legal/privacy" className="underline">개인정보처리방침</a>을 확인해주세요.
-                </p>
               </>
             )}
 
@@ -1140,7 +1047,7 @@ export function AuthSheet() {
                 {isSNSOnboarding && (
                   <button
                     onClick={() => {
-                      showToast('SNS 로그인이 완료되었습니다', 'success');
+                      showToast('로그인이 완료되었습니다', 'success');
                       handleComplete();
                     }}
                     className="w-full mt-2 py-2 text-sm text-gray-400 hover:text-gray-600"
@@ -1148,55 +1055,6 @@ export function AuthSheet() {
                     건너뛰기
                   </button>
                 )}
-              </>
-            )}
-
-            {/* ═══════════════════════════════════════════
-                STEP: email_sent — 인증 메일 발송 완료
-               ═══════════════════════════════════════════ */}
-            {step === 'email_sent' && (
-              <>
-                <div className="pt-8 pb-4 text-center">
-                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <Mail className="w-10 h-10 text-green-500" />
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    인증 메일을 보냈습니다
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
-                    <span className="font-semibold text-gray-700">{sentEmail}</span>
-                    <br />메일함을 확인하고 인증 링크를 클릭해주세요.
-                  </p>
-                  <p className="text-xs text-gray-400 mt-3 leading-relaxed">
-                    메일이 보이지 않으면 스팸 폴더를 확인해주세요.
-                  </p>
-                </div>
-
-                {error && (
-                  <p className={`text-sm text-center mt-2 ${error.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>
-                    {error}
-                  </p>
-                )}
-
-                <button
-                  onClick={() => {
-                    setStep('login');
-                    setPassword('');
-                    setError('');
-                  }}
-                  className="w-full mt-5 h-12 rounded-xl bg-red-500 text-white font-semibold
-                             hover:bg-red-600 transition-colors"
-                >
-                  인증 완료 후 로그인하기
-                </button>
-
-                <button
-                  onClick={handleResendEmail}
-                  disabled={loading}
-                  className="w-full mt-2 py-3 text-sm text-red-500 font-medium hover:text-red-600 transition-colors disabled:text-gray-400"
-                >
-                  {loading ? '발송 중...' : '인증 메일 다시 보내기'}
-                </button>
               </>
             )}
 

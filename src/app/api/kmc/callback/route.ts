@@ -3,7 +3,11 @@
  *
  * POST /api/kmc/callback
  * ← KMC가 인증 완료 후 apiToken + certNum을 form POST로 전송
- * → 토큰 검증 API 호출 → 복호화 → profiles 저장 → 부모 창에 postMessage
+ * → 토큰 검증 API 호출 → 복호화 → CI 중복 체크 → profiles 저장 → postMessage
+ *
+ * 두 가지 시나리오:
+ * 1. SNS 로그인 후 본인인증 → 로그인 상태 → profiles 바로 업데이트
+ * 2. 이메일 가입 중 본인인증 → 비로그인 → 결과만 postMessage로 전달
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -97,7 +101,37 @@ export async function POST(req: NextRequest) {
       phoneNo: data.phoneNo.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
     });
 
-    // ── 5. 로그인된 유저의 profiles 업데이트 ──
+    // ── 5. CI 중복 체크 ──
+    const serviceSb = await createServiceClient();
+    if (data.ci) {
+      const { data: existingUser, error: ciError } = await serviceSb
+        .from('profiles')
+        .select('id')
+        .eq('ci', data.ci)
+        .maybeSingle();
+
+      if (ciError) {
+        console.error('[KMC callback] CI check error:', ciError);
+      }
+
+      // 로그인된 유저 확인
+      let currentUserId: string | null = null;
+      try {
+        const anonSb = await createServerSupabaseClient();
+        const { data: { user } } = await anonSb.auth.getUser();
+        currentUserId = user?.id || null;
+      } catch { /* 비로그인 */ }
+
+      // 이미 다른 유저가 같은 CI로 가입되어 있으면 차단
+      if (existingUser && existingUser.id !== currentUserId) {
+        return returnHtml({
+          success: false,
+          error: '이미 가입된 정보입니다. 기존 계정으로 로그인해주세요.',
+        });
+      }
+    }
+
+    // ── 6. 로그인 상태면 profiles 업데이트 ──
     let profileSaved = false;
     try {
       const anonSb = await createServerSupabaseClient();
@@ -106,14 +140,21 @@ export async function POST(req: NextRequest) {
       } = await anonSb.auth.getUser();
 
       if (user) {
-        const serviceSb = await createServiceClient();
+        // 전화번호 포맷팅
+        const rawPhone = data.phoneNo.replace(/[^0-9]/g, '');
+        const formattedPhone = rawPhone.length === 11
+          ? `${rawPhone.slice(0, 3)}-${rawPhone.slice(3, 7)}-${rawPhone.slice(7)}`
+          : rawPhone;
+
         const { error: updateError } = await serviceSb
           .from('profiles')
           .update({
-            phone: data.phoneNo,
+            phone: formattedPhone,
             name: data.name,
             ci: data.ci,
             di: data.di,
+            gender: data.gender === '0' ? '남성' : data.gender === '1' ? '여성' : '',
+            birth_date: data.birthDay || null,
           })
           .eq('id', user.id);
 
@@ -127,12 +168,16 @@ export async function POST(req: NextRequest) {
       console.error('[KMC callback] Profile save error:', profileErr);
     }
 
-    // ── 6. 부모 창에 결과 전달 (HTML) ──
+    // ── 7. 부모 창에 결과 전달 (HTML) ──
     return returnHtml({
       success: true,
       data: {
         name: data.name,
         phoneNo: data.phoneNo,
+        ci: data.ci,
+        di: data.di,
+        gender: data.gender,
+        birthDay: data.birthDay,
         profileSaved,
       },
     });
@@ -161,7 +206,15 @@ function getTokenErrorMessage(code: string): string {
 function returnHtml(result: {
   success: boolean;
   error?: string;
-  data?: { name: string; phoneNo: string; profileSaved: boolean };
+  data?: {
+    name: string;
+    phoneNo: string;
+    ci: string;
+    di: string;
+    gender: string;
+    birthDay: string;
+    profileSaved: boolean;
+  };
 }) {
   const html = `<!DOCTYPE html>
 <html>
@@ -221,10 +274,14 @@ function returnHtml(result: {
             success: String(result.success),
             name: (result.data && result.data.name) || '',
             phone: (result.data && result.data.phoneNo) || '',
+            ci: (result.data && result.data.ci) || '',
+            di: (result.data && result.data.di) || '',
+            gender: (result.data && result.data.gender) || '',
+            birthDay: (result.data && result.data.birthDay) || '',
             error: result.error || ''
           });
           window.location.href = 'poppon://kmc/callback?' + params.toString();
-          setTimeout(showFallback, 2000); // 딥링크 실패 시 fallback
+          setTimeout(showFallback, 2000);
         } catch (e) {
           showFallback();
         }

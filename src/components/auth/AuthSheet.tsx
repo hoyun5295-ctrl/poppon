@@ -193,29 +193,81 @@ export function AuthSheet() {
 
   // ═══════════════════════════════════════════
   // KMC 본인인증 팝업 열기
+  // KMC 가이드 p.11 샘플 방식:
+  // 1) 빈 팝업 열기
+  // 2) /api/kmc/request에서 tr_cert JSON 수신
+  // 3) 현재 페이지(/auth)에서 hidden form.target=팝업으로 submit
+  // → Referer가 등록된 URL(/auth)과 일치
   // ═══════════════════════════════════════════
-  const openKmcVerify = () => {
+  const openKmcVerify = async () => {
     setKmcLoading(true);
     setError('');
+
+    // 1) 빈 팝업 먼저 열기 (유저 제스처 컨텍스트에서 열어야 차단 안 됨)
     const popup = window.open(
-      '/api/kmc/verify',
-      'kmc_popup',
-      'width=430,height=640,scrollbars=yes,resizable=yes'
+      '',
+      'KMCISWindow',
+      'width=425,height=550,scrollbars=no,resizable=0,status=0,titlebar=0,toolbar=0'
     );
 
-    // 팝업이 닫혔는데 결과 안 온 경우 처리
-    if (popup) {
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          // kmcData가 아직 없으면 취소 처리
-          setKmcLoading(false);
-        }
-      }, 500);
-    } else {
+    if (!popup) {
       setKmcLoading(false);
       setError('팝업이 차단되었습니다. 팝업 차단을 해제해주세요.');
+      return;
     }
+
+    try {
+      // 2) 서버에서 tr_cert 데이터 가져오기
+      const res = await fetch('/api/kmc/request');
+      const data = await res.json();
+
+      if (!data.success || !data.tr_cert) {
+        popup.close();
+        setKmcLoading(false);
+        setError('본인인증 준비에 실패했습니다. 다시 시도해주세요.');
+        return;
+      }
+
+      // 3) 현재 페이지에서 hidden form 생성 → target을 팝업으로 지정하여 submit
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.form_url;
+      form.target = 'KMCISWindow';
+      form.style.display = 'none';
+
+      const fields: Record<string, string> = {
+        tr_cert: data.tr_cert,
+        tr_url: data.tr_url,
+        tr_add: data.tr_add,
+        tr_ver: data.tr_ver,
+      };
+
+      for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      }
+
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+
+    } catch {
+      popup.close();
+      setKmcLoading(false);
+      setError('본인인증 요청 중 오류가 발생했습니다.');
+      return;
+    }
+
+    // 팝업이 닫혔는데 결과 안 온 경우 처리
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        setKmcLoading(false);
+      }
+    }, 500);
   };
 
   // ═══════════════════════════════════════════

@@ -1,17 +1,19 @@
 /**
  * KMC 본인인증 요청 API
  *
- * POST /api/kmc/request
- * → tr_cert 암호화 생성 + 팝업 호출에 필요한 파라미터 반환
+ * GET /api/kmc/request
+ * → tr_cert + tr_url + form_url을 JSON으로 반환
+ * → AuthSheet에서 받아서 현재 페이지(/auth)에서 form submit
+ *   (Referer가 등록된 URL과 일치해야 KMC가 허용)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { encryptTrCert, generateCertNum } from '@/lib/kmc/crypto';
 
 const KMC_CP_ID = 'IVTT1001';
-const KMC_URL_CODE = '003001';
+const KMC_URL_CODE = '003002';
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     const { certNum, date } = generateCertNum();
 
@@ -30,15 +32,17 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
+      success: true,
       tr_cert: trCert,
       tr_url: trUrl,
       tr_add: 'N',
       tr_ver: 'V2',
+      form_url: 'https://www.kmcert.com/kmcis/web/kmcisReq.jsp',
     });
   } catch (error) {
     console.error('[KMC request] error:', error);
     return NextResponse.json(
-      { error: 'KMC 요청 생성 실패' },
+      { success: false, error: 'tr_cert 생성 실패' },
       { status: 500 }
     );
   }

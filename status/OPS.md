@@ -190,7 +190,8 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 ### Next.js / Vercel
 - 한글 slug → decodeURIComponent 필수
 - useSearchParams + Suspense: Next.js 15 필수
-- DealModal 스크롤: `position: fixed` + `top: -scrollY` 패턴
+- **DealModal 스크롤**: `useLayoutEffect`로 paint 전 body 고정 + `handleClose`에서 `router.back()` 전 직접 복원
+- **intercepting route 모달 Link**: 반드시 `scroll={false}` 추가. 없으면 Next.js가 라우팅 시 `scrollTo(0,0)` 실행 → 모달 열릴 때 스크롤 점프 발생
 - 모달 내부 링크 → `<a>` hard navigation
 - Vercel 빌드: `.rpc()` → `.then(() => {}, () => {})`
 
@@ -217,8 +218,8 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 - 회원 목록 `auth.admin.listUsers()` 배치 필수
 - 머천트 PUT: event_page_url/connector_type 필드 분리 (merchants 컬럼 오염 방지)
 - edit 페이지 null 처리: 필드별 타입 맞춤 (배열→[], boolean→false), 일괄 `null→''` 금지
-- 브랜드 수정 후 필터 유지: URL param `?category=xxx`
+- 브랜드 수정 후 필터 유지: URL param `?category=xxx&page=N` (카테고리+페이지 양쪽 보존)
 
 ---
 
-*마지막 업데이트: 2026-02-25 (createServiceClient await 주의사항 추가)*
+*마지막 업데이트: 2026-02-25 (DealModal useLayoutEffect+scroll={false}, 어드민 페이지 유지)*

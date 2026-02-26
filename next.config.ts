@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+    outputFileTracingIncludes: {
+      '/api/kmc/*': ['./bin/KmcCrypto'],
+    },
   },
 };
 

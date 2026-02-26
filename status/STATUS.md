@@ -54,6 +54,9 @@
 5. **가정 관리(ASSUMPTION LEDGER)**
    불확실한 정보는 "사실"로 말하지 말고, **가정 목록에 등록** 한 뒤 확인 질문을 남긴다.
 
+6. **버그 수정 시 증상이 아닌 전체 흐름(트리거→라우팅→렌더→effect)을 먼저 추적한다.**
+   효과(effect) 내부만 고치지 말고, **트리거 지점부터 역추적**하여 근본 원인을 찾는다.
+
 ---
 
 ## 3) 표준 작업 흐름(Workflow)
@@ -145,9 +148,21 @@
 - [ ] 웹 + 앱 양쪽에서 KMC 인증 플로우 동작 확인
 - [ ] 푸시 알림 EAS 개발 빌드 e2e 테스트 (기존 미완료)
 
+**KMC SDK 분석 완료 (2/25):**
+- **cpId**: `IVTT1001` (파일명 기준, 직원 확인 필요)
+- **urlCode**: KMC 관리자페이지에서 서비스 URL 등록 후 발급 필요 (미확인)
+- **KMC 관리자페이지**: www.kmcert.com 고객사 전용 (로그인 정보 직원 확인 필요)
+- **암호화 모듈**: `KmcCrypto` Linux ELF 64-bit 바이너리 (child_process.spawn → stdin/stdout 통신)
+- **인증 플로우**: Step1(요청정보 입력) → Step2(2중 암호화 → KMC 팝업) → Step3(apiToken 수신) → Step4(API 토큰 검증 → 복호화 → 결과)
+- **KMC API 엔드포인트**: `https://www.kmcert.com/kmcis/web/kmcisReq.jsp` (인증 팝업), `https://www.kmcert.com/kmcis/api/kmcisToken_api.jsp` (토큰 검증)
+- **인증 결과 필드**: certNum, date, CI(88byte), phoneNo, phoneCorp, birth, gender, nation, name, result, certMet, ip, plusInfo, DI(64byte)
+- **⚠️ Vercel 이슈**: KmcCrypto는 상주 프로세스 방식 → Serverless에서는 요청 단위 spawn/kill 패턴 변환 필요
+- **의존성**: axios, iconv-lite (EUC-KR 인코딩 처리)
+
 **참조:**
 - KMC 기존 계약: 월 55,000원
 - profiles 컬럼: phone, name, ci, di 이미 존재 (SCHEMA.md 확인)
+- KMC SDK 파일: `_주_인비토_IVTT1001.zip` (Linux/Windows NodeJS 샘플 + 바이너리 + 가이드 PDF)
 
 ---
 
@@ -205,8 +220,8 @@
 - **Phase M3**: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
 
 #### 🔄 진행 중
-- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + 애플 DUNS 대기 + 심사 준비
-- **Phase M4+**: KMC 휴대폰 본인인증 연동 + 이메일 가입 제거 🚧
+- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + **DUNS 도착(2/25)** + 심사 준비
+- **Phase M4+**: KMC 휴대폰 본인인증 연동 + 이메일 가입 제거 — **SDK 수신 완료, cpId/urlCode 확인 후 착수** 🚧
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -216,11 +231,11 @@
 ### 6-5. 미해결 / 진행 예정
 
 #### 즉시 (Phase M4+ 작업)
-- 🚧 **KMC 휴대폰 본인인증 연동** (기존 계약 월 55,000원, API 연동 필요)
+- 🚧 **KMC 휴대폰 본인인증 연동** — SDK 수신 완료(2/25), cpId/PW/urlCode 직원 확인 후 착수
 - 🚧 **이메일 가입 플로우 제거** (웹 AuthSheet + 앱 email.tsx)
 - 🚧 **Supabase email confirmation OFF** (이메일 인증 메일 비활성화)
 - ⚠️ 푸시 알림 EAS 개발 빌드 후 end-to-end 테스트 필수 (토큰 발급 → 실제 수신 확인)
-- 🍎 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
+- 🍎 애플 로그인 — **DUNS 번호 도착 (2/25)** → Apple Developer $99 등록 → Supabase Apple Provider
 
 #### 단기 (Phase 2 + Phase M5)
 - **웹**: 도메인 연결, 링크프라이스 제휴 API, 카카오 알림톡
@@ -470,26 +485,30 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 ## 10) ASSUMPTION LEDGER (가정 목록)
 - ~~A1: event_page_url이 merchants 테이블 컬럼이다~~ → **거짓 확인 (2/22). 커넥터 자동 생성 트리거용 필드일 뿐, merchants 컬럼 아님.**
-- A2: KMC API 업체코드 + 암호화 키 발급 완료 상태인지 미확인 → **다음 세션에서 주인님 확인 필요**
+- ~~A2: KMC API 업체코드 + 암호화 키 발급 완료 상태인지 미확인~~ → **SDK 수신 확인 (2/25). cpId=IVTT1001, KmcCrypto 바이너리 포함.**
+- A3: KMC 관리자페이지 로그인 정보(cpId/PW) — **직원 확인 필요 (2/26 예정)**
+- A4: KMC urlCode 등록 여부 — **관리자페이지에서 서비스 URL 등록 후 발급 필요. 미확인.**
+- A5: KmcCrypto 바이너리가 Vercel Serverless(Amazon Linux) 환경에서 정상 실행되는지 — **테스트 필요**
 
 ---
 
 ## 11) RISK REGISTER (리스크 목록)
 | ID | 리스크 | 확률 | 영향 | 점수 | 대응 |
 |----|--------|------|------|------|------|
-| R1 | DUNS 번호 지연으로 애플 로그인/앱스토어 일정 지연 | 3 | 4 | 12 | 웹+Android 우선 출시 |
+| ~~R1~~ | ~~DUNS 번호 지연~~ | - | - | - | **해소 (2/25 DUNS 도착)** → Apple Developer 등록 진행 가능 |
 | R2 | EAS 빌드 후 푸시 알림 미작동 | 2 | 3 | 6 | 개발 빌드 e2e 테스트 필수 |
 | R3 | KMC 연동 시 팝업 차단/웹뷰 호환 이슈 | 2 | 3 | 6 | 웹+앱 별도 플로우 설계 |
+| R4 | KmcCrypto 바이너리 Vercel Serverless 호환 | 3 | 4 | 12 | 바이너리 실행 권한+라이브러리 의존성 테스트, 실패 시 별도 서버 또는 Edge 우회 |
+| R5 | KMC urlCode 미등록 시 개발 착수 불가 | 2 | 4 | 8 | 직원 통해 관리자페이지 접속 → URL 등록 → urlCode 확보 |
 
 ---
 
 ## 12) DONE LOG (완료 기록)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동.
-> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링 → `ARCHIVE.md` 참조
+> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링, 2/21 푸시알림+platform → `ARCHIVE.md` 참조
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
-| 2/21 | 푸시알림+platform | 앱+DB | 앱 푸시 인프라 완료 + platform 컬럼 | AuthProvider v10 |
 | 2/21 | SaveButton+FollowButton | 앱 | 딜상세·브랜드관에 저장/구독 버튼 연결 | — |
 | 2/21 | 푸시 발송 시스템 | 어드민 | Step 1~4 전체 완료 | save-deals v2.4, e2e 테스트 필수 |
 | 2/21 | 제보화면+naver_brand | 앱+어드민 | 제보화면 포팅 + ai-engine v5.1 | 인라인 style 패턴, 제목+혜택 조합 판단 |
@@ -499,7 +518,9 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 2/24 | 커스텀 스플래시 | 앱 | 다크 테마 + 팝콘 파티클 + DB 실시간 숫자 + _layout 통합 | "팝콘처럼 터지는 쿠폰" 브랜드 컨셉 반영 |
 | 2/24 | 이메일인증+어드민로고 | 웹+앱+어드민 | 어드민 로고 적용 + 앱 로고 교체 + 이메일 가입/인증 플로우(웹+앱) | RLS 때문에 미인증 상태에서 profiles 업데이트 불가 → localStorage 임시 저장 패턴 |
 | 2/25 | 제보버그+인증전략 | DB+기획 | submissions.user_id nullable 수정 + 인증 전략 전환 결정(이메일→KMC) | 가입 허들 최소화, 인증은 KMC 한방으로 |
+| 2/25 | 버그수정 2건 | 웹+어드민 | 어드민 브랜드 수정 후 페이지 유지 + 웹 딜 모달 스크롤 점프 근본 수정 | **버그 수정 시 effect 내부가 아닌 트리거 지점(Link scroll)부터 역추적** |
+| 2/25 | KMC SDK 분석 | 기획 | KMC SDK 수신+분석 완료(IVTT1001) + DUNS 도착 확인 | KmcCrypto=네이티브 바이너리(spawn), Vercel Serverless 호환 테스트 필수, urlCode 사전 등록 필요 |
 
 ---
 
-*마지막 업데이트: 2026-02-25 (인증 전략 전환: 이메일 가입 제거 + KMC 본인인증 연동 결정)*
+*마지막 업데이트: 2026-02-25 (KMC SDK 분석 완료 + DUNS 도착, cpId/urlCode 직원 확인 대기)*

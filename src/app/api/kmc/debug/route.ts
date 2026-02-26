@@ -1,56 +1,63 @@
 /**
- * KMC 디버그 v3 - cwd + stderr + exit code 집중 분석
+ * KMC 디버그 v4 - GCONV_PATH 수정 검증
  * GET /api/kmc/debug
  */
 
 import { NextResponse } from 'next/server';
 import { spawn } from 'child_process';
-import { copyFileSync, chmodSync, existsSync, statSync, readdirSync } from 'fs';
+import { copyFileSync, chmodSync, existsSync, statSync, mkdirSync, readdirSync } from 'fs';
 import path from 'path';
 
-const TMP_PATH = '/tmp/KmcCrypto';
-const SRC_DIR = path.join(process.cwd(), 'bin');
-const SRC_PATH = path.join(SRC_DIR, 'KmcCrypto');
+const TMP_BIN = '/tmp/KmcCrypto';
+const TMP_GCONV = '/tmp/gconv';
 
-function ensureBin() {
-  if (!existsSync(TMP_PATH)) {
-    copyFileSync(SRC_PATH, TMP_PATH);
-    chmodSync(TMP_PATH, 0o755);
+function ensureFiles() {
+  // 바이너리
+  if (!existsSync(TMP_BIN)) {
+    const src = path.join(process.cwd(), 'bin', 'KmcCrypto');
+    copyFileSync(src, TMP_BIN);
+    chmodSync(TMP_BIN, 0o755);
+  }
+
+  // gconv 모듈
+  if (!existsSync(TMP_GCONV)) {
+    mkdirSync(TMP_GCONV, { recursive: true });
+    const gconvSrc = path.join(process.cwd(), 'bin', 'gconv');
+    for (const file of ['EUC-KR.so', 'gconv-modules']) {
+      const s = path.join(gconvSrc, file);
+      const d = path.join(TMP_GCONV, file);
+      if (existsSync(s)) copyFileSync(s, d);
+    }
   }
 }
 
 function runBinary(
-  binPath: string,
   mode: string,
   input: string,
-  cwd?: string
+  env?: Record<string, string>
 ): Promise<{ code: number | null; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
-    const opts: { cwd?: string } = {};
-    if (cwd) opts.cwd = cwd;
+    const proc = spawn(TMP_BIN, [], {
+      env: { ...process.env, ...env },
+    });
 
-    const proc = spawn(binPath, [], opts);
-    const outChunks: Buffer[] = [];
-    const errChunks: Buffer[] = [];
+    const out: Buffer[] = [];
+    const err: Buffer[] = [];
 
     const timer = setTimeout(() => {
       proc.kill('SIGKILL');
-      resolve({
-        code: -999,
-        stdout: Buffer.concat(outChunks).toString('utf-8').trim(),
-        stderr: 'TIMEOUT (5s)',
-      });
+      resolve({ code: -999, stdout: Buffer.concat(out).toString('utf-8').trim(), stderr: 'TIMEOUT' });
     }, 5000);
 
-    proc.stdout.on('data', (c: Buffer) => outChunks.push(c));
-    proc.stderr.on('data', (c: Buffer) => errChunks.push(c));
+    proc.stdout.on('data', (c: Buffer) => out.push(c));
+    proc.stderr.on('data', (c: Buffer) => err.push(c));
 
     proc.on('close', (code) => {
       clearTimeout(timer);
       resolve({
         code,
-        stdout: Buffer.concat(outChunks).toString('utf-8').trim(),
-        stderr: Buffer.concat(errChunks).toString('utf-8').trim(),
+        stdout: Buffer.concat(out).toString('utf-8').trim(),
+        stderr: Buffer.concat(err).toString('utf-8').trim(),
       });
     });
 
@@ -64,58 +71,54 @@ function runBinary(
 }
 
 export async function GET() {
-  ensureBin();
+  ensureFiles();
 
-  const testInput =
-    'IVTT1001/003001/20260226120000123456/20260226120000////////0000000000000000';
-
+  const testInput = 'IVTT1001/003001/20260226120000123456/20260226120000////////0000000000000000';
   const results: Record<string, unknown> = {};
 
-  // 1. 바이너리 정보
-  results['binary_size'] = statSync(TMP_PATH).size;
-  results['src_dir'] = SRC_DIR;
-  results['src_dir_files'] = (() => {
-    try { return readdirSync(SRC_DIR); } catch { return 'READ_ERROR'; }
+  // 1. 파일 확인
+  results['binary_size'] = statSync(TMP_BIN).size;
+  results['gconv_files'] = (() => {
+    try { return readdirSync(TMP_GCONV); } catch { return 'MISSING'; }
   })();
-  results['tmp_dir_files'] = (() => {
-    try { return readdirSync('/tmp').filter(f => f.includes('Kmc') || f.includes('kmc')); } catch { return 'READ_ERROR'; }
+  results['gconv_euckr_size'] = (() => {
+    try { return statSync(path.join(TMP_GCONV, 'EUC-KR.so')).size; } catch { return 'MISSING'; }
   })();
 
-  // 2. cwd 없이 (현재 방식)
-  results['no_cwd'] = await runBinary(TMP_PATH, 'enc', testInput);
+  // 2. GCONV_PATH 없이 (현재 실패하는 방식)
+  results['enc_without_gconv'] = await runBinary('enc', testInput);
 
-  // 3. cwd = /tmp (바이너리 위치)
-  results['cwd_tmp'] = await runBinary(TMP_PATH, 'enc', testInput, '/tmp');
+  // 3. GCONV_PATH=/tmp/gconv 설정 (수정된 방식)
+  results['enc_with_gconv'] = await runBinary('enc', testInput, { GCONV_PATH: TMP_GCONV });
 
-  // 4. cwd = bin 폴더 (원본 위치)
-  results['cwd_bin'] = await runBinary(TMP_PATH, 'enc', testInput, SRC_DIR);
+  // 4. msg 테스트 (비교용)
+  results['msg_test'] = await runBinary('msg', testInput, { GCONV_PATH: TMP_GCONV });
 
-  // 5. 원본 경로에서 직접 실행 + cwd = bin
+  // 5. 전체 tr_cert 플로우 테스트
   try {
-    chmodSync(SRC_PATH, 0o755);
-    results['src_cwd_bin'] = await runBinary(SRC_PATH, 'enc', testInput, SRC_DIR);
+    const enc1 = await runBinary('enc', testInput, { GCONV_PATH: TMP_GCONV });
+    const enc1Result = enc1.stdout.split(':').slice(1).join(':');
+
+    if (enc1Result && !enc1Result.includes('ERROR')) {
+      const msgResult = await runBinary('msg', enc1Result, { GCONV_PATH: TMP_GCONV });
+      const msgHash = msgResult.stdout.split(':').slice(1).join(':');
+
+      const enc2Input = `${enc1Result}/${msgHash}/0000000000000000`;
+      const enc2 = await runBinary('enc', enc2Input, { GCONV_PATH: TMP_GCONV });
+      const trCert = enc2.stdout.split(':').slice(1).join(':');
+
+      results['full_flow'] = {
+        enc1: enc1Result.substring(0, 30) + '...',
+        msg: msgHash.substring(0, 30) + '...',
+        trCert: trCert.substring(0, 30) + '...',
+        success: trCert.startsWith('KMC'),
+      };
+    } else {
+      results['full_flow'] = { error: enc1Result };
+    }
   } catch (e: unknown) {
-    results['src_cwd_bin'] = `ERROR: ${e instanceof Error ? e.message : String(e)}`;
+    results['full_flow'] = { error: e instanceof Error ? e.message : String(e) };
   }
-
-  // 6. msg 테스트 (비교용 - 이건 항상 성공)
-  results['msg_test'] = await runBinary(TMP_PATH, 'msg', testInput);
-
-  // 7. stdin hex dump 확인
-  const cmd = `enc:0^*${testInput}\n`;
-  results['stdin_hex_first20'] = Buffer.from(cmd, 'utf-8')
-    .slice(0, 40)
-    .toString('hex');
-  results['stdin_hex_last10'] = Buffer.from(cmd, 'utf-8')
-    .slice(-20)
-    .toString('hex');
-  results['stdin_length'] = cmd.length;
-
-  // 8. 환경 정보
-  results['platform'] = process.platform;
-  results['arch'] = process.arch;
-  results['node'] = process.version;
-  results['cwd'] = process.cwd();
 
   return NextResponse.json(results, { status: 200 });
 }

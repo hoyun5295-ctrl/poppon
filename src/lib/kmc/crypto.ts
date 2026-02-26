@@ -1,155 +1,131 @@
 /**
- * KMC 본인확인서비스 암호화 모듈 래퍼
+ * KMC 암호화 모듈 래퍼 (Vercel Lambda 호환)
  *
- * KmcCrypto 바이너리를 child_process.spawn으로 호출하여
- * 암호화(enc), 복호화(dec), 위변조 해시(msg) 처리
- *
- * 프로토콜: stdin → "mode:id^*input\n" / stdout → "id:result\n"
+ * KmcCrypto 바이너리는 내부적으로 iconv_open("EUC-KR")을 호출함.
+ * Vercel Lambda(Amazon Linux 2)에는 gconv 모듈이 없어서
+ * GCONV_PATH 환경변수로 번들된 EUC-KR.so를 가리켜야 함.
  */
 
 import { spawn } from 'child_process';
-import { copyFileSync, chmodSync, existsSync, statSync } from 'fs';
+import { copyFileSync, chmodSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import * as iconv from 'iconv-lite';
 
-// iconv-lite 동적 로드 (dec에서만 필요)
-let iconvDecode: ((buffer: Buffer, encoding: string) => string) | null = null;
-async function getIconvDecode() {
-  if (!iconvDecode) {
-    try {
-      const iconv = await import('iconv-lite');
-      iconvDecode = iconv.default?.decode || iconv.decode;
-    } catch (e) {
-      console.error('[KMC] iconv-lite 로드 실패:', e);
+const BIN_NAME = 'KmcCrypto';
+const TMP_BIN = `/tmp/${BIN_NAME}`;
+const TMP_GCONV = '/tmp/gconv';
+
+/** 바이너리 + gconv 모듈을 /tmp에 복사 */
+function ensureBinary(): void {
+  // 바이너리 복사
+  if (!existsSync(TMP_BIN)) {
+    const src = path.join(process.cwd(), 'bin', BIN_NAME);
+    copyFileSync(src, TMP_BIN);
+    chmodSync(TMP_BIN, 0o755);
+  }
+
+  // gconv 모듈 복사 (EUC-KR.so + gconv-modules)
+  if (!existsSync(TMP_GCONV)) {
+    mkdirSync(TMP_GCONV, { recursive: true });
+    const gconvSrc = path.join(process.cwd(), 'bin', 'gconv');
+    for (const file of ['EUC-KR.so', 'gconv-modules']) {
+      const srcFile = path.join(gconvSrc, file);
+      const dstFile = path.join(TMP_GCONV, file);
+      if (existsSync(srcFile) && !existsSync(dstFile)) {
+        copyFileSync(srcFile, dstFile);
+      }
     }
   }
-  return iconvDecode;
 }
 
-// ─── 바이너리 경로 ───
-const TMP_PATH = '/tmp/KmcCrypto';
-let binaryReady = false;
-
-function ensureBinary(): string {
-  if (!binaryReady || !existsSync(TMP_PATH)) {
-    const srcPath = path.join(process.cwd(), 'bin', 'KmcCrypto');
-    if (!existsSync(srcPath)) {
-      throw new Error(`KmcCrypto binary not found at ${srcPath}`);
-    }
-    copyFileSync(srcPath, TMP_PATH);
-    chmodSync(TMP_PATH, 0o755);
-    binaryReady = true;
-    const srcSize = statSync(srcPath).size;
-    const tmpSize = statSync(TMP_PATH).size;
-    console.log(`[KMC] Binary size: src=${srcSize}, tmp=${tmpSize} (expect 39080)`);
-  }
-  return TMP_PATH;
-}
-
-// ─── 바이너리 실행 (per-request spawn) ───
-export async function kmcExec(
-  mode: 'enc' | 'dec' | 'msg',
-  input: string
-): Promise<string> {
+/**
+ * KmcCrypto 바이너리 실행
+ * 프로토콜: stdin에 "mode:id^*input\n" → stdout에 "id:result\n"
+ */
+function execBinary(mode: string, input: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const binPath = ensureBinary();
-    const proc = spawn(binPath);
+    ensureBinary();
+
+    const proc = spawn(TMP_BIN, [], {
+      env: {
+        ...process.env,
+        GCONV_PATH: TMP_GCONV,  // ← 핵심: EUC-KR 인코딩 모듈 경로
+      },
+    });
+
     const chunks: Buffer[] = [];
+    const errChunks: Buffer[] = [];
 
     const timer = setTimeout(() => {
       proc.kill('SIGKILL');
-      reject(new Error(`KmcCrypto timeout (mode=${mode})`));
-    }, 10_000);
+      reject(new Error(`KMC ${mode} timeout (5s)`));
+    }, 5000);
 
-    proc.stdout.on('data', (chunk: Buffer) => {
-      chunks.push(chunk);
-    });
+    proc.stdout.on('data', (c: Buffer) => chunks.push(c));
+    proc.stderr.on('data', (c: Buffer) => errChunks.push(c));
 
-    proc.stderr.on('data', (data: Buffer) => {
-      console.error('[KmcCrypto stderr]', data.toString('utf-8'));
-    });
-
-    proc.on('close', async (code) => {
+    proc.on('close', (code) => {
       clearTimeout(timer);
 
-      const rawBuffer = Buffer.concat(chunks);
+      const raw = Buffer.concat(chunks);
+      const stderr = Buffer.concat(errChunks).toString('utf-8').trim();
 
-      console.log(`[KMC exec] mode=${mode}, raw_len=${rawBuffer.length}, raw_utf8=${rawBuffer.toString('utf-8').substring(0, 80)}`);
-
-      if (rawBuffer.length === 0) {
-        return reject(new Error(`KmcCrypto empty response (mode=${mode}, code=${code})`));
+      if (stderr) {
+        console.error(`[KMC] stderr (${mode}):`, stderr);
       }
 
-      // "id:" 구분자 찾기 (바이트 레벨)
-      const colonIdx = rawBuffer.indexOf(0x3a); // ':'
-      if (colonIdx < 0) {
-        return reject(new Error(`Invalid KmcCrypto response (no colon): ${rawBuffer.toString('utf-8').substring(0, 50)}`));
+      // dec 모드: EUC-KR → UTF-8 디코딩 필요
+      // enc/msg 모드: ASCII 결과 → UTF-8로 충분
+      const output = mode === 'dec'
+        ? iconv.decode(raw, 'euc-kr').trim()
+        : raw.toString('utf-8').trim();
+
+      // 결과 형식: "id:result"
+      const colonIdx = output.indexOf(':');
+      if (colonIdx === -1) {
+        reject(new Error(`KMC ${mode} invalid output: ${output.substring(0, 50)}`));
+        return;
       }
 
-      // result 부분 추출 (colon 다음부터)
-      let resultBuffer = rawBuffer.slice(colonIdx + 1);
+      const result = output.substring(colonIdx + 1);
 
-      // 줄바꿈 제거
-      let endPos = resultBuffer.indexOf(0x0a);
-      if (endPos >= 0) resultBuffer = resultBuffer.slice(0, endPos);
-      if (resultBuffer.length > 0 && resultBuffer[resultBuffer.length - 1] === 0x0d) {
-        resultBuffer = resultBuffer.slice(0, -1);
-      }
-
-      let result: string;
-
-      if (mode === 'dec') {
-        // dec: 한글(EUC-KR) 포함 가능 → iconv 디코딩
-        try {
-          const decode = await getIconvDecode();
-          if (decode) {
-            result = decode(resultBuffer, 'euc-kr');
-          } else {
-            result = resultBuffer.toString('utf-8');
-          }
-        } catch (e) {
-          console.error('[KMC] iconv decode error, fallback utf-8:', e);
-          result = resultBuffer.toString('utf-8');
-        }
-      } else {
-        // enc/msg: ASCII(hex) 결과 → utf-8으로 충분
-        result = resultBuffer.toString('utf-8');
-      }
-
-      if (result.startsWith('ERR')) {
-        return reject(new Error(`KmcCrypto error: ${result}`));
+      if (!result || result === 'ENCODING_ERROR' || result.startsWith('ERR')) {
+        reject(new Error(`KMC ${mode} error: ${result} (code=${code})`));
+        return;
       }
 
       resolve(result);
     });
 
-    proc.on('error', (err) => {
+    proc.on('error', (e) => {
       clearTimeout(timer);
-      reject(new Error(`KmcCrypto spawn error: ${err.message}`));
+      reject(new Error(`KMC spawn error: ${e.message}`));
     });
 
     // 프로토콜: "mode:id^*input\n"
-    const cmd = `${mode}:0^*${input}\n`;
-    console.log(`[KMC exec] mode=${mode}, input_len=${input.length}, cmd_len=${cmd.length}`);
-    proc.stdin.write(cmd);
-    proc.stdin.end();
+    proc.stdin.end(`${mode}:0^*${input}\n`);
   });
 }
 
-// ─── KST 날짜 생성 (YYYYMMDDHHmmss) ───
-export function getKstDateString(): string {
-  const now = new Date();
-  now.setHours(now.getHours() + 9); // UTC → KST
-  return now.toISOString().replace(/[-T:\.Z]/g, '').slice(0, 14);
+/** 암호화 */
+export function encrypt(plainText: string): Promise<string> {
+  return execBinary('enc', plainText);
 }
 
-// ─── 요청번호 생성 ───
-export function generateCertNum(): { certNum: string; date: string } {
-  const date = getKstDateString();
-  const random = Math.floor(100000 + Math.random() * 900000);
-  return { certNum: date + random, date };
+/** 복호화 */
+export function decrypt(cipherText: string): Promise<string> {
+  return execBinary('dec', cipherText);
 }
 
-// ─── tr_cert 암호화 (서비스 호출용) ───
+/** 해시 (위변조 검증용) */
+export function hash(input: string): Promise<string> {
+  return execBinary('msg', input);
+}
+
+/**
+ * tr_cert 생성 (KMC 인증 요청용)
+ * 개발가이드 p.5 참조
+ */
 export async function encryptTrCert(params: {
   cpId: string;
   urlCode: string;
@@ -157,81 +133,84 @@ export async function encryptTrCert(params: {
   date: string;
   certMet?: string;
   plusInfo?: string;
+  extendVar?: string;
 }): Promise<string> {
-  const { cpId, urlCode, certNum, date, certMet = '', plusInfo = '' } = params;
-  const extendVar = '0000000000000000';
+  const {
+    cpId,
+    urlCode,
+    certNum,
+    date,
+    certMet = '',
+    plusInfo = '',
+    extendVar = '0000000000000000',
+  } = params;
 
+  // 1차 암호화 대상 문자열 (개발가이드 형식)
   const plainText = `${cpId}/${urlCode}/${certNum}/${date}/${certMet}///////${plusInfo}/${extendVar}`;
 
-  console.log('[KMC] Encrypting, plaintext length:', plainText.length);
+  console.log(`[KMC] plainText length=${plainText.length}`);
 
   // 1차 암호화
-  const tmpEnc = await kmcExec('enc', plainText);
-  console.log('[KMC] 1차 enc:', tmpEnc.substring(0, 30) + '...');
+  const tmpEnc = await encrypt(plainText);
+  console.log(`[KMC] 1차 enc 성공: ${tmpEnc.substring(0, 20)}...`);
 
-  // 위변조 검증값 생성
-  const tmpMsg = await kmcExec('msg', tmpEnc);
-  console.log('[KMC] msg hash:', tmpMsg.substring(0, 30) + '...');
+  // 위변조 해시
+  const tmpMsg = await hash(tmpEnc);
+  console.log(`[KMC] msg hash: ${tmpMsg.substring(0, 20)}...`);
 
-  // 2차 암호화
-  const trCert = await kmcExec('enc', `${tmpEnc}/${tmpMsg}/${extendVar}`);
-  console.log('[KMC] tr_cert:', trCert.substring(0, 30) + '...');
+  // 2차 암호화 (최종 tr_cert)
+  const trCert = await encrypt(`${tmpEnc}/${tmpMsg}/${extendVar}`);
+  console.log(`[KMC] 2차 enc 성공: ${trCert.substring(0, 20)}...`);
 
   return trCert;
 }
 
-// ─── rec_cert 복호화 (결과 수신용) ───
-export interface KmcVerifyResult {
+/**
+ * rec_cert 복호화 (KMC 인증 결과 수신용)
+ * 개발가이드 p.6 참조
+ */
+export async function decryptRecCert(apiRecCert: string): Promise<{
   certNum: string;
   date: string;
   ci: string;
   phoneNo: string;
-  phoneCorp: string;
-  birthDay: string;
+  name: string;
+  birthday: string;
   gender: string;
   nation: string;
-  name: string;
-  result: string;
-  certMet: string;
-  ip: string;
-  plusInfo: string;
+  carrier: string;
   di: string;
-}
+  result: string;
+}> {
+  // 1차 복호화
+  const tmpDec1 = await decrypt(apiRecCert);
+  const [tmpDec2, tmpMsg1] = tmpDec1.split('/');
 
-export async function decryptRecCert(apiRecCert: string): Promise<KmcVerifyResult> {
-  const tmpDec1 = await kmcExec('dec', apiRecCert);
-
-  const inf1 = tmpDec1.indexOf('/', 0);
-  const inf2 = tmpDec1.indexOf('/', inf1 + 1);
-
-  const tmpDec2 = tmpDec1.substring(0, inf1);
-  const tmpMsg1 = tmpDec1.substring(inf1 + 1, inf2);
-
-  const tmpMsg2 = await kmcExec('msg', tmpDec2);
+  // 위변조 검증
+  const tmpMsg2 = await hash(tmpDec2);
   if (tmpMsg1 !== tmpMsg2) {
-    throw new Error('KMC 위변조 검증 실패 (해시 불일치)');
+    throw new Error('KMC 위변조 검증 실패');
   }
 
-  const recCert = await kmcExec('dec', tmpDec2);
-  const arr = recCert.split('/');
+  // 2차 복호화
+  const recCert = await decrypt(tmpDec2);
+  const fields = recCert.split('/');
 
-  const ci = arr[2] ? await kmcExec('dec', arr[2]) : '';
-  const di = arr[17] ? await kmcExec('dec', arr[17]) : '';
+  // CI/DI 추가 복호화
+  const ci = await decrypt(fields[2] || '');
+  const di = await decrypt(fields[17] || '');
 
   return {
-    certNum: arr[0] || '',
-    date: arr[1] || '',
+    certNum: fields[0] || '',
+    date: fields[1] || '',
     ci,
-    phoneNo: arr[3] || '',
-    phoneCorp: arr[4] || '',
-    birthDay: arr[5] || '',
-    gender: arr[6] || '',
-    nation: arr[7] || '',
-    name: arr[8] || '',
-    result: arr[9] || '',
-    certMet: arr[10] || '',
-    ip: arr[11] || '',
-    plusInfo: arr[16] || '',
+    phoneNo: fields[3] || '',
+    name: fields[4] || '',
+    birthday: fields[5] || '',
+    gender: fields[6] || '',
+    nation: fields[7] || '',
+    carrier: fields[8] || '',
     di,
+    result: fields[16] || '',
   };
 }

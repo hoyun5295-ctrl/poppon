@@ -16,9 +16,9 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   // Powered by 헤더 제거
   poweredByHeader: false,
-  // KmcCrypto 바이너리를 서버리스 함수에 포함
+  // KmcCrypto 바이너리 + gconv 모듈을 서버리스 함수에 포함
   outputFileTracingIncludes: {
-    '/api/kmc/*': ['./bin/KmcCrypto'],
+    '/api/kmc/*': ['./bin/KmcCrypto', './bin/gconv/**/*'],
   },
   // 실험적 기능
   experimental: {

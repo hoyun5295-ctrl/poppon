@@ -2,39 +2,32 @@
  * KMC 암호화 모듈 래퍼 (Vercel Lambda 호환)
  *
  * KmcCrypto 바이너리는 내부적으로 iconv_open("EUC-KR")을 호출함.
- * Vercel Lambda(Amazon Linux 2)에는 gconv 모듈이 없어서
- * GCONV_PATH 환경변수로 번들된 EUC-KR.so를 가리켜야 함.
+ * Vercel Lambda에 gconv 모듈이 없으므로 LD_PRELOAD로
+ * iconv를 통째로 가로채는 shim .so를 주입하여 해결.
  */
 
 import { spawn } from 'child_process';
-import { copyFileSync, chmodSync, existsSync, mkdirSync } from 'fs';
+import { copyFileSync, chmodSync, existsSync } from 'fs';
 import path from 'path';
 import * as iconv from 'iconv-lite';
 
 const BIN_NAME = 'KmcCrypto';
+const SHIM_NAME = 'iconv_shim.so';
 const TMP_BIN = `/tmp/${BIN_NAME}`;
-const TMP_GCONV = '/tmp/gconv';
+const TMP_SHIM = `/tmp/${SHIM_NAME}`;
 
-/** 바이너리 + gconv 모듈을 /tmp에 복사 */
+/** 바이너리 + shim을 /tmp에 복사 */
 function ensureBinary(): void {
-  // 바이너리 복사
+  const binDir = path.join(process.cwd(), 'bin');
+
   if (!existsSync(TMP_BIN)) {
-    const src = path.join(process.cwd(), 'bin', BIN_NAME);
-    copyFileSync(src, TMP_BIN);
+    copyFileSync(path.join(binDir, BIN_NAME), TMP_BIN);
     chmodSync(TMP_BIN, 0o755);
   }
 
-  // gconv 모듈 복사 (EUC-KR.so + gconv-modules)
-  if (!existsSync(TMP_GCONV)) {
-    mkdirSync(TMP_GCONV, { recursive: true });
-    const gconvSrc = path.join(process.cwd(), 'bin', 'gconv');
-    for (const file of ['EUC-KR.so', 'gconv-modules']) {
-      const srcFile = path.join(gconvSrc, file);
-      const dstFile = path.join(TMP_GCONV, file);
-      if (existsSync(srcFile) && !existsSync(dstFile)) {
-        copyFileSync(srcFile, dstFile);
-      }
-    }
+  if (!existsSync(TMP_SHIM)) {
+    copyFileSync(path.join(binDir, SHIM_NAME), TMP_SHIM);
+    chmodSync(TMP_SHIM, 0o755);
   }
 }
 
@@ -49,7 +42,7 @@ function execBinary(mode: string, input: string): Promise<string> {
     const proc = spawn(TMP_BIN, [], {
       env: {
         ...process.env,
-        GCONV_PATH: TMP_GCONV,  // ← 핵심: EUC-KR 인코딩 모듈 경로
+        LD_PRELOAD: TMP_SHIM,  // ← 핵심: iconv를 shim이 가로챔
       },
     });
 

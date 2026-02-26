@@ -1,4 +1,0 @@
-alias	EUCKR//			EUC-KR//
-alias	CSEUCKR//		EUC-KR//
-module	EUC-KR//		INTERNAL		EUC-KR		1
-module	INTERNAL		EUC-KR//		EUC-KR		1

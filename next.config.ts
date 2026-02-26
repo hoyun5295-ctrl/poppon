@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // KmcCrypto 바이너리 + gconv 모듈을 서버리스 함수에 포함
   outputFileTracingIncludes: {
-    '/api/kmc/*': ['./bin/KmcCrypto', './bin/gconv/**/*'],
+    '/api/kmc/*': ['./bin/KmcCrypto', './bin/iconv_shim.so'],
   },
   // 실험적 기능
   experimental: {

@@ -86,6 +86,48 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ---
 
+## 🆔 KMC 본인인증 시스템 (Phase M4+)
+
+### 아키텍처
+```
+[웹] 버튼 클릭 → POST /api/kmc/request → tr_cert 암호화 생성 → KMC 팝업 열기
+  → 유저 인증 → KMC가 POST /api/kmc/callback에 apiToken+certNum 전송
+  → 토큰 검증 API 호출 → rec_cert 복호화 → profiles 업데이트(phone/name/ci/di)
+  → postMessage로 부모 창에 결과 전달 → 팝업 닫기
+[앱] 동일 플로우 → 딥링크(poppon://kmc/callback)로 결과 전달
+```
+
+### 파일 구조
+| 파일 | 경로 | 용도 |
+|------|------|------|
+| crypto.ts | `src/lib/kmc/crypto.ts` | KmcCrypto 바이너리 래퍼 (encrypt/decrypt/hash + GCONV_PATH) |
+| request | `src/app/api/kmc/request/route.ts` | tr_cert 생성 API |
+| callback | `src/app/api/kmc/callback/route.ts` | KMC 인증 결과 수신 + profiles 저장 |
+| debug | `src/app/api/kmc/debug/route.ts` | gconv 번들 검증용 디버그 엔드포인트 |
+| KmcCrypto | `bin/KmcCrypto` | KMC 암호화 바이너리 (39080 bytes) |
+| EUC-KR.so | `bin/gconv/EUC-KR.so` | gconv EUC-KR 인코딩 모듈 |
+| gconv-modules | `bin/gconv/gconv-modules` | gconv 설정 파일 |
+
+### KMC 계정 정보
+- CP ID: `IVTT1001`
+- PW: `invito8517!`
+- URL CODE: `003001`
+- 월 비용: 55,000원
+- 토큰 검증 API: `https://www.kmcert.com/kmcis/api/kmcisToken_api.jsp`
+
+### ENCODING_ERROR 이슈 (🚧 배포 검증 대기)
+- **원인**: KmcCrypto 바이너리 내부에서 `iconv_open("EUC-KR")` 호출 → Vercel Lambda에 gconv 모듈 없음
+- **증상**: `enc` 모드에서 `0:ENCODING_ERROR` 반환, `msg` 모드는 정상 (해시만 계산, 인코딩 변환 불필요)
+- **해결**: `GCONV_PATH=/tmp/gconv` 환경변수 + `bin/gconv/EUC-KR.so` 번들 → 로컬 검증 성공
+- **리스크**: EUC-KR.so가 Ubuntu 24(glibc 2.39)에서 추출됨 → Vercel Lambda(Amazon Linux 2, glibc 2.26~2.34)에서 호환 안 될 수 있음
+- **실패 시 대안**:
+  1. Vercel 시스템 gconv 경로 확인: `GCONV_PATH=/usr/lib64/gconv`
+  2. Amazon Linux 2용 EUC-KR.so 재빌드
+  3. 별도 API 서버(EC2)에서 KMC 암호화 처리
+- **검증**: `GET /api/kmc/debug` → `enc_with_gconv` 결과 확인
+
+---
+
 ## 📱 푸시 알림 시스템
 
 ### 앱 인프라 (✅ 구현 완료)
@@ -175,6 +217,16 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 - FollowButton: 클라이언트 컴포넌트 분리 필수
 - 카카오 OAuth 검수 승인 완료
 
+### KMC 본인인증
+- **KmcCrypto 바이너리**: 39080 bytes, iconv_open("EUC-KR") 내부 호출 → gconv 모듈 필수
+- **Vercel Lambda에서 ENCODING_ERROR**: gconv 모듈 없음이 원인. `GCONV_PATH=/tmp/gconv`로 해결
+- **crypto.ts 함수**: `encrypt()`/`decrypt()`/`hash()` + 하위호환 `kmcExec()`/`getKstDateString()`/`generateCertNum()`
+- **next.config.ts**: `outputFileTracingIncludes`에 `'./bin/gconv/**/*'` 필수
+- **enc vs msg**: enc는 인코딩 변환 필요(실패 가능), msg는 해시만(항상 성공)
+- **dec 모드**: 결과에 한글(이름 등) 포함 → iconv-lite로 EUC-KR→UTF-8 디코딩 필요
+- **glibc 호환**: Ubuntu 24(glibc 2.39)의 EUC-KR.so → Amazon Linux 2(glibc 2.26~2.34) 호환 미확인
+- **디버그**: `/api/kmc/debug` 엔드포인트로 gconv 번들 상태 + enc 테스트 가능
+
 ### 행동추적
 - actions API(웹): `createServiceClient` 사용 (RLS 우회, 비로그인도 insert)
 - actions API: body user_id null이면 서버 세션에서 자동 추출
@@ -222,4 +274,4 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ---
 
-*마지막 업데이트: 2026-02-25 (DealModal useLayoutEffect+scroll={false}, 어드민 페이지 유지)*
+*마지막 업데이트: 2026-02-26 (KMC 본인인증 섹션 추가, gconv ENCODING_ERROR 트러블슈팅)*

@@ -32,9 +32,9 @@ function shellExec(cmd: string): string {
   }
 }
 
-function spawnWithEnv(binPath: string, mode: string, input: string, env?: Record<string, string>): Promise<string> {
+function spawnWithEnv(binPath: string, mode: string, input: string, env?: NodeJS.ProcessEnv): Promise<string> {
   return new Promise((resolve) => {
-    const proc = spawn(binPath, [], { env: env || process.env });
+    const proc = spawn(binPath, [], { env: env ?? process.env });
     const chunks: Buffer[] = [];
 
     const timer = setTimeout(() => {
@@ -95,15 +95,15 @@ export async function GET() {
 
   // 6. locale 설정 후 테스트
   results['enc_LANG_C'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { ...process.env, LANG: 'C' } as any);
+    { ...process.env, LANG: 'C' });
   results['enc_LANG_UTF8'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { ...process.env, LANG: 'en_US.UTF-8' } as any);
+    { ...process.env, LANG: 'en_US.UTF-8' });
   results['enc_LANG_EUCKR'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { ...process.env, LANG: 'ko_KR.euckr' } as any);
+    { ...process.env, LANG: 'ko_KR.euckr' });
 
   // 7. 최소 환경 테스트 (PATH만)
   results['enc_minimal_env'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
-    { PATH: '/usr/bin:/bin' });
+    { PATH: '/usr/bin:/bin' } as NodeJS.ProcessEnv);
 
   // 8. file 명령
   results['file_info'] = shellExec(`file ${TMP_PATH} 2>&1`);

@@ -1,43 +1,45 @@
 /**
- * KMC 디버그 테스트 엔드포인트 (배포 확인 후 삭제)
+ * KMC 디버그 v2 - Vercel 환경 상세 분석
  * GET /api/kmc/debug
  */
 
 import { NextResponse } from 'next/server';
 import { execSync, spawn } from 'child_process';
-import { copyFileSync, chmodSync, existsSync, statSync } from 'fs';
+import { copyFileSync, chmodSync, existsSync, statSync, readFileSync } from 'fs';
+import { createHash } from 'crypto';
 import path from 'path';
 
 const TMP_PATH = '/tmp/KmcCrypto';
+const SRC_PATH = path.join(process.cwd(), 'bin', 'KmcCrypto');
 
 function ensureBin() {
   if (!existsSync(TMP_PATH)) {
-    const src = path.join(process.cwd(), 'bin', 'KmcCrypto');
-    copyFileSync(src, TMP_PATH);
+    copyFileSync(SRC_PATH, TMP_PATH);
     chmodSync(TMP_PATH, 0o755);
   }
 }
 
-// shell exec 방식 테스트
-function shellTest(mode: string, input: string): string {
+function sha256(filePath: string): string {
+  const buf = readFileSync(filePath);
+  return createHash('sha256').update(buf).digest('hex');
+}
+
+function shellExec(cmd: string): string {
   try {
-    const cmd = `echo '${mode}:0^*${input}' | ${TMP_PATH}`;
-    const result = execSync(cmd, { timeout: 5000, encoding: 'utf-8' });
-    return result.trim();
+    return execSync(cmd, { timeout: 5000, encoding: 'utf-8' }).trim();
   } catch (e: any) {
-    return `SHELL_ERROR: ${e.message}`;
+    return `ERROR: ${e.message?.substring(0, 200)}`;
   }
 }
 
-// spawn 방식 테스트 (현재 crypto.ts 방식)
-function spawnTest(mode: string, input: string): Promise<string> {
+function spawnWithEnv(binPath: string, mode: string, input: string, env?: Record<string, string>): Promise<string> {
   return new Promise((resolve) => {
-    const proc = spawn(TMP_PATH);
+    const proc = spawn(binPath, [], { env: env || process.env });
     const chunks: Buffer[] = [];
 
     const timer = setTimeout(() => {
       proc.kill();
-      resolve('SPAWN_TIMEOUT');
+      resolve('TIMEOUT');
     }, 5000);
 
     proc.stdout.on('data', (c: Buffer) => chunks.push(c));
@@ -45,68 +47,10 @@ function spawnTest(mode: string, input: string): Promise<string> {
 
     proc.on('close', () => {
       clearTimeout(timer);
-      const raw = Buffer.concat(chunks);
-      resolve(`raw_hex=[${raw.slice(0, 40).toString('hex')}] raw_utf8=[${raw.toString('utf-8').trim()}]`);
+      resolve(Buffer.concat(chunks).toString('utf-8').trim());
     });
 
-    proc.on('error', (e) => {
-      clearTimeout(timer);
-      resolve(`SPAWN_ERROR: ${e.message}`);
-    });
-
-    const cmd = `${mode}:0^*${input}\n`;
-    proc.stdin.write(cmd);
-    proc.stdin.end();
-  });
-}
-
-// spawn 방식 - end() 없이 테스트
-function spawnTestNoEnd(mode: string, input: string): Promise<string> {
-  return new Promise((resolve) => {
-    const proc = spawn(TMP_PATH);
-    const chunks: Buffer[] = [];
-
-    const timer = setTimeout(() => {
-      proc.kill();
-      const raw = Buffer.concat(chunks);
-      resolve(`NOEND_TIMEOUT raw=[${raw.toString('utf-8').trim()}]`);
-    }, 3000);
-
-    proc.stdout.on('data', (c: Buffer) => chunks.push(c));
-
-    proc.on('close', () => {
-      clearTimeout(timer);
-      const raw = Buffer.concat(chunks);
-      resolve(`NOEND_CLOSE raw=[${raw.toString('utf-8').trim()}]`);
-    });
-
-    const cmd = `${mode}:0^*${input}\n`;
-    proc.stdin.write(cmd);
-    // 의도적으로 end() 호출 안 함
-  });
-}
-
-// spawn - Buffer로 write
-function spawnTestBuffer(mode: string, input: string): Promise<string> {
-  return new Promise((resolve) => {
-    const proc = spawn(TMP_PATH);
-    const chunks: Buffer[] = [];
-
-    const timer = setTimeout(() => {
-      proc.kill();
-      resolve('BUF_TIMEOUT');
-    }, 5000);
-
-    proc.stdout.on('data', (c: Buffer) => chunks.push(c));
-
-    proc.on('close', () => {
-      clearTimeout(timer);
-      const raw = Buffer.concat(chunks);
-      resolve(`BUF raw=[${raw.toString('utf-8').trim()}]`);
-    });
-
-    const cmd = Buffer.from(`${mode}:0^*${input}\n`, 'utf-8');
-    proc.stdin.write(cmd);
+    proc.stdin.write(`${mode}:0^*${input}\n`);
     proc.stdin.end();
   });
 }
@@ -114,28 +58,55 @@ function spawnTestBuffer(mode: string, input: string): Promise<string> {
 export async function GET() {
   ensureBin();
 
-  const size = statSync(TMP_PATH).size;
-  const testInput = 'IVTT1001/003001/20260226120000123456/20260226120000/////////0000000000000000';
+  const testInput = 'IVTT1001/003001/20260226120000123456/20260226120000////////0000000000000000';
+  const results: Record<string, string> = {};
 
-  const results: Record<string, string> = {
-    binary_size: String(size),
-    input_length: String(testInput.length),
-    input_preview: testInput.substring(0, 50) + '...',
-  };
+  // 1. 바이너리 해시 비교
+  results['src_sha256'] = sha256(SRC_PATH);
+  results['tmp_sha256'] = sha256(TMP_PATH);
+  results['expect_sha256'] = 'e6cd3f84d6dc5963011daa275342606729386c0f95d5dceac84d9c83b15c365c';
+  results['hash_match'] = results['src_sha256'] === results['expect_sha256'] ? 'YES' : 'NO';
 
-  // 1. shell exec
-  results['shell_enc'] = shellTest('enc', testInput);
-  results['shell_msg'] = shellTest('msg', 'test');
+  // 2. 환경 정보
+  results['env_LANG'] = process.env.LANG || '(not set)';
+  results['env_LC_ALL'] = process.env.LC_ALL || '(not set)';
+  results['env_LC_CTYPE'] = process.env.LC_CTYPE || '(not set)';
+  results['locale'] = shellExec('locale 2>&1 || echo no_locale');
+  results['node_version'] = process.version;
+  results['platform'] = process.platform;
+  results['arch'] = process.arch;
+  results['cwd'] = process.cwd();
 
-  // 2. spawn + end()
-  results['spawn_enc'] = await spawnTest('enc', testInput);
-  results['spawn_msg'] = await spawnTest('msg', 'test');
+  // 3. glibc 버전
+  results['ldd'] = shellExec(`ldd ${TMP_PATH} 2>&1`);
+  results['glibc'] = shellExec('ldd --version 2>&1 | head -1');
 
-  // 3. spawn - no end()
-  results['spawn_noend_enc'] = await spawnTestNoEnd('enc', testInput);
+  // 4. enc 테스트 - /tmp 경로
+  results['tmp_enc'] = await spawnWithEnv(TMP_PATH, 'enc', testInput);
+  results['tmp_msg'] = await spawnWithEnv(TMP_PATH, 'msg', testInput);
 
-  // 4. spawn with Buffer
-  results['spawn_buf_enc'] = await spawnTestBuffer('enc', testInput);
+  // 5. enc 테스트 - 원본 경로 직접 실행
+  try {
+    chmodSync(SRC_PATH, 0o755);
+    results['src_enc'] = await spawnWithEnv(SRC_PATH, 'enc', testInput);
+  } catch (e: any) {
+    results['src_enc'] = `CHMOD_ERROR: ${e.message}`;
+  }
+
+  // 6. locale 설정 후 테스트
+  results['enc_LANG_C'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
+    { ...process.env, LANG: 'C' } as any);
+  results['enc_LANG_UTF8'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
+    { ...process.env, LANG: 'en_US.UTF-8' } as any);
+  results['enc_LANG_EUCKR'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
+    { ...process.env, LANG: 'ko_KR.euckr' } as any);
+
+  // 7. 최소 환경 테스트 (PATH만)
+  results['enc_minimal_env'] = await spawnWithEnv(TMP_PATH, 'enc', testInput, 
+    { PATH: '/usr/bin:/bin' });
+
+  // 8. file 명령
+  results['file_info'] = shellExec(`file ${TMP_PATH} 2>&1`);
 
   return NextResponse.json(results, { status: 200 });
 }

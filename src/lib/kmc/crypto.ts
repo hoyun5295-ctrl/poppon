@@ -8,7 +8,7 @@
  */
 
 import { spawn } from 'child_process';
-import { copyFileSync, chmodSync, existsSync } from 'fs';
+import { copyFileSync, chmodSync, existsSync, statSync } from 'fs';
 import path from 'path';
 
 // iconv-lite 동적 로드 (dec에서만 필요)
@@ -38,7 +38,9 @@ function ensureBinary(): string {
     copyFileSync(srcPath, TMP_PATH);
     chmodSync(TMP_PATH, 0o755);
     binaryReady = true;
-    console.log('[KMC] Binary copied to /tmp/KmcCrypto');
+    const srcSize = statSync(srcPath).size;
+    const tmpSize = statSync(TMP_PATH).size;
+    console.log(`[KMC] Binary size: src=${srcSize}, tmp=${tmpSize} (expect 39080)`);
   }
   return TMP_PATH;
 }
@@ -70,6 +72,8 @@ export async function kmcExec(
       clearTimeout(timer);
 
       const rawBuffer = Buffer.concat(chunks);
+
+      console.log(`[KMC exec] mode=${mode}, raw_len=${rawBuffer.length}, raw_utf8=${rawBuffer.toString('utf-8').substring(0, 80)}`);
 
       if (rawBuffer.length === 0) {
         return reject(new Error(`KmcCrypto empty response (mode=${mode}, code=${code})`));
@@ -124,7 +128,9 @@ export async function kmcExec(
     });
 
     // 프로토콜: "mode:id^*input\n"
-    proc.stdin.write(`${mode}:0^*${input}\n`);
+    const cmd = `${mode}:0^*${input}\n`;
+    console.log(`[KMC exec] mode=${mode}, input_len=${input.length}, cmd_len=${cmd.length}`);
+    proc.stdin.write(cmd);
     proc.stdin.end();
   });
 }

@@ -141,8 +141,9 @@ export function generateCertNum(): { certNum: string; date: string } {
  * tr_cert 생성 (KMC 인증 요청용)
  * 개발가이드 p.5 참조
  *
- * plainText 규격 (7필드, 6슬래시):
- *   cpId / urlCode / certNum / date / certMet / plusInfo / extendVar
+ * plainText 규격 (13필드, 12슬래시):
+ *   cpId / urlCode / certNum / date / certMet / (빈필드×6) / plusInfo / extendVar
+ *   → certMet과 plusInfo 사이에 슬래시 7개 (빈 예비필드 6개)
  */
 export async function encryptTrCert(params: {
   cpId: string;
@@ -163,10 +164,10 @@ export async function encryptTrCert(params: {
     extendVar = '0000000000000000',
   } = params;
 
-  // 1차 암호화 대상 문자열 (개발가이드 p.5 — 7필드, 구분자 "/")
-  const plainText = `${cpId}/${urlCode}/${certNum}/${date}/${certMet}/${plusInfo}/${extendVar}`;
+  // 1차 암호화 대상 문자열 (13필드 — certMet~plusInfo 사이 슬래시 7개)
+  const plainText = `${cpId}/${urlCode}/${certNum}/${date}/${certMet}///////${plusInfo}/${extendVar}`;
 
-  console.log(`[KMC] plainText length=${plainText.length}, fields=7`);
+  console.log(`[KMC] plainText length=${plainText.length}, fields=13`);
 
   // 1차 암호화
   const tmpEnc = await encrypt(plainText);

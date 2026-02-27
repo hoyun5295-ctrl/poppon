@@ -96,6 +96,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // 이름이 URL 인코딩되어 올 수 있음 → 디코딩
+    try { data.name = decodeURIComponent(data.name); } catch { /* 이미 디코딩된 상태 */ }
+
     console.log('[KMC callback] 인증 성공:', {
       name: data.name,
       phoneNo: data.phoneNo.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),

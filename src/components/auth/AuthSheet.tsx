@@ -167,8 +167,11 @@ export function AuthSheet() {
     const { payload } = event.data;
 
     if (payload.success && payload.data) {
+      let decodedName = payload.data.name || '';
+      try { decodedName = decodeURIComponent(decodedName); } catch { /* 이미 디코딩됨 */ }
+
       setKmcData({
-        name: payload.data.name,
+        name: decodedName,
         phoneNo: payload.data.phoneNo,
         ci: payload.data.ci || '',
         di: payload.data.di || '',

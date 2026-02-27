@@ -1028,7 +1028,7 @@ export function AuthSheet() {
                 </button>
 
                 <button
-                  onClick={() => { setSelectedCategories([]); setStep('marketing'); }}
+                  onClick={() => setStep('marketing')}
                   className="w-full mt-2 py-2 text-sm text-gray-400 hover:text-gray-600"
                 >
                   나중에 설정할게요

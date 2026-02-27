@@ -133,30 +133,41 @@
 
 > **규칙:** AI는 아래 목표에만 100% 리소스를 집중한다.
 
-### KMC 휴대폰 본인인증 연동 + 이메일 가입 제거
+### 애플 로그인 + 앱스토어 심사 준비
 
 **배경:**
-- 이메일 인증(확인 메일) + 휴대폰 인증 두 개는 UX 과부하
-- 핵심 자산은 실명+휴대폰번호 (TargetUP-AI 타겟 메시징)
-- 이메일 가입 자체를 제거하고 인증은 KMC 본인인증으로 통일
+- ✅ KMC 본인인증 연동 완료 (2/27)
+- ✅ DUNS 번호 승인 (694835804) + Apple Developer Program 등록 신청 완료 (2/27)
+- ✅ 카카오/네이버 동의항목 설정 완료 (이름 필수, 전화번호 추가)
+- ✅ EAS Android 개발 빌드 성공 + Firebase FCM V1 연동 (2/27)
+- ✅ **푸시 알림 e2e 테스트 성공** (2/27) — 토큰 발급 → 어드민 발송 → 실제 수신 확인
+- 🚧 Apple Developer 서명 권한 확인 대기 중 (등록 ID: 2XY5J82A36)
+
+**다음 세션 시작 시:**
+1. Apple Developer 승인 상태 확인 → 승인되면 $99 결제
+2. App ID + Service ID + Key(.p8) 생성
+3. Supabase Apple Provider 설정
+4. 앱 `src/lib/auth/apple.ts` 연동 + 테스트
+5. 앱스토어 심사 제출 준비
 
 **DoD (완료 기준):**
-- [ ] 이메일 가입 플로우 제거 (웹 AuthSheet + 앱 email.tsx)
-- [ ] Supabase "Enable email confirmations" OFF (이메일 인증 메일 비활성화)
-- [x] KMC 본인인증 API 연동 — crypto.ts + request/callback/debug 라우트 구현 완료
-- [ ] ⚠️ **Vercel ENCODING_ERROR 해결 검증** (gconv EUC-KR.so 번들링 배포됨, 호환성 미확인)
-- [ ] 인증 완료 시 profiles에 phone, name(실명), ci, di 저장
-- [ ] 웹 + 앱 양쪽에서 KMC 인증 플로우 동작 확인
-- [ ] 푸시 알림 EAS 개발 빌드 e2e 테스트 (기존 미완료)
+- [x] DUNS 번호 승인 완료
+- [x] 카카오/네이버 동의항목 설정 확인 (이름 필수, 전화번호 추가)
+- [x] EAS Android 개발 빌드 성공
+- [x] Firebase FCM V1 연동 + Expo credentials 등록
+- [x] 푸시 알림 e2e 테스트 성공 (토큰 발급 → 어드민 발송 → 실제 수신 확인) 🔔
+- [ ] Apple Developer Program 결제 + 승인 (서명 권한 확인 대기 중)
+- [ ] Supabase Apple Provider 설정
+- [ ] 앱 애플 로그인 동작 확인
+- [ ] 앱스토어 심사 제출 준비 (OPS.md 체크리스트 참조)
 
 **참조:**
-- KMC 기존 계약: 월 55,000원
-- KMC 계정: CP ID `IVTT1001`, PW `invito8517!`, URL CODE `003001`
-- 도메인: `poppon.vercel.app`
-- profiles 컬럼: phone, name, ci, di 이미 존재 (SCHEMA.md 확인)
-- **ENCODING_ERROR 원인**: KmcCrypto 바이너리가 내부적으로 `iconv_open("EUC-KR")` 호출 → Vercel Lambda에 gconv 모듈 없음
-- **해결책**: `GCONV_PATH` 환경변수 + `bin/gconv/EUC-KR.so` 번들링 (로컬 검증 성공, Vercel 배포 검증 필요)
-- **glibc 호환 리스크**: Ubuntu 24(glibc 2.39)에서 추출한 .so → Vercel Lambda(Amazon Linux 2, glibc 2.26~2.34) 호환 미확인
+- DUNS: `694835804` / Apple 등록 ID: `2XY5J82A36` / 법인명: INVITO corp.
+- 앱 번들 ID: `kr.poppon.app` (Android application id 동일)
+- EAS 프로젝트: `@yuhoyun/poppon-app` (ID: `3f3caa91-8f76-44c6-bc7a-d5aaff7eadde`)
+- Firebase 프로젝트: `poppon-845f8` (Spark 무료, FCM V1 전용)
+- 애플 로그인 코드 준비 완료: `src/lib/auth/apple.ts` (expo-apple-authentication)
+- KMC 본인인증 ✅ 완료: CP ID `IVTT1001`, URL CODE `003002`
 
 ---
 
@@ -190,7 +201,7 @@
 | 배포 | **Vercel Pro ×2** | Git push 자동 배포, 서울(icn1) |
 | 검색 | **PostgreSQL 풀텍스트 (pg_trgm)** | 초기 1만건 충분 |
 | AI 크롤러 | **Puppeteer + Claude Haiku** | 커넥터 타입별 (어드민 앱) |
-| 본인인증 | **KMC** (월 55,000원 기존 계약) | 연동 예정 |
+| 본인인증 | **KMC** (월 55,000원 기존 계약) | ✅ 연동 완료 (2/27) |
 
 #### 모바일 (poppon-app) 🚧
 | 영역 | 기술 | 비고 |
@@ -214,8 +225,8 @@
 - **Phase M3**: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
 
 #### 🔄 진행 중
-- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + 애플 DUNS 대기 + 심사 준비
-- **Phase M4+**: KMC 휴대폰 본인인증 연동 + 이메일 가입 제거 🚧
+- **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + **EAS Android 개발 빌드 성공** + **Firebase FCM V1 + 푸시 e2e 완료** 🔔 + Apple Developer 승인 대기 + 심사 준비
+- **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 신청 ✅**
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -225,12 +236,15 @@
 ### 6-5. 미해결 / 진행 예정
 
 #### 즉시 (Phase M4+ 작업)
-- 🚧 **KMC ENCODING_ERROR 배포 검증** → `/api/kmc/debug` 호출로 gconv 번들 호환 확인 (glibc 호환 리스크)
-- 🚧 **KMC e2e 플로우 테스트** (tr_cert 생성 → 팝업 → 인증 → callback → profiles 저장)
-- 🚧 **이메일 가입 플로우 제거** (웹 AuthSheet + 앱 email.tsx)
-- 🚧 **Supabase email confirmation OFF** (이메일 인증 메일 비활성화)
-- ⚠️ 푸시 알림 EAS 개발 빌드 후 end-to-end 테스트 필수 (토큰 발급 → 실제 수신 확인)
-- 🍎 애플 로그인 (DUNS 번호 대기 → Apple Developer $99 → Supabase Apple Provider)
+- ✅ ~~KMC 에러 코드 5/99 디버깅~~ → plainText 13필드 복원으로 해결 (2/27)
+- ✅ ~~KMC e2e 플로우 테스트~~ → 웹 본인인증 → callback → postMessage → signup 스텝 진행 확인 (2/27)
+- ✅ ~~이메일 가입 플로우 제거~~ → KMC 본인인증 + 이메일/비번 설정으로 전환 완료 (identity/email_sent 스텝 제거)
+- ✅ ~~ENCODING_ERROR~~ → LD_PRELOAD iconv_shim.so로 해결
+- ✅ ~~카카오/네이버 개발자 포털 동의항목 설정~~ → 이름 필수 + 전화번호 추가 완료 (2/27)
+- ✅ ~~DUNS 번호~~ → 694835804 승인 완료 (2/27)
+- ✅ ~~EAS Android 개발 빌드~~ → 빌드 성공 (notification-icon.png 누락 → 복사로 해결)
+- ✅ ~~푸시 알림 e2e 테스트~~ → Firebase FCM V1 연동 + Expo credentials 등록 + 토큰 발급 + 어드민 발송 + 실제 수신 확인 (2/27)
+- 🍎 Apple Developer 서명 권한 확인 대기 → 승인 후 $99 결제 → Supabase Apple Provider 설정 → 앱 애플 로그인 연동
 
 #### 단기 (Phase 2 + Phase M5)
 - **웹**: 도메인 연결, 링크프라이스 제휴 API, 카카오 알림톡
@@ -291,7 +305,7 @@
 | Toast.tsx | `src/components/common/Toast.tsx` |
 | Pagination.tsx | `src/components/common/Pagination.tsx` |
 | SortDropdown.tsx | `src/components/common/SortDropdown.tsx` |
-| AuthSheet.tsx | `src/components/auth/AuthSheet.tsx` |
+| AuthSheet.tsx | `src/components/auth/AuthSheet.tsx` ← **KMC 본인인증 + kmc_verify 스텝 (2/26 전환)** |
 | MobileFilterSheet.tsx | `src/components/search/MobileFilterSheet.tsx` |
 | SearchBar.tsx | `src/components/search/SearchBar.tsx` |
 | SearchFilters.tsx | `src/components/search/SearchFilters.tsx` |
@@ -349,17 +363,19 @@
 | 로그아웃 API | `src/app/api/auth/signout/route.ts` |
 | 네이버 OAuth | `src/app/api/auth/naver/route.ts` |
 | 네이버 OAuth (모바일) | `src/app/api/auth/naver/mobile/route.ts` |
-| KMC 인증 요청 | `src/app/api/kmc/request/route.ts` ✅ |
-| KMC 인증 콜백 | `src/app/api/kmc/callback/route.ts` ✅ |
+| KMC 인증 요청 | `src/app/api/kmc/request/route.ts` ✅ | tr_cert JSON API (AuthSheet에서 fetch) |
+| KMC 인증 팝업 | `src/app/api/kmc/verify/route.ts` | 레거시 (request가 대체) |
+| KMC 인증 콜백 | `src/app/api/kmc/callback/route.ts` ✅ (CI 중복체크 + postMessage) |
 | KMC 디버그 | `src/app/api/kmc/debug/route.ts` ✅ |
-| KMC 암호화 래퍼 | `src/lib/kmc/crypto.ts` ✅ |
+| KMC 암호화 래퍼 | `src/lib/kmc/crypto.ts` ✅ (LD_PRELOAD iconv_shim) |
 
 #### 바이너리 / 설정
 | 파일 | 경로 |
 |------|------|
 | KmcCrypto 바이너리 | `bin/KmcCrypto` (39080 bytes) |
-| gconv EUC-KR 모듈 | `bin/gconv/EUC-KR.so` (18640 bytes) ✅ |
-| gconv 설정 | `bin/gconv/gconv-modules` ✅ |
+| iconv_shim.so | `bin/iconv_shim.so` (145KB) ✅ 🆕 — LD_PRELOAD 방식 EUC-KR 변환 |
+| gconv EUC-KR 모듈 | `bin/gconv/EUC-KR.so` (18640 bytes) ← 레거시, iconv_shim이 대체 |
+| gconv 설정 | `bin/gconv/gconv-modules` ← 레거시 |
 
 ### 🔴 poppon-admin (어드민 앱)
 
@@ -428,9 +444,9 @@
 | 딜 상세 모달 | `app/d/[slug].tsx` | transparentModal + maxHeight 85% |
 | 브랜드관 | `app/m/[merchantSlug].tsx` | 프로필헤더 + 진행중/종료 탭 + 무한스크롤 |
 | 카테고리 상세 | `app/c/[categorySlug].tsx` | 서브카테고리칩 + FlatList 무한스크롤 |
-| 로그인 | `app/auth/index.tsx` + `_layout.tsx` | 카카오/네이버/애플 + 이메일 버튼 |
-| 이메일 가입/로그인 | `app/auth/email.tsx` | 통합 플로우 + 이메일 인증 ← ⚠️ 제거 예정 |
-| 온보딩 | `app/auth/onboarding.tsx` | 3단계: 카테고리→마케팅→완료 |
+| 로그인 | `app/auth/index.tsx` + `_layout.tsx` | 카카오/네이버/애플 + **이메일은 웹으로 이동** ✅ |
+| ~~이메일 가입/로그인~~ | ~~`app/auth/email.tsx`~~ | ⚠️ **제거 대상** (웹 KMC 플로우로 대체) |
+| 온보딩 | `app/auth/onboarding.tsx` | **4단계: [profile_info→]카테고리→마케팅→완료** ✅ |
 | 제보 | `app/submit.tsx` | 웹 API 호출 + 인라인 style ✅ |
 | 법적 페이지 | `app/legal/*.tsx` + `_layout.tsx` | WebView로 웹 URL 로딩 |
 
@@ -464,7 +480,7 @@
 | 카카오 OAuth | `src/lib/auth/kakao.ts` | 웹 콜백 중간 페이지 경유 + Linking.addEventListener |
 | 네이버 OAuth | `src/lib/auth/naver.ts` | v2 웹 중간 페이지 경유 (카카오 동일 패턴) |
 | 애플 로그인 | `src/lib/auth/apple.ts` | expo-apple-authentication 코드 준비 |
-| 프로필 헬퍼 | `src/lib/auth/profile.ts` | saveOnboarding/toggleSave/toggleFollow/saveProviderProfile |
+| 프로필 헬퍼 | `src/lib/auth/profile.ts` | **v3**: saveOnboarding/toggleSave/toggleFollow/saveProviderProfile + **SNS 메타데이터 자동 추출(phone/gender/birth_date)** ✅ |
 
 ---
 
@@ -483,46 +499,51 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 - ADR-20260222-01: merchants DELETE cascade 추가 (v4.4) — FK 연관 데이터 순서 삭제
 - ADR-20260224-01: 앱 로그인 게이트 전략 — 웹은 SEO 유지(열람 허용), 앱은 딜 카드 탭 시 로그인 필수 (LoginPromptModal 바텀시트)
-- ADR-20260224-02: 이메일 인증 플로우 — signUp 후 인증 메일 발송 필수. 웹은 localStorage에 pending profile 임시 저장→인증 후 첫 로그인 시 자동 적용. 앱은 user_metadata에 닉네임 저장→첫 로그인 시 profiles 반영.
+- ADR-20260224-02: ~~이메일 인증 플로우~~ → **ADR-20260226-01로 대체됨**
 - ADR-20260225-01: 앱 아이콘/파비콘 전략 — 앱 아이콘: 빨간 배경(홈 화면 가시성), 파비콘: 흰 배경(브라우저 탭 깔끔). PDF 벡터에서 600dpi 렌더링→1024×1024 추출.
 - ADR-20260225-02: 인증 체계 전환 — 이메일 가입 제거 + 이메일 인증(확인 메일) 제거 → KMC 휴대폰 본인인증으로 통일. 실명+폰번호+CI/DI 한방 확보. TargetUP-AI 타겟 메시징 기반.
+- ADR-20260226-01: **가입 플로우 전환 구현** — 웹: main→kmc_verify→signup→categories→marketing→signUp→complete (identity/email_sent 제거). 앱 SNS: OAuth→[profile_info if 폰없음]→categories→marketing→완료. 앱 이메일: WebBrowser로 웹 가입 페이지 이동. callback에 CI 중복체크 추가. profile.ts v3 SNS 메타데이터 자동 추출.
+- ADR-20260227-01: **KMC 에러 5→99 해결** — 원인: plainText를 7필드로 축소한 것이 IndexOutOfRange 유발. 해결: 13필드 복원 (`certMet`~`plusInfo` 사이 슬래시 7개). form submit을 AuthSheet에서 직접 실행(Referer 일치). URL CODE `003002`.
 
 ---
 
 ## 10) ASSUMPTION LEDGER (가정 목록)
 - ~~A1: event_page_url이 merchants 테이블 컬럼이다~~ → **거짓 확인 (2/22). 커넥터 자동 생성 트리거용 필드일 뿐, merchants 컬럼 아님.**
 - ~~A2: KMC API 업체코드 + 암호화 키 발급 완료 상태인지 미확인~~ → **확인됨 (2/26). CP ID: IVTT1001, URL CODE: 003001, 바이너리 정상 작동**
-- A3: Ubuntu 24 glibc 2.39의 EUC-KR.so가 Vercel Lambda(Amazon Linux 2, glibc 2.26~2.34)에서 호환되는지 미확인 → **배포 후 `/api/kmc/debug`로 검증 필요**
+- ~~A3: Ubuntu 24 glibc 2.39의 EUC-KR.so가 Vercel Lambda(Amazon Linux 2, glibc 2.26~2.34)에서 호환되는지 미확인~~ → **우회됨 (2/26). LD_PRELOAD iconv_shim.so 방식으로 gconv 의존성 자체를 제거. enc 성공 확인.**
+- ~~A4: KMC verify route의 tr_cert plainText 포맷이 KMC 규격과 일치하는지 미확인~~ → **해결 (2/27). 13필드 포맷(certMet~plusInfo 사이 슬래시 7개)으로 복원하여 정상 작동 확인. KMC 개발자와 통화로 IndexOutOfRange 원인 확인.**
 
 ---
 
 ## 11) RISK REGISTER (리스크 목록)
 | ID | 리스크 | 확률 | 영향 | 점수 | 대응 |
 |----|--------|------|------|------|------|
-| R1 | DUNS 번호 지연으로 애플 로그인/앱스토어 일정 지연 | 3 | 4 | 12 | 웹+Android 우선 출시 |
-| R2 | EAS 빌드 후 푸시 알림 미작동 | 2 | 3 | 6 | 개발 빌드 e2e 테스트 필수 |
+| R1 | Apple Developer 서명 권한 확인 지연으로 애플 로그인/앱스토어 일정 지연 | 2 | 4 | 8 | DUNS 승인 완료. 웹+Android 우선 출시 |
+| R2 | ~~EAS 빌드 후 푸시 알림 미작동~~ | - | - | - | **해결: Firebase FCM V1 + Expo credentials 등록 + e2e 성공 (2/27)** |
 | R3 | KMC 연동 시 팝업 차단/웹뷰 호환 이슈 | 2 | 3 | 6 | 웹+앱 별도 플로우 설계 |
-| R4 | gconv EUC-KR.so glibc 버전 불일치 (Ubuntu 24 → Amazon Linux 2) | 3 | 4 | 12 | 실패 시 Vercel 시스템 /usr/lib64/gconv 탐색 또는 Amazon Linux용 .so 재빌드 |
+| ~~R4~~ | ~~gconv EUC-KR.so glibc 버전 불일치~~ | - | - | - | **해결: LD_PRELOAD iconv_shim.so로 대체** |
+| ~~R5~~ | ~~KMC 에러 코드 5/99 — tr_cert 규격 불일치~~ | - | - | - | **해결: plainText 13필드 복원 (2/27)** |
 
 ---
 
 ## 12) DONE LOG (완료 기록)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동.
-> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링, 2/21 푸시알림+platform, 2/21 SaveButton+FollowButton → `ARCHIVE.md` 참조
+> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링, 2/21 푸시알림+platform, 2/21 SaveButton+FollowButton, 2/21 푸시 발송 시스템, 2/21 제보화면+naver_brand, 2/22 머천트DELETE+PUT, 2/23 로고확정+적용 → `ARCHIVE.md` 참조
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
-| 2/21 | 푸시 발송 시스템 | 어드민 | Step 1~4 전체 완료 | save-deals v2.4, e2e 테스트 필수 |
-| 2/21 | 제보화면+naver_brand | 앱+어드민 | 제보화면 포팅 + ai-engine v5.1 | 인라인 style 패턴, 제목+혜택 조합 판단 |
-| 2/22 | 머천트 DELETE+PUT 수정 | 어드민 | DELETE cascade 추가 + PUT 롤백 | **SCHEMA.md 컬럼 확인 필수 — 추측 금지** |
-| 2/23 | 로고 확정+적용 | 웹+앱 | 로고 확정(투명PNG) + 웹 TopNav 배포 + 앱 홈 헤더 적용 | JPG→투명PNG 필수, Storage Dashboard 직접 업로드 |
 | 2/24 | UX수정+로그인게이트 | 앱 | SafeArea bottom + 전탭 검색바 + 브랜드검색 + LoginPromptModal | 웹 SEO 유지 vs 앱 가입률 극대화 전략 분리 |
 | 2/24 | 커스텀 스플래시 | 앱 | 다크 테마 + 팝콘 파티클 + DB 실시간 숫자 + _layout 통합 | "팝콘처럼 터지는 쿠폰" 브랜드 컨셉 반영 |
 | 2/24 | 이메일인증+어드민로고 | 웹+앱+어드민 | 어드민 로고 적용 + 앱 로고 교체 + 이메일 가입/인증 플로우(웹+앱) | RLS 때문에 미인증 상태에서 profiles 업데이트 불가 → localStorage 임시 저장 패턴 |
 | 2/25 | 제보버그+인증전략 | DB+기획 | submissions.user_id nullable 수정 + 인증 전략 전환 결정(이메일→KMC) | 가입 허들 최소화, 인증은 KMC 한방으로 |
 | 2/25 | 버그수정 2건 | 웹+어드민 | 어드민 브랜드 수정 후 페이지 유지 + 웹 딜 모달 스크롤 점프 근본 수정 | **버그 수정 시 effect 내부가 아닌 트리거 지점(Link scroll)부터 역추적** |
-| 2/26 | KMC 암호화 모듈 연동 | 웹 | crypto.ts + request/callback/debug 라우트 + gconv 번들링. 로컬 검증 성공, **Vercel ENCODING_ERROR 미해결** | **KmcCrypto 바이너리가 iconv_open("EUC-KR") 호출 → Vercel Lambda에 gconv 없음 → GCONV_PATH로 해결. glibc 호환 미확인** |
+| 2/26 | KMC 암호화 모듈 연동 | 웹 | crypto.ts + request/callback/debug 라우트 + ENCODING_ERROR → **LD_PRELOAD iconv_shim.so로 해결** | KmcCrypto가 iconv_open("EUC-KR") 호출 → gconv 대신 LD_PRELOAD shim 주입 |
+| 2/26 | 가입 플로우 전환 | 웹+앱 | AuthSheet kmc_verify 스텝 + verify/callback 라우트 + 앱 onboarding profile_info + profile.ts v3 + 앱 이메일→웹 이동 | identity/email_sent 제거, signUp 후 session null 대응(자동 signIn), CI 중복체크 |
+| 2/26 | KMC 에러 코드 5 | 웹 | KMC 팝업에서 에러 코드 5 발생. 암호화는 성공(Vercel 로그 확인). **tr_cert plainText 포맷 규격 불일치** | plainText 포맷 변경 시 KMC 가이드 정독 필수 |
+| 2/27 | **KMC 본인인증 완료** 🎉 | 웹 | plainText 13필드 복원(에러5→99→성공) + form submit AuthSheet 직접 실행 + URL CODE 003002 + 이름 URL 디코딩 | **KMC plainText는 반드시 13필드(certMet~plusInfo 사이 슬래시 7개). 가이드 매뉴얼 정독 필수** |
+| 2/27 | **Apple Developer + EAS 빌드** | 앱+인프라 | DUNS 승인(694835804) + Apple Developer 등록 신청 + 카카오/네이버 동의항목 완료 + EAS Android 개발 빌드 성공 (notification-icon 누락 해결) | EAS prebuild 시 notification-icon.png 필수. monochrome 아이콘 재활용 가능 |
+| 2/27 | **푸시 알림 e2e 완료** 🔔 | 앱+인프라 | Firebase 프로젝트 생성 + FCM V1 서비스 계정 키 → Expo credentials 등록 + 토큰 발급 성공 + 어드민 발송 → 실제 수신 확인 | FCM V1 필수(Legacy 아님). `eas credentials -p android` → Google Service Account → FCM V1. app.json에 `googleServicesFile` 필수. **app.json scheme과 네이티브 빌드 스킴 불일치 주의** |
 
 ---
 
-*마지막 업데이트: 2026-02-26 (KMC crypto.ts + gconv 번들링, ENCODING_ERROR 배포 검증 대기)*
+*마지막 업데이트: 2026-02-27 (Firebase FCM V1 연동 + 푸시 알림 e2e 완료 🔔)*

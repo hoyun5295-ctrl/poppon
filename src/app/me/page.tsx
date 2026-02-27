@@ -31,6 +31,14 @@ export default function MyPage() {
   const initialTab = (searchParams.get('tab') as Tab) || 'saved';
   const [tab, setTab] = useState<Tab>(initialTab);
 
+  // URL ?tab= 파라미터 변경 시 탭 동기화 (TopNav 설정 링크 등)
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') as Tab;
+    if (urlTab && ['saved', 'follows', 'settings'].includes(urlTab)) {
+      setTab(urlTab);
+    }
+  }, [searchParams]);
+
   // 비로그인 상태
   if (!isLoading && !isLoggedIn) {
     return (
@@ -553,19 +561,12 @@ function SettingsTab({ profile, user, onRefresh }: {
         </div>
       </div>
 
-      {/* 알림 설정 */}
-      <div className="bg-white rounded-xl border border-surface-200 p-5">
-        <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
-          <Bell className="w-4 h-4" />
-          알림 설정
-        </h3>
-        <div className="space-y-4">
-          <ToggleSetting label="카카오 알림톡" desc="새 딜/마감 임박 알림" />
-          <ToggleSetting label="SMS 알림" desc="중요 딜 알림" />
-          <ToggleSetting label="이메일 알림" desc="주간 다이제스트" />
-          <ToggleSetting label="푸시 알림" desc="실시간 알림 (추후 지원)" disabled />
-        </div>
-      </div>
+      {/* 알림 설정 — ✅ 실제 DB 저장 */}
+      <NotificationSettingsSection
+        fullProfile={fullProfile}
+        userId={user?.id}
+        loading={profileLoading}
+      />
 
       {/* 마케팅 동의 — ✅ 실제 DB 저장 */}
       <MarketingConsentSection
@@ -1060,23 +1061,107 @@ function SNSLinkItem({ name, color, textColor, linked }: {
   );
 }
 
-function ToggleSetting({ label, desc, disabled = false, defaultOn = false }: {
-  label: string; desc: string; disabled?: boolean; defaultOn?: boolean;
+// --- ✅ 알림 설정 (실제 DB 저장 — marketing_channel) ---
+const NOTIFICATION_CHANNELS = [
+  { key: 'kakao', label: '카카오 알림톡', desc: '새 딜/마감 임박 알림' },
+  { key: 'sms', label: 'SMS 알림', desc: '중요 딜 알림' },
+  { key: 'email', label: '이메일 알림', desc: '주간 다이제스트' },
+  { key: 'push', label: '푸시 알림', desc: '실시간 알림 (앱 설치 시)' },
+] as const;
+
+function NotificationSettingsSection({ fullProfile, userId, loading: profileLoading }: {
+  fullProfile: any; userId?: string; loading: boolean;
 }) {
-  const [on, setOn] = useState(defaultOn);
-  return (
-    <div className={`flex items-center justify-between ${disabled ? 'opacity-40' : ''}`}>
-      <div>
-        <p className="text-sm font-medium text-surface-700">{label}</p>
-        <p className="text-xs text-surface-400">{desc}</p>
+  const { showToast } = useAuth();
+  const [channels, setChannels] = useState<string[]>([]);
+  const [originalChannels, setOriginalChannels] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  // fullProfile 로딩 후 값 동기화
+  useEffect(() => {
+    const ch = fullProfile?.marketing_channel || [];
+    setChannels(ch);
+    setOriginalChannels(ch);
+  }, [fullProfile?.marketing_channel]);
+
+  const toggle = (key: string) => {
+    setChannels(prev =>
+      prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]
+    );
+  };
+
+  const hasChanges = channels.length !== originalChannels.length ||
+    channels.some(c => !originalChannels.includes(c));
+
+  const handleSave = async () => {
+    if (!userId) return;
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('profiles')
+        .update({ marketing_channel: channels })
+        .eq('id', userId);
+
+      if (error) {
+        showToast('저장에 실패했습니다', 'error');
+      } else {
+        setOriginalChannels([...channels]);
+        showToast('알림 설정이 저장되었습니다', 'success');
+      }
+    } catch {
+      showToast('저장에 실패했습니다', 'error');
+    }
+    setSaving(false);
+  };
+
+  if (profileLoading) {
+    return (
+      <div className="bg-white rounded-xl border border-surface-200 p-5">
+        <div className="h-5 w-24 bg-surface-100 rounded animate-pulse mb-4" />
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-10 bg-surface-50 rounded animate-pulse" />
+          ))}
+        </div>
       </div>
-      <button
-        onClick={() => !disabled && setOn(!on)}
-        disabled={disabled}
-        className={`w-10 h-6 rounded-full transition-colors relative ${on ? 'bg-primary-500' : 'bg-surface-200'}`}
-      >
-        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${on ? 'left-5' : 'left-1'}`} />
-      </button>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-surface-200 p-5">
+      <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
+        <Bell className="w-4 h-4" />
+        알림 설정
+      </h3>
+      <div className="space-y-4">
+        {NOTIFICATION_CHANNELS.map(({ key, label, desc }) => {
+          const isOn = channels.includes(key);
+          return (
+            <div key={key} className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-surface-700">{label}</p>
+                <p className="text-xs text-surface-400">{desc}</p>
+              </div>
+              <button
+                onClick={() => toggle(key)}
+                className={`w-10 h-6 rounded-full transition-colors relative ${isOn ? 'bg-primary-500' : 'bg-surface-200'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${isOn ? 'left-5' : 'left-1'}`} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {hasChanges && (
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="mt-4 w-full py-2.5 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 transition-colors"
+        >
+          {saving ? '저장 중...' : '변경사항 저장'}
+        </button>
+      )}
     </div>
   );
 }

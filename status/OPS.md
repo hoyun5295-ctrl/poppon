@@ -13,6 +13,30 @@
 - **이관 트리거**: Supabase 비용 월 $100+ 시 자체 서버 검토
 - **모바일**: EAS Build (Expo 무료 티어, 빌드 30회/월)
 
+### EAS Build 정보
+- **Expo 계정**: yuhoyun (ceo@invitocorp.com)
+- **EAS 프로젝트**: `@yuhoyun/poppon-app` (ID: `3f3caa91-8f76-44c6-bc7a-d5aaff7eadde`)
+- **Android application id**: `kr.poppon.app`
+- **iOS bundle id**: `kr.poppon.app`
+- **Android 키스토어**: Expo 클라우드 관리 (자동 생성)
+- **notification-icon.png**: `assets/images/notification-icon.png` (monochrome 아이콘 복사본, EAS prebuild 필수)
+- **google-services.json**: 프로젝트 루트에 위치 + `app.json`에 `android.googleServicesFile` 설정 필수
+
+### Firebase (FCM 전용)
+- **Firebase 프로젝트**: `poppon-845f8` (Spark 무료 요금제)
+- **용도**: Android 푸시 알림(FCM V1)만 사용. 다른 Firebase 서비스 미사용
+- **FCM V1 서비스 계정 키**: Expo credentials에 등록 완료 (`eas credentials -p android` → Google Service Account → FCM V1)
+- **주의**: Legacy FCM API Key가 아닌 **FCM V1 Service Account Key** 사용해야 함
+- **google-services.json**: `C:\projects\poppon-app\google-services.json` (EAS 빌드 시 번들에 포함)
+
+### ⚠️ 앱 스킴(Scheme) 관리 주의사항
+- **프로덕션 스킴**: `poppon` (app.json `"scheme": "poppon"`)
+- **딥링크 URL**: `poppon://auth/callback`, `poppon://kmc/callback` 등
+- **웹 콜백 페이지**: `poppon/src/app/auth/callback/mobile/page.tsx`에 `poppon://` 하드코딩
+- ⚠️ **app.json scheme은 빌드 시 네이티브에 박힘** — JS에서 scheme 변경해도 이미 설치된 앱은 변경 안 됨
+- ⚠️ **개발 빌드 시 scheme과 Supabase redirect URL, 웹 콜백 딥링크 3곳 모두 일치해야 OAuth 작동**
+- 개발 빌드 scheme 변경 시 반드시 **재빌드 필요** (JS 핫리로드로 반영 불가)
+
 ### 환경변수 (이름만)
 - **메인(poppon)**: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NAVER_CLIENT_ID, NAVER_CLIENT_SECRET
 - **어드민(poppon-admin)**: 위 + ADMIN_SECRET, ANTHROPIC_API_KEY, CRON_SECRET, NEXT_PUBLIC_MAIN_URL
@@ -57,88 +81,118 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ## 🔐 회원가입/인증 시스템
 
-### 웹 인증 플로우
+### 웹 인증 플로우 (2/27 KMC 완료)
 ```
-[이메일] AuthSheet: signup(검증만) → identity(프로필) → categories → marketing → signUp → 인증 메일 발송 → email_sent 화면
-  → 유저 메일 인증 → 돌아와서 로그인 → localStorage pending profile 자동 적용 → 홈
-[카카오] signInWithOAuth → Supabase 콜백 → saveProviderProfile v2 → 신규? → 온보딩
-[네이버] 수동 OAuth → admin.createUser+generateLink+verifyOtp → 프로필 저장
+[이메일] AuthSheet: main → kmc_verify(KMC 본인인증 팝업) → signup(이메일+비번 설정) → categories → marketing → signUp → 자동 로그인 → 홈
+  → KMC 팝업: fetch('/api/kmc/request')로 tr_cert 수신 → hidden form target=팝업 submit
+  → signUp 후 session null이면 signInWithPassword로 자동 로그인 (email confirmation 대응)
+  → KMC에서 받은 phone/name/ci/di/gender/birthDay를 profiles에 저장
+[카카오] signInWithOAuth → Supabase 콜백 → saveProviderProfile v2 → 신규? → 온보딩(categories→marketing)
+[네이버] 수동 OAuth → admin.createUser+generateLink+verifyOtp → 프로필 저장 → 온보딩
 [탈퇴] 마이페이지 → pending_withdrawal → 어드민 승인(withdrawn) / 거부(active)
 [로그아웃] <a href="/api/auth/signout"> → sb- 쿠키 삭제 + 302
 ```
+- ⚠️ 이전 플로우(identity 직접입력 + email_sent 인증메일)는 제거됨
 
-### 앱 인증 플로우 ✅
+### 앱 인증 플로우 ✅ (2/26 업데이트)
 ```
 [카카오] ✅ 동작 확인
   앱 → Linking.openURL(Supabase OAuth URL) → 카카오 로그인 → 웹 콜백 페이지(/auth/callback/mobile)
   → "앱으로 돌아가기" 버튼 → 딥링크 → Linking.addEventListener로 토큰 수신 → setSession
+  → saveProviderProfile v3 (phone/gender/birth_date 자동 추출) → 신규? → 온보딩
 [네이버] ✅ 동작 확인
   앱 → Linking.openURL(네이버 로그인) → 웹 콜백 페이지(/auth/callback/naver/mobile)
   → /api/auth/naver/mobile 호출(토큰 교환) → 앱으로 딥링크 → setSession
-[이메일] ✅ 신규
-  앱 → auth/email.tsx → 로그인 모드(signInWithPassword) / 회원가입 모드(signUp + 인증 메일)
-  → 인증 메일 확인 → 돌아와서 로그인 → user_metadata.nickname → profiles 저장 → 온보딩
+  → saveProviderProfile v3 → 신규? → 온보딩
+[이메일] 🆕 웹으로 이동
+  앱 → WebBrowser.openBrowserAsync('https://poppon.vercel.app/auth?mode=signup')
+  → 웹에서 KMC 본인인증 + 이메일/비번 가입 완료
 [애플] 코드 준비 완료 (Apple Developer DUNS 대기 중)
 [로그아웃] supabase.auth.signOut() → clearPushToken() → router.replace('/(tabs)')
 ```
 
-- saveProviderProfile v2: `app_metadata.providers` 기반 linked_providers 동기화
+### 앱 온보딩 플로우 (2/26 업데이트)
+```
+SNS 로그인 후 신규 유저:
+  → [profile_info 스텝: 전화번호 없으면 전화번호+성별+생년월일 입력] → categories → marketing → 완료
+```
+
+- saveProviderProfile v3: `app_metadata.providers` 기반 linked_providers + **SNS 메타데이터에서 phone/gender/birth_date 자동 추출**
+  - 카카오: phone_number("+82 10-..."), gender("male"/"female"), birthyear("1990"), birthday("0101")
+  - 네이버: mobile("010-..."), gender("M"/"F"), birthyear("1990"), birthday("01-01")
 
 ---
 
-## 🆔 KMC 본인인증 시스템 (Phase M4+)
+## 🆔 KMC 본인인증 시스템 (✅ 연동 완료 2/27)
 
-### 아키텍처
+### 아키텍처 (2/27 최종)
 ```
-[웹] 버튼 클릭 → POST /api/kmc/request → tr_cert 암호화 생성 → KMC 팝업 열기
+[웹] AuthSheet "본인인증" 버튼
+  → 빈 팝업 window.open('', 'KMCISWindow') 먼저 열기
+  → fetch('/api/kmc/request')로 tr_cert JSON 수신
+  → AuthSheet 페이지(/auth)에서 hidden form 생성 → form.target=팝업 → form.submit()
+  → Referer: /auth (KMC 등록 URL과 일치)
   → 유저 인증 → KMC가 POST /api/kmc/callback에 apiToken+certNum 전송
-  → 토큰 검증 API 호출 → rec_cert 복호화 → profiles 업데이트(phone/name/ci/di)
-  → postMessage로 부모 창에 결과 전달 → 팝업 닫기
+  → 토큰 검증 API 호출 → rec_cert 복호화 → CI 중복체크
+  → 로그인 상태: profiles 바로 업데이트 | 비로그인: postMessage로 데이터 전달
+  → postMessage로 부모 창에 결과 전달(phone/name/ci/di/gender/birthDay) → 팝업 닫기
 [앱] 동일 플로우 → 딥링크(poppon://kmc/callback)로 결과 전달
 ```
 
 ### 파일 구조
 | 파일 | 경로 | 용도 |
 |------|------|------|
-| crypto.ts | `src/lib/kmc/crypto.ts` | KmcCrypto 바이너리 래퍼 (encrypt/decrypt/hash + GCONV_PATH) |
-| request | `src/app/api/kmc/request/route.ts` | tr_cert 생성 API |
-| callback | `src/app/api/kmc/callback/route.ts` | KMC 인증 결과 수신 + profiles 저장 |
-| debug | `src/app/api/kmc/debug/route.ts` | gconv 번들 검증용 디버그 엔드포인트 |
+| crypto.ts | `src/lib/kmc/crypto.ts` | KmcCrypto 바이너리 래퍼 (encrypt/decrypt/hash + **LD_PRELOAD iconv_shim**) |
+| request | `src/app/api/kmc/request/route.ts` ✅ | tr_cert JSON API (AuthSheet에서 fetch) |
+| verify | `src/app/api/kmc/verify/route.ts` | 레거시 (request가 대체) |
+| callback | `src/app/api/kmc/callback/route.ts` ✅ | KMC 인증 결과 수신 + **CI 중복체크** + profiles 저장 + postMessage + **이름 decodeURIComponent** |
+| debug | `src/app/api/kmc/debug/route.ts` | 바이너리/shim 번들 검증용 디버그 엔드포인트 |
 | KmcCrypto | `bin/KmcCrypto` | KMC 암호화 바이너리 (39080 bytes) |
-| EUC-KR.so | `bin/gconv/EUC-KR.so` | gconv EUC-KR 인코딩 모듈 |
-| gconv-modules | `bin/gconv/gconv-modules` | gconv 설정 파일 |
+| iconv_shim.so | `bin/iconv_shim.so` | LD_PRELOAD EUC-KR 변환 shim (145KB) |
+| ~~EUC-KR.so~~ | `bin/gconv/EUC-KR.so` | 레거시 (iconv_shim이 대체) |
 
 ### KMC 계정 정보
 - CP ID: `IVTT1001`
 - PW: `invito8517!`
-- URL CODE: `003001`
+- URL CODE: `003002` (등록 URL: `auth`)
 - 월 비용: 55,000원
 - 토큰 검증 API: `https://www.kmcert.com/kmcis/api/kmcisToken_api.jsp`
+- 개발 담당자: 02-2033-8567 (김성재 매니저)
 
-### ENCODING_ERROR 이슈 (🚧 배포 검증 대기)
+### plainText 규격 (✅ 확정 — 13필드, 12슬래시)
+```
+cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
+                                  ↑ 슬래시 7개 (빈 예비필드 6개)
+```
+⚠️ **certMet과 plusInfo 사이에 반드시 슬래시 7개**. 줄이면 KMC 서버에서 IndexOutOfRange 발생 → 에러 99.
+
+### ENCODING_ERROR 이슈 (✅ 해결 완료)
 - **원인**: KmcCrypto 바이너리 내부에서 `iconv_open("EUC-KR")` 호출 → Vercel Lambda에 gconv 모듈 없음
-- **증상**: `enc` 모드에서 `0:ENCODING_ERROR` 반환, `msg` 모드는 정상 (해시만 계산, 인코딩 변환 불필요)
-- **해결**: `GCONV_PATH=/tmp/gconv` 환경변수 + `bin/gconv/EUC-KR.so` 번들 → 로컬 검증 성공
-- **리스크**: EUC-KR.so가 Ubuntu 24(glibc 2.39)에서 추출됨 → Vercel Lambda(Amazon Linux 2, glibc 2.26~2.34)에서 호환 안 될 수 있음
-- **실패 시 대안**:
-  1. Vercel 시스템 gconv 경로 확인: `GCONV_PATH=/usr/lib64/gconv`
-  2. Amazon Linux 2용 EUC-KR.so 재빌드
-  3. 별도 API 서버(EC2)에서 KMC 암호화 처리
-- **검증**: `GET /api/kmc/debug` → `enc_with_gconv` 결과 확인
+- **증상**: `enc` 모드에서 `0:ENCODING_ERROR` 반환
+- **해결 (1차 시도 실패)**: `GCONV_PATH=/tmp/gconv` + `bin/gconv/EUC-KR.so` 번들 → glibc 버전 불일치
+- **해결 (최종)**: `LD_PRELOAD=iconv_shim.so` 방식 — C로 작성한 shim이 `iconv_open("EUC-KR")`을 인터셉트하여 내부적으로 변환 처리. gconv 의존성 완전 제거. Vercel 배포 검증 성공.
+- **crypto.ts 구현**: `spawn` 호출 시 `env: { LD_PRELOAD: shimPath }` 설정
+
+### 에러 코드 5 → 99 → 해결 (✅ 2/27)
+- **에러 5**: plainText를 7필드로 축소한 것이 원인. 13필드로 복원하여 해결
+- **에러 99**: form submit의 Referer 불일치 + plainText 필드 부족 → AuthSheet에서 직접 form submit + 13필드 복원으로 해결
+- **KMC 개발자 확인**: 서버 로그상 **IndexOutOfRange** → plainText 필드 수 부족이 근본 원인
+- **이름 URL 인코딩**: callback에서 받는 이름이 URL 인코딩 상태 → `decodeURIComponent` 처리 추가
 
 ---
 
 ## 📱 푸시 알림 시스템
 
-### 앱 인프라 (✅ 구현 완료)
+### 앱 인프라 (✅ 구현 + e2e 검증 완료 2/27)
 - `expo-notifications` + `expo-device` 설치 완료
-- `app.json`: notifications 플러그인 + Android 채널(deals/marketing) 설정
+- `app.json`: notifications 플러그인 + Android 채널(deals/marketing) 설정 + `googleServicesFile`
 - `src/lib/push/notifications.ts`: 토큰 등록/삭제/딥링크 처리/핸들러
 - `AuthProvider v10`: 로그인 시 자동 토큰 등록, 로그아웃 시 토큰 삭제
 - `app/_layout.tsx`: 알림 탭 딥링크 리스너 (deal/merchant)
 - profiles 테이블: push_token, push_token_updated_at, push_enabled, device_os, app_version
+- **Firebase FCM V1**: `poppon-845f8` 프로젝트, Expo credentials에 서비스 계정 키 등록 완료
 
-### 어드민 발송 시스템 (✅ 구현 완료 — ⚠️ EAS 빌드 후 e2e 테스트 필수)
+### 어드민 발송 시스템 (✅ 구현 + e2e 검증 완료 2/27)
 - 수동 발송 UI + API (`/push` 페이지, `/api/push` POST/GET)
 - 대상 필터: 전체/마케팅동의/관심카테고리/구독브랜드/딜저장자/플랫폼(iOS·Android)/가입일
 - 자동 발송 Cron: 만료 임박 24h (`/api/cron/push-expiring`, 매일 10:00 KST)
@@ -205,10 +259,11 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 - anon key는 프론트엔드 노출됨 → RLS가 실제 보안 방벽
 
 ### 인증 / 회원
-- AuthSheet signUp 지연: marketing 스텝에서 signUp + profile 한꺼번에 저장
-- **이메일 인증**: signUp 후 session null → `poppon_pending_profile` localStorage에 프로필 임시 저장 → 인증 후 첫 로그인 시 자동 적용
-- **앱 이메일**: signUp 시 닉네임을 user_metadata에 저장 → 첫 로그인 시 profiles에 반영
-- **Supabase 설정 필수**: Auth → Settings → "Enable email confirmations" ON
+- **웹 이메일 가입 (2/26 전환)**: main → kmc_verify → signup → categories → marketing → signUp → 자동 로그인
+- **signUp 후 session null 대응**: `signInWithPassword`로 자동 로그인 (Supabase email confirmation 상태 무관하게 동작)
+- **KMC postMessage**: 팝업에서 `window.opener.postMessage({ type: 'KMC_RESULT', payload })` → AuthSheet에서 `message` 이벤트 수신. **이름은 URL 인코딩 상태 → callback + AuthSheet 양쪽에서 `decodeURIComponent` 필수**
+- **앱 이메일 가입**: WebBrowser로 웹 가입 페이지 이동 (KMC 본인인증은 웹에서만)
+- **앱 온보딩 profile_info**: SNS 로그인 후 전화번호 미수집 시 전화번호+성별+생년월일 직접 입력 스텝 추가
 - AuthProvider TOKEN_REFRESHED: fetchProfile 절대 금지 → 무한루프
 - 로그아웃(웹): 서버 사이드 API 필수, `<a>` 태그 사용
 - Toast: sessionStorage('poppon_pending_toast') → layout mount 시 표시
@@ -218,14 +273,19 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 - 카카오 OAuth 검수 승인 완료
 
 ### KMC 본인인증
-- **KmcCrypto 바이너리**: 39080 bytes, iconv_open("EUC-KR") 내부 호출 → gconv 모듈 필수
-- **Vercel Lambda에서 ENCODING_ERROR**: gconv 모듈 없음이 원인. `GCONV_PATH=/tmp/gconv`로 해결
-- **crypto.ts 함수**: `encrypt()`/`decrypt()`/`hash()` + 하위호환 `kmcExec()`/`getKstDateString()`/`generateCertNum()`
-- **next.config.ts**: `outputFileTracingIncludes`에 `'./bin/gconv/**/*'` 필수
-- **enc vs msg**: enc는 인코딩 변환 필요(실패 가능), msg는 해시만(항상 성공)
+- **KmcCrypto 바이너리**: 39080 bytes, iconv_open("EUC-KR") 내부 호출. 바이너리 내 `KMC000002-...` 태그는 서비스ID가 아닌 모듈 태그 (CP ID와 무관)
+- **ENCODING_ERROR 해결**: ~~GCONV_PATH~~ → **LD_PRELOAD iconv_shim.so** 방식으로 최종 해결. gconv 의존성 완전 제거.
+- **crypto.ts**: `encrypt()`/`decrypt()`/`hash()` + `encryptTrCert()` + `LD_PRELOAD` env 설정
+- **next.config.ts**: `outputFileTracingIncludes`에 `'./bin/**/*'` 필수 (KmcCrypto + iconv_shim.so)
+- **enc vs msg**: enc는 인코딩 변환 필요(iconv_shim으로 해결), msg는 해시만(항상 성공)
 - **dec 모드**: 결과에 한글(이름 등) 포함 → iconv-lite로 EUC-KR→UTF-8 디코딩 필요
-- **glibc 호환**: Ubuntu 24(glibc 2.39)의 EUC-KR.so → Amazon Linux 2(glibc 2.26~2.34) 호환 미확인
-- **디버그**: `/api/kmc/debug` 엔드포인트로 gconv 번들 상태 + enc 테스트 가능
+- **plainText 13필드 필수**: `cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar` — certMet~plusInfo 사이 슬래시 7개. **줄이면 IndexOutOfRange → 에러 99**
+- **form submit**: AuthSheet에서 직접 hidden form 생성 → target=팝업 → submit. Referer가 등록 URL과 일치해야 함
+- **request route**: JSON API (`/api/kmc/request`) → tr_cert + form_url 등 반환. verify route는 레거시
+- **callback**: 이름이 URL 인코딩 상태로 올 수 있음 → `decodeURIComponent` 필수
+- **callback CI 중복체크**: 같은 CI로 이미 가입된 유저 있으면 에러 반환
+- **URL CODE**: `003002` (등록 URL: `auth`). KMC 관리자 페이지에서 확인/변경 가능
+- **디버그**: `/api/kmc/debug` 엔드포인트로 바이너리/shim 상태 + enc 테스트 가능
 
 ### 행동추적
 - actions API(웹): `createServiceClient` 사용 (RLS 우회, 비로그인도 insert)
@@ -265,6 +325,13 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 - 카테고리 아이콘: 이모지 `<Text>` (👕패션/💄뷰티/🍔식품/🏠생활/✈️여행/🎬문화) — 홈·카테고리탭·검색 3곳 통일
 - expo-notifications: Expo Go 제한적 → EAS 빌드에서만 토큰 발급 정상 작동
 - 앱 스타일링: 인라인 `style={{}}` 사용 (NativeWind className은 라우트 파일에서 미작동 확인됨)
+- **앱은 Expo Go 개발 환경** — `npx expo start`로 확인, 배포는 EAS Build
+- **EAS prebuild**: `assets/images/notification-icon.png` 없으면 Android 빌드 실패 (ENOENT). monochrome 아이콘 복사로 해결
+- **EAS 빌드 명령**: `eas build --profile development --platform android` (iOS는 Apple Developer 필요)
+- **expo-dev-client**: 개발 빌드 시 자동 설치 필요 (`eas build` 실행 시 프롬프트)
+- **FCM 푸시 실패 "Unable to retrieve FCM server key"**: `eas credentials -p android` → Google Service Account → **FCM V1** (Legacy 아님) → 서비스 계정 키 JSON 업로드. 재빌드 불필요
+- **⚠️ app.json scheme 변경 시 반드시 재빌드**: scheme은 네이티브에 박히므로 JS 수정만으로 반영 안 됨. scheme 변경 후 `eas build` 필수
+- **⚠️ OAuth 딥링크 3곳 일치 필수**: (1) app.json scheme (2) Supabase redirect URL (3) 웹 콜백 페이지(`/auth/callback/mobile`)의 딥링크 URL — 하나라도 불일치하면 OAuth 콜백 실패
 
 ### 어드민
 - 회원 목록 `auth.admin.listUsers()` 배치 필수
@@ -274,4 +341,4 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 
 ---
 
-*마지막 업데이트: 2026-02-26 (KMC 본인인증 섹션 추가, gconv ENCODING_ERROR 트러블슈팅)*
+*마지막 업데이트: 2026-02-27 (Firebase FCM V1 연동 + 푸시 e2e 완료 + 스킴 관리 주의사항 추가)*

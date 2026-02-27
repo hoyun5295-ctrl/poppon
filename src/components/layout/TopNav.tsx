@@ -126,7 +126,7 @@ export function TopNav() {
                         마이페이지
                       </Link>
                       <Link
-                        href="/me"
+                        href="/me?tab=settings"
                         className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-surface-50 transition-colors"
                         onClick={() => setIsProfileMenuOpen(false)}
                       >

@@ -66,8 +66,8 @@ export default function MyPage() {
           <div className="bg-white rounded-xl border border-surface-200 divide-y divide-surface-100">
             <MenuPreview icon={<Bookmark className="w-5 h-5" />} label="저장한 딜" desc="관심 딜을 저장하고 관리하세요" />
             <MenuPreview icon={<Store className="w-5 h-5" />} label="구독 브랜드" desc="좋아하는 브랜드의 새 딜 알림 받기" />
-            <MenuPreview icon={<Tag className="w-5 h-5" />} label="관심 카테고리" desc="맞춤 카테고리 기반 추천" />
-            <MenuPreview icon={<Bell className="w-5 h-5" />} label="알림 설정" desc="카카오/SMS/이메일 알림 설정" />
+            <MenuPreview icon={<Tag className="w-5 h-5" />} label="관심 카테고리" desc="관심 카테고리를 선택하면 맞춤 딜을 추천해드려요" />
+            <MenuPreview icon={<Bell className="w-5 h-5" />} label="알림 설정" desc="푸시 알림으로 새 딜 소식을 받아보세요" />
             <MenuPreview icon={<Shield className="w-5 h-5" />} label="마케팅 동의" desc="마케팅 수신 동의 관리" />
           </div>
         </div>
@@ -761,7 +761,7 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
         body: JSON.stringify({ interest_categories: selected }),
       });
       if (res.ok) {
-        await onRefresh();
+        onRefresh().catch(() => {}); // fire-and-forget (auth lock 방지)
         showToast('관심 카테고리가 저장되었습니다', 'success');
         setHasChanges(false);
       } else {
@@ -780,7 +780,7 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
         관심 카테고리
       </h3>
       <p className="text-xs text-surface-400 mb-4">
-        선택한 카테고리의 새로운 딜 알림을 받을 수 있어요
+        관심 카테고리를 선택하면 맞춤 딜을 추천해드려요
       </p>
 
       <div className="flex flex-wrap gap-2">

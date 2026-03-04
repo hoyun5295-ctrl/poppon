@@ -1,45 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-// Supabase 서버 클라이언트 생성 헬퍼
-async function createSupabase() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // 무시
-          }
-        },
-      },
-    }
-  );
-}
+import { createServerSupabaseClient, createServiceClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/me/profile
  * 로그인한 유저의 전체 프로필 정보 반환
  */
 export async function GET() {
-  const supabase = await createSupabase();
+  const supabase = await createServerSupabaseClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: profile, error } = await supabase
+  // service_role로 RLS 우회하여 확실하게 조회
+  const serviceClient = await createServiceClient();
+  const { data: profile, error } = await serviceClient
     .from('profiles')
     .select('*')
     .eq('id', user.id)
@@ -54,12 +30,13 @@ export async function GET() {
 
 /**
  * PATCH /api/me/profile
- * 프로필 부분 업데이트 (관심 카테고리, 알림 채널, 마케팅 동의)
+ * 프로필 부분 업데이트 (관심 카테고리, 알림 채널, 마케팅 동의, 푸시 설정)
  * 
- * body: { interest_categories?: string[], marketing_channel?: string[], marketing_agreed?: boolean }
+ * body: { interest_categories?: string[], marketing_channel?: string[], marketing_agreed?: boolean, push_enabled?: boolean }
  */
 export async function PATCH(request: NextRequest) {
-  const supabase = await createSupabase();
+  // anon 클라이언트로 인증 확인
+  const supabase = await createServerSupabaseClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -75,7 +52,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   // 허용된 필드만 추출 (안전)
-  const allowedFields = ['interest_categories', 'marketing_channel', 'marketing_agreed'];
+  const allowedFields = ['interest_categories', 'marketing_channel', 'marketing_agreed', 'push_enabled'];
   const updateData: Record<string, any> = {};
 
   for (const field of allowedFields) {
@@ -95,7 +72,9 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
-  const { error } = await supabase
+  // service_role 클라이언트로 RLS 우회하여 확실하게 저장
+  const serviceClient = await createServiceClient();
+  const { error } = await serviceClient
     .from('profiles')
     .update(updateData)
     .eq('id', user.id);

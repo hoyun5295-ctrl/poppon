@@ -7,11 +7,10 @@ import {
   Heart, Bell, Store, Tag, Settings, LogOut, ChevronRight,
   Bookmark, Shield, Smartphone, ExternalLink, AlertTriangle, KeyRound,
   Check, Shirt, Sparkles, UtensilsCrossed, Home, Plane, LayoutGrid, Plus,
-  User, Camera, Clock
+  User, Camera, Clock, Eye, EyeOff
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { setPendingToast } from '@/lib/auth/AuthProvider';
-import { createClient } from '@/lib/supabase/client';
 import { formatTimeRemaining } from '@/lib/utils/format';
 
 type Tab = 'saved' | 'follows' | 'settings';
@@ -402,10 +401,18 @@ function FollowsRecommendSection({ excludeIds, onFollow }: { excludeIds: string[
 function SettingsTab({ profile, user }: {
   profile: any; user: any;
 }) {
+  const { showToast } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [passwordResetSent, setPasswordResetSent] = useState(false);
-  const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+
+  // ✅ 비밀번호 변경 — 인라인 폼 (resetPasswordForEmail 완전 제거)
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   // ✅ 전체 프로필 조회 (AuthProvider가 제공하지 않는 필드 포함)
   const [fullProfile, setFullProfile] = useState<any>(null);
@@ -427,23 +434,45 @@ function SettingsTab({ profile, user }: {
     fetchFullProfile();
   }, [user?.id]);
 
-  const supabase = createClient();
+  // ✅ 비밀번호 변경 핸들러 — 서버 API 직접 호출 (recovery 세션 없음)
+  const handlePasswordChange = async () => {
+    setPasswordError('');
 
-  // 비밀번호 재설정 이메일 발송
-  const handlePasswordReset = async () => {
-    if (!user?.email) return;
-    setPasswordResetLoading(true);
+    if (!newPassword || !newPasswordConfirm) {
+      setPasswordError('새 비밀번호를 입력해주세요.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      setPasswordError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    setPasswordSaving(true);
     try {
-      // 서버 callback에서 비밀번호 재설정 분기를 위한 쿠키 (1시간 유효)
-      document.cookie = 'password_reset_pending=true;path=/;max-age=3600;SameSite=Lax';
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/auth/callback`,
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
       });
-      if (!error) {
-        setPasswordResetSent(true);
+      const data = await res.json();
+
+      if (res.ok) {
+        setPasswordSuccess(true);
+        setShowPasswordForm(false);
+        setNewPassword('');
+        setNewPasswordConfirm('');
+        showToast('비밀번호가 변경되었습니다', 'success');
+      } else {
+        setPasswordError(data.error || '비밀번호 변경에 실패했습니다.');
       }
-    } catch { /* ignore */ }
-    finally { setPasswordResetLoading(false); }
+    } catch {
+      setPasswordError('서버 오류가 발생했습니다.');
+    }
+    setPasswordSaving(false);
   };
 
   // 계정 탈퇴
@@ -521,30 +550,91 @@ function SettingsTab({ profile, user }: {
       {/* 추천 브랜드 구독 */}
       <RecommendedBrandsSection userId={user?.id} />
 
-      {/* 비밀번호 변경 — 이메일 가입자만 표시 */}
+      {/* ✅ 비밀번호 변경 — 이메일 가입자만 표시 (인라인 폼 방식, recovery 세션 없음) */}
       {(!currentProvider || currentProvider === 'email') && (
         <div className="bg-white rounded-xl border border-surface-200 p-5">
           <h3 className="font-semibold text-surface-900 mb-4 flex items-center gap-2">
             <KeyRound className="w-4 h-4" />
             비밀번호 변경
           </h3>
-          {passwordResetSent ? (
-            <p className="text-sm text-green-600">
-              비밀번호 재설정 이메일을 발송했습니다. 메일함을 확인해주세요.
-            </p>
-          ) : (
+
+          {passwordSuccess ? (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <Check className="w-4 h-4" />
+              비밀번호가 변경되었습니다.
+            </div>
+          ) : !showPasswordForm ? (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-surface-700">{user?.email}</p>
-                <p className="text-xs text-surface-400">이메일로 재설정 링크를 보내드립니다</p>
+                <p className="text-xs text-surface-400">새 비밀번호를 직접 설정할 수 있습니다</p>
               </div>
               <button
-                onClick={handlePasswordReset}
-                disabled={passwordResetLoading}
-                className="px-3 py-1.5 text-xs text-primary-500 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors disabled:opacity-50"
+                onClick={() => { setShowPasswordForm(true); setPasswordError(''); setPasswordSuccess(false); }}
+                className="px-3 py-1.5 text-xs text-primary-500 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
               >
-                {passwordResetLoading ? '발송 중...' : '변경하기'}
+                변경하기
               </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-surface-600 mb-1">새 비밀번호</label>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="6자 이상 입력해주세요"
+                    className="w-full px-3 py-2.5 rounded-lg border border-surface-200 text-sm pr-10
+                               focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-surface-400 hover:text-surface-600"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-surface-600 mb-1">새 비밀번호 확인</label>
+                <input
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPasswordConfirm}
+                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && newPassword && newPasswordConfirm) handlePasswordChange(); }}
+                  placeholder="비밀번호를 다시 입력해주세요"
+                  className="w-full px-3 py-2.5 rounded-lg border border-surface-200 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                />
+                {newPasswordConfirm && newPassword !== newPasswordConfirm && (
+                  <p className="text-xs text-red-500 mt-1">비밀번호가 일치하지 않습니다</p>
+                )}
+              </div>
+
+              {passwordError && (
+                <p className="text-xs text-red-500">{passwordError}</p>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={passwordSaving || !newPassword || !newPasswordConfirm}
+                  className="flex-1 py-2.5 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:bg-surface-200 disabled:text-surface-400 transition-colors"
+                >
+                  {passwordSaving ? '변경 중...' : '비밀번호 변경'}
+                </button>
+                <button
+                  onClick={() => { setShowPasswordForm(false); setNewPassword(''); setNewPasswordConfirm(''); setPasswordError(''); }}
+                  className="px-4 py-2.5 text-sm text-surface-500 border border-surface-200 rounded-lg hover:bg-surface-50 transition-colors"
+                >
+                  취소
+                </button>
+              </div>
             </div>
           )}
         </div>

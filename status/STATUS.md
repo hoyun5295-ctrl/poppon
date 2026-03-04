@@ -133,37 +133,87 @@
 
 > **규칙:** AI는 아래 목표에만 100% 리소스를 집중한다.
 
-### 비밀번호 재설정 페이지 + 애플 로그인 + 앱스토어 심사 준비
+### 🔥 비밀번호 재설정 근본 재설계 + 롤백 + 애플 로그인 + 앱스토어 심사
 
 **배경:**
 - ✅ KMC 본인인증 연동 완료 (2/27)
 - ✅ DUNS 번호 승인 (694835804) + Apple Developer Program 등록 신청 완료 (2/27)
 - ✅ 카카오/네이버 동의항목 설정 완료 (이름 필수, 전화번호 추가)
 - ✅ EAS Android 개발 빌드 성공 + Firebase FCM V1 연동 (2/27)
-- ✅ **푸시 알림 e2e 테스트 성공** (2/27) — 토큰 발급 → 어드민 발송 → 실제 수신 확인
-- ✅ **마이페이지 프로필 저장 근본 수정** (3/4) — service_role + fullProfile 전환 + 레거시 채널 필터링
-- ✅ **Resend SMTP 연동 + 이메일 템플릿 한국어화** (3/4) — poppon@poppon.kr 발신
-- 🚧 비밀번호 재설정 페이지 미구현 (메일은 발송되나 링크 클릭 시 홈으로 이동)
+- ✅ 푸시 알림 e2e 테스트 성공 (2/27)
+- ✅ 마이페이지 프로필 저장 근본 수정 (3/4) — service_role + fullProfile 전환
+- ✅ Resend SMTP 연동 + 이메일 템플릿 한국어화 (3/4)
+- ❌ **비밀번호 재설정 구현 실패 (3/4)** — 5회 시도 전부 실패. 근본 원인 파악 완료. 아래 상세 기록
 - 🚧 Apple Developer 서명 권한 확인 대기 중 (등록 ID: 2XY5J82A36)
 
-**다음 세션 시작 시:**
-1. **비밀번호 재설정 페이지 구현** — `/auth/callback` route에서 recovery 타입 감지 → 비밀번호 재설정 입력 페이지로 라우팅
-2. route.ts 디버깅 로그 제거 (profile API)
-3. Apple Developer 승인 상태 확인 → 승인되면 $99 결제
-4. App ID + Service ID + Key(.p8) 생성
-5. Supabase Apple Provider 설정
-6. 앱 `src/lib/auth/apple.ts` 연동 + 테스트
-7. 앱스토어 심사 제출 준비
+---
+
+### ⚠️ 비밀번호 재설정 — 실패 원인 상세 분석 (3/4 세션)
+
+#### 근본 원인 (3겹)
+1. **Recovery 세션이 기존 세션을 덮어씌움**: `resetPasswordForEmail()` → 이메일 링크 → `/auth/callback?code=xxx` → 서버에서 `exchangeCodeForSession(code)` 성공 → **recovery 세션 쿠키가 기존 카카오 세션 쿠키를 덮어씌움** → 기존 로그인 풀림
+2. **클라이언트 AuthProvider가 recovery 세션을 인식 못함**: 서버에서 세션 쿠키를 설정해도 클라이언트 Supabase 싱글톤(AuthProvider)은 새 탭에서 이 세션을 자동 감지하지 못함 → TopNav "로그인" 표시
+3. **Recovery 세션 찌꺼기가 이후 로그인을 방해**: 비밀번호 재설정 후 홈으로 이동해도 recovery 세션 쿠키가 남아있어서 카카오 로그인 등 정상 인증 플로우를 방해
+
+#### 실패한 시도들 (반복 금지)
+| # | 방식 | 실패 이유 |
+|---|------|----------|
+| 1 | 클라이언트에서 `exchangeCodeForSession(code)` | PKCE code_verifier + auth lock → 무한 대기 |
+| 2 | 클라이언트에서 `getUser()` 먼저 → 이미 세션 있으면 바로 폼 | `getUser()`도 auth lock → 무한 대기 |
+| 3 | 클라이언트에서 `getSession()` (로컬만) | auth lock은 회피했으나 세션이 로컬에 없음 → expired 표시 |
+| 4 | 서버 callback + 쿠키 분기 → 클라이언트 `updateUser()` | 서버 세션 ≠ 클라이언트 세션. 클라이언트에서 `updateUser()` 실패 |
+| 5 | 서버 callback + 쿠키 분기 → 서버 API(service_role) | 페이지 도착은 성공하나 **recovery 세션이 기존 세션 덮어씌움** → 로그인 풀림 → 변경 후에도 카카오 로그인 불가 |
+
+#### 현재 배포된 코드 상태 (❌ 문제 있음, 롤백 필요)
+| 파일 | 경로 | 상태 |
+|------|------|------|
+| callback/route.ts | `src/app/auth/callback/route.ts` | ⚠️ `password_reset_pending` 쿠키 체크 추가됨 (OAuth는 영향 없으나 불필요) |
+| reset-password/page.tsx | `src/app/auth/reset-password/page.tsx` | ⚠️ 서버 API fetch 방식 (동작하나 recovery 세션 문제 미해결) |
+| API route | `src/app/api/auth/reset-password/route.ts` | 🆕 신규 생성됨 (service_role 비밀번호 변경) |
+| me/page.tsx | `src/app/me/page.tsx` | ⚠️ `password_reset_pending` 쿠키 세팅 + `redirectTo: /auth/callback` |
+
+---
+
+### 다음 세션 시작 시 (순서대로):
+
+#### 0단계: 주인님 쿠키 삭제 확인
+- 크롬 주소창 자물쇠 → 쿠키 → `poppon.vercel.app` 전부 삭제 → 카카오 로그인 정상 복구 확인
+- **이미 하셨으면 스킵**
+
+#### 1단계: 롤백 (기존 코드 원복)
+- `callback/route.ts` → 원본으로 복원 (`password_reset_pending` 쿠키 체크 제거)
+- `me/page.tsx` → 원본으로 복원 (쿠키 세팅 + redirectTo 원복)
+- 원본 callback/route.ts는 업로드된 파일에 있음 (saveProviderProfile v2 포함, 170줄)
+- 원본 me/page.tsx는 `redirectTo: /auth/callback?next=/me` 상태
+
+#### 2단계: 비밀번호 재설정 근본 재설계
+**핵심 원칙: recovery 세션을 만들지 않는다**
+
+**Option A: 마이페이지 직접 변경 (이메일 링크 불필요) ← 권장**
+- 마이페이지 설정에 "새 비밀번호" 입력 필드 직접 추가
+- "변경" 버튼 → `POST /api/auth/reset-password` (이미 생성됨) → `admin.updateUserById(userId, { password })`
+- 이미 로그인 상태이므로 이메일 인증 불필요
+- 장점: 가장 간단, recovery 세션 문제 완전 회피, 기존 세션 영향 0
+- 단점: 비밀번호를 잊은 비로그인 유저는 이 방법 사용 불가 (별도 "비밀번호 찾기" 필요)
+
+**Option B: admin.generateLink + Resend 커스텀 이메일 (비로그인 비밀번호 찾기용)**
+- 서버 API: `admin.generateLink({ type: 'recovery', email })` → 토큰 포함 링크 반환
+- Resend API로 커스텀 이메일 발송 (Supabase 이메일 템플릿 미사용)
+- 링크: `/auth/reset-password?token=xxx` (callback 경유 안 함)
+- 페이지: 토큰 + 새 비밀번호 → 서버 API → `admin.verifyOtp()` + `admin.updateUserById()`
+- 장점: recovery 세션 생성 안 함, 기존 세션 영향 0
+- 단점: 구현 복잡도 높음, Supabase 이메일 템플릿 사용 불가
+
+**주인님 결정 필요**: A만? A+B 둘 다?
+
+#### 3단계: profile API 디버깅 로그 제거
+#### 4단계: Apple Developer 승인 확인 → $99 결제 → 애플 로그인 연동
+#### 5단계: 앱스토어 심사 제출 준비
 
 **DoD (완료 기준):**
-- [x] DUNS 번호 승인 완료
-- [x] 카카오/네이버 동의항목 설정 확인 (이름 필수, 전화번호 추가)
-- [x] EAS Android 개발 빌드 성공
-- [x] Firebase FCM V1 연동 + Expo credentials 등록
-- [x] 푸시 알림 e2e 테스트 성공 (토큰 발급 → 어드민 발송 → 실제 수신 확인) 🔔
-- [x] 마이페이지 프로필 저장 정상 동작 (카테고리/알림/마케팅)
-- [x] Resend SMTP + 이메일 템플릿 한국어화
-- [ ] **비밀번호 재설정 페이지 구현** (recovery 콜백 → 새 비밀번호 입력 → 저장)
+- [ ] **callback/route.ts + me/page.tsx 원본 롤백** (recovery 세션 문제 코드 제거)
+- [ ] **비밀번호 재설정 재구현** (recovery 세션 미생성 방식)
+- [ ] 카카오/네이버 로그인 정상 동작 회귀 테스트
 - [ ] profile API 디버깅 로그 제거
 - [ ] Apple Developer Program 결제 + 승인 (서명 권한 확인 대기 중)
 - [ ] Supabase Apple Provider 설정
@@ -179,6 +229,7 @@
 - KMC 본인인증 ✅ 완료: CP ID `IVTT1001`, URL CODE `003002`
 - Resend: `poppon.kr` 도메인 verified, SMTP `smtp.resend.com:465`, API Key `re_UubnQ2az_...`
 - 이메일 발신: `POPPON <poppon@poppon.kr>` (가비아 하이웍스 메일 + Resend SMTP)
+- 비밀번호 변경 서버 API: `src/app/api/auth/reset-password/route.ts` (이미 생성됨, service_role 방식)
 
 ---
 
@@ -237,7 +288,7 @@
 
 #### 🔄 진행 중
 - **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + **EAS Android 개발 빌드 성공** + **Firebase FCM V1 + 푸시 e2e 완료** 🔔 + Apple Developer 승인 대기 + 심사 준비 + **마이페이지 프로필 저장 서버 API 통일** ✅ + **알림 설정 푸시만 남기기** ✅ + **새 딜 푸시 아침 9시 Cron 일괄 발송(save-deals v2.6)** ✅
-- **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 신청 ✅** + **마이페이지 프로필 저장 근본 수정(service_role+fullProfile) ✅** + **Resend SMTP + 이메일 템플릿 한국어화 ✅**
+- **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 신청 ✅** + **마이페이지 프로필 저장 근본 수정(service_role+fullProfile) ✅** + **Resend SMTP + 이메일 템플릿 한국어화 ✅** + ❌ 비밀번호 재설정 5회 실패 → 롤백+재설계 필요
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -247,14 +298,8 @@
 ### 6-5. 미해결 / 진행 예정
 
 #### 즉시 (Phase M4+ 작업)
-- ✅ ~~KMC 에러 코드 5/99 디버깅~~ → plainText 13필드 복원으로 해결 (2/27)
-- ✅ ~~KMC e2e 플로우 테스트~~ → 웹 본인인증 → callback → postMessage → signup 스텝 진행 확인 (2/27)
-- ✅ ~~이메일 가입 플로우 제거~~ → KMC 본인인증 + 이메일/비번 설정으로 전환 완료 (identity/email_sent 스텝 제거)
-- ✅ ~~ENCODING_ERROR~~ → LD_PRELOAD iconv_shim.so로 해결
-- ✅ ~~카카오/네이버 개발자 포털 동의항목 설정~~ → 이름 필수 + 전화번호 추가 완료 (2/27)
-- ✅ ~~DUNS 번호~~ → 694835804 승인 완료 (2/27)
-- ✅ ~~EAS Android 개발 빌드~~ → 빌드 성공 (notification-icon.png 누락 → 복사로 해결)
-- ✅ ~~푸시 알림 e2e 테스트~~ → Firebase FCM V1 연동 + Expo credentials 등록 + 토큰 발급 + 어드민 발송 + 실제 수신 확인 (2/27)
+- ❌ **비밀번호 재설정 재설계** → recovery 세션 미생성 방식으로 전환 (상세: CURRENT_TASK)
+- ⚠️ **callback/route.ts + me/page.tsx 롤백 필요** → 현재 password_reset_pending 쿠키 로직이 삽입된 상태
 - 🍎 Apple Developer 서명 권한 확인 대기 → 승인 후 $99 결제 → Supabase Apple Provider 설정 → 앱 애플 로그인 연동
 
 #### 단기 (Phase 2 + Phase M5)
@@ -341,8 +386,9 @@
 | 딜 상세 (모달) | `src/app/@modal/(.)d/[slug]/page.tsx` |
 | 딜 상세 (풀페이지) | `src/app/d/[slug]/page.tsx` |
 | 제보 | `src/app/submit/page.tsx` |
-| 마이페이지 | `src/app/me/page.tsx` + `loading.tsx` |
+| 마이페이지 | `src/app/me/page.tsx` |
 | 로그인 | `src/app/auth/page.tsx` + `callback/route.ts` + `callback/naver/route.ts` |
+| 비밀번호 재설정 | `src/app/auth/reset-password/page.tsx` ⚠️ 재설계 필요 |
 | 모바일 OAuth 콜백 (카카오) | `src/app/auth/callback/mobile/page.tsx` |
 | 모바일 OAuth 콜백 (네이버) | `src/app/auth/callback/naver/mobile/page.tsx` |
 | 법적 페이지 | `src/app/legal/privacy/`, `terms/`, `marketing/` |
@@ -371,6 +417,7 @@
 | 브랜드 구독 API | `src/app/api/me/follows/merchants/route.ts` |
 | 계정 탈퇴 API | `src/app/api/me/delete-account/route.ts` |
 | 프로필 조회/수정 API | `src/app/api/me/profile/route.ts` ✅ GET+PATCH (3/4 서버 API 통일) |
+| 비밀번호 변경 API | `src/app/api/auth/reset-password/route.ts` 🆕 (service_role, 3/4 생성) |
 | 로그아웃 API | `src/app/api/auth/signout/route.ts` |
 | 네이버 OAuth | `src/app/api/auth/naver/route.ts` |
 | 네이버 OAuth (모바일) | `src/app/api/auth/naver/mobile/route.ts` |
@@ -508,17 +555,15 @@ AI는 매 응답을 아래 순서로 작성한다.
 ## 9) DECISION LOG (ADR Index)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동, 본 문서에 1줄 요약만 남긴다.
 
-- ADR-20260222-01: merchants DELETE cascade 추가 (v4.4) — FK 연관 데이터 순서 삭제
-- ADR-20260224-01: 앱 로그인 게이트 전략 — 웹은 SEO 유지(열람 허용), 앱은 딜 카드 탭 시 로그인 필수 (LoginPromptModal 바텀시트)
-- ADR-20260224-02: ~~이메일 인증 플로우~~ → **ADR-20260226-01로 대체됨**
-- ADR-20260225-01: 앱 아이콘/파비콘 전략 — 앱 아이콘: 빨간 배경(홈 화면 가시성), 파비콘: 흰 배경(브라우저 탭 깔끔). PDF 벡터에서 600dpi 렌더링→1024×1024 추출.
-- ADR-20260225-02: 인증 체계 전환 — 이메일 가입 제거 + 이메일 인증(확인 메일) 제거 → KMC 휴대폰 본인인증으로 통일. 실명+폰번호+CI/DI 한방 확보. TargetUP-AI 타겟 메시징 기반.
+> 아카이브: ADR-20260222-01 merchants DELETE cascade, ADR-20260224-01 로그인 게이트, ADR-20260224-02 이메일 인증(폐기), ADR-20260225-01 앱 아이콘 전략, ADR-20260225-02 인증 체계 전환 → `ARCHIVE.md` 참조
+
 - ADR-20260226-01: **가입 플로우 전환 구현** — 웹: main→kmc_verify→signup→categories→marketing→signUp→complete (identity/email_sent 제거). 앱 SNS: OAuth→[profile_info if 폰없음]→categories→marketing→완료. 앱 이메일: WebBrowser로 웹 가입 페이지 이동. callback에 CI 중복체크 추가. profile.ts v3 SNS 메타데이터 자동 추출.
 - ADR-20260227-01: **KMC 에러 5→99 해결** — 원인: plainText를 7필드로 축소한 것이 IndexOutOfRange 유발. 해결: 13필드 복원 (`certMet`~`plusInfo` 사이 슬래시 7개). form submit을 AuthSheet에서 직접 실행(Referer 일치). URL CODE `003002`.
 - ADR-20260304-01: **마이페이지 프로필 저장 서버 API 통일** — 원인: `createClient()` auth lock으로 카테고리/알림/마케팅 저장 시 프로미스 영원히 대기("저장 중..." 고착). 해결: `/api/me/profile` PATCH 추가, 페이지에서 `fetch()` 호출로 통일. 허용 필드 화이트리스트 방식.
 - ADR-20260304-02: **새 딜 푸시 아침 9시 일괄 발송** — 기존: save-deals v2.4에서 크롤 시(23시) 즉시 푸시 → 야간 알림 문제. 변경: save-deals v2.6에서 즉시 푸시 제거 + `/api/cron/push-new-deals` Cron(09:00 KST) 추가. 구독 브랜드 구독자에게만 발송. 알림 설정 카카오/SMS/이메일 제거(미구현+비용), 푸시만 남김.
 - ADR-20260304-03: **프로필 API service_role + fullProfile 전환** — 원인: anon key로 update 시 RLS silent fail (에러 없이 0 rows). 카테고리 섹션은 AuthProvider profile(갱신 안 됨) 사용. 해결: API를 service_role 클라이언트로 변경 + 카테고리/알림 섹션을 fullProfile(서버 API 최신값) 기반으로 전환 + 알림 채널 초기화 시 NOTIFICATION_CHANNELS 키만 필터링(레거시 kakao/sms/email 제거).
 - ADR-20260304-04: **Resend SMTP + 이메일 템플릿 한국어화** — 가비아 하이웍스 SMTP 인증 실패(외부 연동 불가). Resend(무료 100통/일) 전환. poppon.kr 도메인 DKIM/SPF/MX DNS 레코드 추가 → Verified. 비밀번호 재설정 이메일 템플릿 한국어 + POPPON 브랜딩. 발신: `POPPON <poppon@poppon.kr>`.
+- ADR-20260304-05: **비밀번호 재설정 5회 실패 — recovery 세션 근본 문제** — `resetPasswordForEmail()` → PKCE callback → `exchangeCodeForSession()` → recovery 세션이 기존 세션 쿠키를 덮어씌움 → 로그인 풀림 + 이후 로그인 불가. 클라이언트 auth 호출(exchangeCodeForSession/getUser/getSession/updateUser) 전부 auth lock 또는 세션 미인식. **해결 방향: recovery 세션을 만들지 않는 방식으로 전환 (마이페이지 직접 변경 or admin.generateLink 커스텀 이메일)**
 
 ---
 
@@ -527,6 +572,7 @@ AI는 매 응답을 아래 순서로 작성한다.
 - ~~A2: KMC API 업체코드 + 암호화 키 발급 완료 상태인지 미확인~~ → **확인됨 (2/26). CP ID: IVTT1001, URL CODE: 003001, 바이너리 정상 작동**
 - ~~A3: Ubuntu 24 glibc 2.39의 EUC-KR.so가 Vercel Lambda(Amazon Linux 2, glibc 2.26~2.34)에서 호환되는지 미확인~~ → **우회됨 (2/26). LD_PRELOAD iconv_shim.so 방식으로 gconv 의존성 자체를 제거. enc 성공 확인.**
 - ~~A4: KMC verify route의 tr_cert plainText 포맷이 KMC 규격과 일치하는지 미확인~~ → **해결 (2/27). 13필드 포맷(certMet~plusInfo 사이 슬래시 7개)으로 복원하여 정상 작동 확인. KMC 개발자와 통화로 IndexOutOfRange 원인 확인.**
+- A5: `admin.generateLink({ type: 'recovery' })`로 토큰 추출 후 커스텀 이메일 발송이 Supabase에서 지원되는지 미확인 → **다음 세션에서 확인 필요 (Option B 선택 시)**
 
 ---
 
@@ -538,18 +584,16 @@ AI는 매 응답을 아래 순서로 작성한다.
 | R3 | KMC 연동 시 팝업 차단/웹뷰 호환 이슈 | 2 | 3 | 6 | 웹+앱 별도 플로우 설계 |
 | ~~R4~~ | ~~gconv EUC-KR.so glibc 버전 불일치~~ | - | - | - | **해결: LD_PRELOAD iconv_shim.so로 대체** |
 | ~~R5~~ | ~~KMC 에러 코드 5/99 — tr_cert 규격 불일치~~ | - | - | - | **해결: plainText 13필드 복원 (2/27)** |
+| R6 | 비밀번호 재설정 — recovery 세션이 기존 세션 덮어씌움 | 5 | 5 | 25 | **근본 재설계: recovery 세션 미생성 방식 전환. 현재 코드 롤백 필요** |
 
 ---
 
 ## 12) DONE LOG (완료 기록)
 > 10개 초과 시 오래된 항목은 `ARCHIVE.md`로 이동.
-> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링, 2/21 푸시알림+platform, 2/21 SaveButton+FollowButton, 2/21 푸시 발송 시스템, 2/21 제보화면+naver_brand, 2/22 머천트DELETE+PUT, 2/23 로고확정+적용, 2/24 UX수정+로그인게이트, 2/24 커스텀 스플래시 → `ARCHIVE.md` 참조
+> 아카이브: 2/20 Phase M3 OAuth(카카오), 2/20 디자인수정+로고시안, 2/20 세션버그수정+네이버, 2/20 법적페이지+홈리디자인, 2/21 UI통일+에러핸들링, 2/21 푸시알림+platform, 2/21 SaveButton+FollowButton, 2/21 푸시 발송 시스템, 2/21 제보화면+naver_brand, 2/22 머천트DELETE+PUT, 2/23 로고확정+적용, 2/24 UX수정+로그인게이트, 2/24 커스텀 스플래시, 2/24 이메일인증+어드민로고, 2/25 제보버그+인증전략, 2/25 버그수정 2건 → `ARCHIVE.md` 참조
 
 | 날짜 | 세션 | 플랫폼 | 주요 완료 내용 | 핵심 교훈 |
 |------|------|--------|--------------|----------|
-| 2/24 | 이메일인증+어드민로고 | 웹+앱+어드민 | 어드민 로고 적용 + 앱 로고 교체 + 이메일 가입/인증 플로우(웹+앱) | RLS 때문에 미인증 상태에서 profiles 업데이트 불가 → localStorage 임시 저장 패턴 |
-| 2/25 | 제보버그+인증전략 | DB+기획 | submissions.user_id nullable 수정 + 인증 전략 전환 결정(이메일→KMC) | 가입 허들 최소화, 인증은 KMC 한방으로 |
-| 2/25 | 버그수정 2건 | 웹+어드민 | 어드민 브랜드 수정 후 페이지 유지 + 웹 딜 모달 스크롤 점프 근본 수정 | **버그 수정 시 effect 내부가 아닌 트리거 지점(Link scroll)부터 역추적** |
 | 2/26 | KMC 암호화 모듈 연동 | 웹 | crypto.ts + request/callback/debug 라우트 + ENCODING_ERROR → **LD_PRELOAD iconv_shim.so로 해결** | KmcCrypto가 iconv_open("EUC-KR") 호출 → gconv 대신 LD_PRELOAD shim 주입 |
 | 2/26 | 가입 플로우 전환 | 웹+앱 | AuthSheet kmc_verify 스텝 + verify/callback 라우트 + 앱 onboarding profile_info + profile.ts v3 + 앱 이메일→웹 이동 | identity/email_sent 제거, signUp 후 session null 대응(자동 signIn), CI 중복체크 |
 | 2/26 | KMC 에러 코드 5 | 웹 | KMC 팝업에서 에러 코드 5 발생. 암호화는 성공(Vercel 로그 확인). **tr_cert plainText 포맷 규격 불일치** | plainText 포맷 변경 시 KMC 가이드 정독 필수 |
@@ -557,8 +601,9 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 2/27 | **Apple Developer + EAS 빌드** | 앱+인프라 | DUNS 승인(694835804) + Apple Developer 등록 신청 + 카카오/네이버 동의항목 완료 + EAS Android 개발 빌드 성공 (notification-icon 누락 해결) | EAS prebuild 시 notification-icon.png 필수. monochrome 아이콘 재활용 가능 |
 | 2/27 | **푸시 알림 e2e 완료** 🔔 | 앱+인프라 | Firebase 프로젝트 생성 + FCM V1 서비스 계정 키 → Expo credentials 등록 + 토큰 발급 성공 + 어드민 발송 → 실제 수신 확인 | FCM V1 필수(Legacy 아님). `eas credentials -p android` → Google Service Account → FCM V1. app.json에 `googleServicesFile` 필수. **app.json scheme과 네이티브 빌드 스킴 불일치 주의** |
 | 3/4 | **마이페이지 버그 수정 + 푸시 개선** | 웹+어드민 | 프로필 저장 서버 API 통일(PATCH) + 알림 설정 푸시만 남기기 + 새 딜 푸시 아침 9시 Cron 일괄 발송(save-deals v2.6) | **클라이언트 createClient() auth lock 문제 → 서버 API 통일이 정석. 미구현 기능(카카오/SMS/이메일 알림)은 UI에서 미리 제거** |
-| 3/4 | **마이페이지 저장 근본 수정 + SMTP** | 웹+인프라 | profile API service_role 전환(RLS silent fail 해결) + fullProfile 기반 카테고리/알림 UI 전환 + 레거시 채널 필터링 + Resend SMTP 연동 + 이메일 템플릿 한국어화 + 비밀번호 재설정 페이지 미구현 발견 | **anon key update는 RLS silent fail(에러 없이 0 rows) → service_role 필수. 가비아 하이웍스 SMTP 외부 연동 불가 → Resend 전환. recovery 콜백 처리 페이지 필요** |
+| 3/4 | **마이페이지 저장 근본 수정 + SMTP** | 웹+인프라 | profile API service_role 전환(RLS silent fail 해결) + fullProfile 기반 카테고리/알림 UI 전환 + 레거시 채널 필터링 + Resend SMTP 연동 + 이메일 템플릿 한국어화 | **anon key update는 RLS silent fail(에러 없이 0 rows) → service_role 필수. 가비아 하이웍스 SMTP 외부 연동 불가 → Resend 전환** |
+| 3/4 | ❌ **비밀번호 재설정 5회 실패** | 웹 | 5가지 방식 시도 전부 실패. 근본 원인: recovery 세션이 기존 세션 쿠키 덮어씌움 + 클라이언트 auth lock. recovery 세션 찌꺼기로 카카오 로그인까지 불가. **현재 코드 롤백 + 근본 재설계 필요** | **⚠️ Supabase `resetPasswordForEmail()` + PKCE callback은 recovery 세션을 생성하며, 이 세션이 기존 세션을 덮어씌운다. recovery 세션을 만들지 않는 방식(직접 변경 or admin.generateLink)으로 전환 필수. 클라이언트에서 Supabase auth API 호출은 auth lock 위험 — 항상 서버 API 경유** |
 
 ---
 
-*마지막 업데이트: 2026-03-04 (마이페이지 저장 근본 수정 + Resend SMTP + 이메일 템플릿 + 비밀번호 재설정 페이지 TODO)*
+*마지막 업데이트: 2026-03-04 (비밀번호 재설정 5회 실패 기록 + 롤백 + 재설계 방향 + ADR-05 + R6)*

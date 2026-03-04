@@ -16,15 +16,15 @@ import { createClient } from '@/lib/supabase/client';
  * 이메일 가입: main → kmc_verify → signup(이메일+비번) → categories → marketing → signUp → complete
  * SNS 신규:   카카오/네이버 OAuth → callback → /?onboarding=sns → categories → marketing → 완료
  * 로그인:     main → login → 완료
+ * 비밀번호 찾기: login → forgot_password → 이메일 발송 완료
  *
- * ✅ 변경점:
- * - identity 스텝 제거 (KMC 본인인증으로 대체)
- * - email_sent 스텝 제거 (이메일 확인 메일 비활성화)
- * - kmc_verify 스텝 추가
- * - signUp 후 바로 session 반환 (email confirmation OFF)
+ * ✅ 변경점 (3/4):
+ * - forgot_password 스텝 추가 (비로그인 비밀번호 찾기)
+ * - resetPasswordForEmail() 사용 금지 (recovery 세션 문제)
+ * - 대신 /api/auth/forgot-password → admin.generateLink + Resend 커스텀 이메일
  */
 
-type AuthStep = AuthSheetStep | 'kmc_verify' | 'complete';
+type AuthStep = AuthSheetStep | 'kmc_verify' | 'complete' | 'forgot_password';
 
 interface CategoryOption {
   id: string;
@@ -85,6 +85,10 @@ export function AuthSheet() {
 
   // SNS 온보딩 모드
   const [isSNSOnboarding, setIsSNSOnboarding] = useState(false);
+
+  // ✅ 비밀번호 찾기 (forgot_password 스텝)
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
 
   // 공통
   const [loading, setLoading] = useState(false);
@@ -196,17 +200,11 @@ export function AuthSheet() {
 
   // ═══════════════════════════════════════════
   // KMC 본인인증 팝업 열기
-  // KMC 가이드 p.11 샘플 방식:
-  // 1) 빈 팝업 열기
-  // 2) /api/kmc/request에서 tr_cert JSON 수신
-  // 3) 현재 페이지(/auth)에서 hidden form.target=팝업으로 submit
-  // → Referer가 등록된 URL(/auth)과 일치
   // ═══════════════════════════════════════════
   const openKmcVerify = async () => {
     setKmcLoading(true);
     setError('');
 
-    // 1) 빈 팝업 먼저 열기 (유저 제스처 컨텍스트에서 열어야 차단 안 됨)
     const popup = window.open(
       '',
       'KMCISWindow',
@@ -220,7 +218,6 @@ export function AuthSheet() {
     }
 
     try {
-      // 2) 서버에서 tr_cert 데이터 가져오기
       const res = await fetch('/api/kmc/request');
       const data = await res.json();
 
@@ -231,7 +228,6 @@ export function AuthSheet() {
         return;
       }
 
-      // 3) 현재 페이지에서 hidden form 생성 → target을 팝업으로 지정하여 submit
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = data.form_url;
@@ -264,7 +260,6 @@ export function AuthSheet() {
       return;
     }
 
-    // 팝업이 닫혔는데 결과 안 온 경우 처리
     const checkClosed = setInterval(() => {
       if (popup.closed) {
         clearInterval(checkClosed);
@@ -325,7 +320,6 @@ export function AuthSheet() {
     setError('');
     try {
       if (isSNSOnboarding) {
-        // SNS는 이미 로그인됨 → 마케팅만 저장
         const currentUser = user;
         const userId = currentUser?.id;
         if (userId) {
@@ -340,7 +334,6 @@ export function AuthSheet() {
         return;
       }
 
-      // ✅ 이메일 가입: signUp 실행 (email confirmation OFF → 바로 session)
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -363,7 +356,6 @@ export function AuthSheet() {
         return;
       }
 
-      // signUp 후 session이 없으면 (이메일 확인 ON 상태) → 자동 로그인
       if (!signUpData.session) {
         const { error: loginErr } = await supabase.auth.signInWithPassword({
           email,
@@ -377,10 +369,8 @@ export function AuthSheet() {
         }
       }
 
-      // 프로필 트리거가 profiles row를 만들 때까지 잠시 대기
       await new Promise(r => setTimeout(r, 500));
 
-      // ✅ KMC 데이터 + 카테고리 + 마케팅 한꺼번에 저장
       const hasConsent = marketingKakao || marketingPush || marketingEmail;
 
       const rawPhone = kmcData?.phoneNo?.replace(/[^0-9]/g, '') || '';
@@ -411,7 +401,6 @@ export function AuthSheet() {
         console.error('Profile update error:', updateError);
       }
 
-      // 아이디 저장
       try {
         if (rememberEmail) {
           localStorage.setItem(REMEMBER_EMAIL_KEY, email);
@@ -481,6 +470,37 @@ export function AuthSheet() {
     }
   };
 
+  // ═══════════════════════════════════════════
+  // ✅ 비밀번호 찾기 이메일 발송
+  // recovery 세션 없음: /api/auth/forgot-password → admin.generateLink + Resend
+  // ═══════════════════════════════════════════
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('이메일을 입력해주세요');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setForgotPasswordSent(true);
+      } else {
+        setError(data.error || '이메일 발송에 실패했습니다.');
+      }
+    } catch {
+      setError('서버 오류가 발생했습니다.');
+    }
+    setForgotPasswordLoading(false);
+  };
+
   // ── SNS 로그인 ──
   const handleSNSLogin = async (provider: 'kakao' | 'google') => {
     setLoading(true);
@@ -540,6 +560,8 @@ export function AuthSheet() {
     setMarketingPush(false);
     setMarketingEmail(false);
     setIsSNSOnboarding(false);
+    setForgotPasswordSent(false);
+    setForgotPasswordLoading(false);
     try {
       const saved = localStorage.getItem(REMEMBER_EMAIL_KEY);
       if (!saved) setEmail('');
@@ -555,9 +577,13 @@ export function AuthSheet() {
     else if (step === 'signup') setStep('kmc_verify');
     else if (step === 'categories' && !isSNSOnboarding) setStep('signup');
     else if (step === 'marketing' && !isSNSOnboarding) setStep('categories');
+    else if (step === 'forgot_password') {
+      setForgotPasswordSent(false);
+      setStep('login');
+    }
   };
 
-  const canGoBack = !isSNSOnboarding && ['kmc_verify', 'signup', 'categories', 'marketing'].includes(step);
+  const canGoBack = !isSNSOnboarding && ['kmc_verify', 'signup', 'categories', 'marketing', 'forgot_password'].includes(step);
 
   // 진행률
   const progressSteps = ['kmc_verify', 'signup', 'categories', 'marketing'];
@@ -709,7 +735,6 @@ export function AuthSheet() {
                 </div>
 
                 {kmcData ? (
-                  /* 인증 완료 상태 */
                   <div className="space-y-3">
                     <div className="p-4 bg-green-50 rounded-xl border border-green-200">
                       <div className="flex items-center gap-2 mb-2">
@@ -729,7 +754,6 @@ export function AuthSheet() {
                     </button>
                   </div>
                 ) : (
-                  /* 인증 전 상태 */
                   <div className="space-y-4">
                     <div className="p-4 bg-gray-50 rounded-xl">
                       <p className="text-sm text-gray-600 leading-relaxed">
@@ -771,19 +795,9 @@ export function AuthSheet() {
                   </button>
                   <h2 className="text-xl font-bold text-gray-900">계정 설정</h2>
                   <p className="text-sm text-gray-500 mt-1">
-                    로그인에 사용할 이메일과 비밀번호를 설정해주세요
+                    {kmcData?.name ? `${kmcData.name}님, ` : ''}로그인에 사용할 이메일과 비밀번호를 설정해주세요
                   </p>
                 </div>
-
-                {/* KMC 인증 정보 표시 */}
-                {kmcData && (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 rounded-xl mb-4">
-                    <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
-                    <span className="text-sm text-green-700">
-                      {kmcData.name}님 본인인증 완료
-                    </span>
-                  </div>
-                )}
 
                 <div className="space-y-3">
                   <div>
@@ -913,21 +927,32 @@ export function AuthSheet() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setRememberEmail(!rememberEmail)}
-                  className="flex items-center gap-2 mt-3 cursor-pointer select-none"
-                >
-                  <div
-                    className={`rounded flex items-center justify-center flex-shrink-0 transition-colors ${
-                      rememberEmail ? 'bg-red-500' : 'border border-gray-300'
-                    }`}
-                    style={{ width: 18, height: 18 }}
+                {/* 아이디 저장 + 비밀번호 찾기 (한 줄) */}
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setRememberEmail(!rememberEmail)}
+                    className="flex items-center gap-2 cursor-pointer select-none"
                   >
-                    {rememberEmail && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <span className="text-sm text-gray-500">아이디 저장</span>
-                </button>
+                    <div
+                      className={`rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+                        rememberEmail ? 'bg-red-500' : 'border border-gray-300'
+                      }`}
+                      style={{ width: 18, height: 18 }}
+                    >
+                      {rememberEmail && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    <span className="text-sm text-gray-500">아이디 저장</span>
+                  </button>
+
+                  {/* ✅ 비밀번호 찾기 링크 */}
+                  <button
+                    onClick={() => { setStep('forgot_password'); setError(''); setForgotPasswordSent(false); }}
+                    className="text-sm text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    비밀번호를 잊으셨나요?
+                  </button>
+                </div>
 
                 {error && (
                   <p className="text-sm text-red-500 mt-3">{error}</p>
@@ -948,6 +973,91 @@ export function AuthSheet() {
                 >
                   아직 회원이 아니신가요? <span className="font-semibold text-red-500">회원가입</span>
                 </button>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════
+                STEP: forgot_password — 비밀번호 찾기 (이메일 발송)
+                ✅ resetPasswordForEmail() 사용 금지 → /api/auth/forgot-password 서버 API
+               ═══════════════════════════════════════════ */}
+            {step === 'forgot_password' && (
+              <>
+                <div className="pt-2 mb-6">
+                  <button
+                    onClick={handleBack}
+                    className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 mb-4"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    뒤로
+                  </button>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Mail className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900">비밀번호 찾기</h2>
+                    <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">
+                      가입한 이메일로 비밀번호 재설정 링크를 보내드립니다
+                    </p>
+                  </div>
+                </div>
+
+                {forgotPasswordSent ? (
+                  /* ✅ 발송 완료 상태 */
+                  <div className="space-y-4">
+                    <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Check className="w-5 h-5 text-green-600" />
+                        <span className="text-sm font-bold text-green-700">이메일 발송 완료</span>
+                      </div>
+                      <p className="text-sm text-green-600 leading-relaxed">
+                        <strong>{email}</strong>로 비밀번호 재설정 링크를 보냈습니다.
+                        메일함을 확인해주세요.
+                      </p>
+                    </div>
+
+                    <p className="text-xs text-gray-400 text-center leading-relaxed">
+                      메일이 도착하지 않으면 스팸함을 확인하거나<br />
+                      잠시 후 다시 시도해주세요.
+                    </p>
+
+                    <button
+                      onClick={() => { setForgotPasswordSent(false); setStep('login'); }}
+                      className="w-full h-12 rounded-xl bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+                    >
+                      로그인으로 돌아가기
+                    </button>
+                  </div>
+                ) : (
+                  /* 이메일 입력 + 발송 버튼 */
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">이메일</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && email) handleForgotPassword(); }}
+                        placeholder="example@email.com"
+                        className="w-full px-4 h-12 rounded-xl border border-gray-200 text-sm
+                                   focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                        autoFocus
+                      />
+                    </div>
+
+                    {error && (
+                      <p className="text-sm text-red-500 text-center">{error}</p>
+                    )}
+
+                    <button
+                      onClick={handleForgotPassword}
+                      disabled={forgotPasswordLoading || !email}
+                      className="w-full h-12 rounded-xl bg-red-500 text-white font-semibold
+                                 hover:bg-red-600 disabled:bg-gray-200 disabled:text-gray-400 transition-colors"
+                    >
+                      {forgotPasswordLoading ? '발송 중...' : '재설정 링크 보내기'}
+                    </button>
+                  </div>
+                )}
               </>
             )}
 

@@ -272,7 +272,15 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 - anon key는 프론트엔드 노출됨 → RLS가 실제 보안 방벽
 
 ### 인증 / 회원
-- **⚠️ createClient() auth lock**: 브라우저 Supabase 싱글톤이 토큰 갱신 중 lock 걸리면 `.update()` 프로미스 영원히 대기 → "저장 중..." 고착. **해결: 프로필 관련 DB 조작은 `/api/me/profile` 서버 API(PATCH)로 통일 (3/4)**. 마이페이지에서 `createClient()` 직접 DB 호출 금지 (비밀번호 재설정 auth API만 예외)
+- **⚠️ createClient() auth lock**: 브라우저 Supabase 싱글톤이 토큰 갱신 중 lock 걸리면 `.update()` 프로미스 영원히 대기 → "저장 중..." 고착. **해결: 프로필 관련 DB 조작은 `/api/me/profile` 서버 API(PATCH)로 통일 (3/4)**. 마이페이지에서 `createClient()` 직접 DB 호출 금지.
+- **⚠️⚠️⚠️ 비밀번호 재설정 — recovery 세션 근본 문제 (3/4 5회 실패)**:
+  - `resetPasswordForEmail()` → 이메일 링크 → `/auth/callback?code=xxx` → `exchangeCodeForSession(code)` → **recovery 세션 쿠키가 기존 로그인 세션 쿠키를 덮어씌움** → 기존 로그인(카카오 등) 풀림
+  - 새 탭에서 열리므로 클라이언트 AuthProvider가 recovery 세션을 감지 못함 → TopNav "로그인" 표시
+  - 비밀번호 변경 후에도 recovery 세션 쿠키 찌꺼기가 남아 카카오/네이버 로그인 방해
+  - **클라이언트에서 exchangeCodeForSession/getUser/getSession/updateUser 전부 auth lock 또는 세션 미인식**
+  - **절대 금지**: `resetPasswordForEmail()` + PKCE callback 방식으로 비밀번호 재설정 구현
+  - **해결 방향**: recovery 세션을 만들지 않는 방식 → (A) 마이페이지 직접 변경 (B) admin.generateLink 커스텀 이메일. 상세: STATUS.md CURRENT_TASK 참조
+  - **현재 배포 코드 상태**: callback/route.ts에 password_reset_pending 쿠키 체크 삽입됨 + me/page.tsx에 쿠키 세팅 추가됨 → **롤백 필요**
 - **웹 이메일 가입 (2/26 전환)**: main → kmc_verify → signup → categories → marketing → signUp → 자동 로그인
 - **signUp 후 session null 대응**: `signInWithPassword`로 자동 로그인 (Supabase email confirmation 상태 무관하게 동작)
 - **KMC postMessage**: 팝업에서 `window.opener.postMessage({ type: 'KMC_RESULT', payload })` → AuthSheet에서 `message` 이벤트 수신. **이름은 URL 인코딩 상태 → callback + AuthSheet 양쪽에서 `decodeURIComponent` 필수**
@@ -350,7 +358,7 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 ### 이메일 / SMTP
 - **가비아 하이웍스 SMTP 외부 연동 불가**: POP3/SMTP 사용함 설정 + 메일 전용 비밀번호 생성해도 `535 5.7.8 Error: authentication failed` 발생. → **Resend SMTP로 전환하여 해결**
 - **Supabase 비밀번호 재설정**: `resetPasswordForEmail()` → Supabase Auth 서버 직접 호출 (Vercel 로그에 안 찍힘) → Supabase Auth Logs에서 확인
-- **recovery 콜백 미처리**: 비밀번호 재설정 링크 클릭 시 `/auth/callback`으로 오지만 recovery 타입 처리 로직 없어서 홈으로 이동 → **비밀번호 재설정 페이지 구현 필요 (TODO)**
+- **❌ recovery 콜백 방식 폐기 (3/4)**: `resetPasswordForEmail()` + PKCE callback 방식은 recovery 세션이 기존 세션을 덮어씌우는 근본 문제로 **사용 불가**. 비밀번호 재설정은 recovery 세션을 만들지 않는 방식으로 전환 필요 (마이페이지 직접 변경 or admin.generateLink). 상세: STATUS.md CURRENT_TASK 참조
 
 ### 프로필 저장 (RLS)
 - **anon key로 profiles update 시 RLS silent fail**: 에러 없이 200 반환하지만 실제 0 rows 업데이트됨. → **service_role 클라이언트로 변경 필수** (`/api/me/profile` route.ts)
@@ -364,4 +372,4 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 
 ---
 
-*마지막 업데이트: 2026-03-04 (Resend SMTP 연동 + 프로필 RLS silent fail 트러블슈팅 + recovery 콜백 TODO)*
+*마지막 업데이트: 2026-03-04 (비밀번호 재설정 recovery 세션 근본 문제 기록 + 롤백 필요 + resetPasswordForEmail 방식 폐기)*

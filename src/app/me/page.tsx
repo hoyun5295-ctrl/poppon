@@ -135,7 +135,7 @@ export default function MyPage() {
 
       {tab === 'saved' && <SavedDealsTab />}
       {tab === 'follows' && <FollowsTab />}
-      {tab === 'settings' && <SettingsTab profile={profile} user={user} onRefresh={refreshProfile} />}
+      {tab === 'settings' && <SettingsTab profile={profile} user={user} />}
     </div>
   );
 }
@@ -399,8 +399,8 @@ function FollowsRecommendSection({ excludeIds, onFollow }: { excludeIds: string[
 }
 
 // --- 설정 탭 ---
-function SettingsTab({ profile, user, onRefresh }: {
-  profile: any; user: any; onRefresh: () => Promise<void>;
+function SettingsTab({ profile, user }: {
+  profile: any; user: any;
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -514,7 +514,7 @@ function SettingsTab({ profile, user, onRefresh }: {
       />
 
       {/* 관심 카테고리 */}
-      <InterestCategoriesSection profile={profile} onRefresh={onRefresh} userId={user?.id} />
+      <InterestCategoriesSection fullProfile={fullProfile} userId={user?.id} />
 
       {/* 추천 브랜드 구독 */}
       <RecommendedBrandsSection userId={user?.id} />
@@ -725,12 +725,19 @@ function getProviderLabel(provider?: string): string {
 }
 
 // --- 관심 카테고리 편집 ---
-function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: any; onRefresh: () => Promise<void>; userId?: string }) {
+function InterestCategoriesSection({ fullProfile, userId }: { fullProfile: any; userId?: string }) {
   const { showToast } = useAuth();
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
-  const [selected, setSelected] = useState<string[]>(profile?.interest_categories || []);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [originalSelected, setOriginalSelected] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+
+  // fullProfile 로딩 후 값 동기화
+  useEffect(() => {
+    const cats = fullProfile?.interest_categories || [];
+    setSelected(cats);
+    setOriginalSelected(cats);
+  }, [fullProfile?.interest_categories]);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/categories?depth=eq.0&is_active=eq.true&order=sort_order&select=id,name,slug`, {
@@ -741,11 +748,8 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    const original = profile?.interest_categories || [];
-    const changed = selected.length !== original.length || selected.some((id: string) => !original.includes(id));
-    setHasChanges(changed);
-  }, [selected, profile?.interest_categories]);
+  const hasChanges = selected.length !== originalSelected.length ||
+    selected.some((id: string) => !originalSelected.includes(id));
 
   const toggle = (id: string) => {
     setSelected(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
@@ -761,9 +765,8 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
         body: JSON.stringify({ interest_categories: selected }),
       });
       if (res.ok) {
-        onRefresh().catch(() => {}); // fire-and-forget (auth lock 방지)
+        setOriginalSelected([...selected]);
         showToast('관심 카테고리가 저장되었습니다', 'success');
-        setHasChanges(false);
       } else {
         showToast('저장에 실패했습니다', 'error');
       }
@@ -780,7 +783,7 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
         관심 카테고리
       </h3>
       <p className="text-xs text-surface-400 mb-4">
-        관심 카테고리를 선택하면 맞춤 딜을 추천해드려요
+        선택한 카테고리에 맞는 딜을 추천해드려요
       </p>
 
       <div className="flex flex-wrap gap-2">
@@ -1072,11 +1075,13 @@ function NotificationSettingsSection({ fullProfile, userId, loading: profileLoad
   const [originalChannels, setOriginalChannels] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // fullProfile 로딩 후 값 동기화
+  // fullProfile 로딩 후 값 동기화 — 유효한 채널만 필터링 (레거시 kakao/sms/email 제거)
   useEffect(() => {
-    const ch = fullProfile?.marketing_channel || [];
-    setChannels(ch);
-    setOriginalChannels(ch);
+    const validKeys = NOTIFICATION_CHANNELS.map(c => c.key);
+    const raw = fullProfile?.marketing_channel || [];
+    const filtered = raw.filter((c: string) => validKeys.includes(c));
+    setChannels(filtered);
+    setOriginalChannels(filtered);
   }, [fullProfile?.marketing_channel]);
 
   const toggle = (key: string) => {

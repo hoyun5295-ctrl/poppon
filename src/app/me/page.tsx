@@ -1077,7 +1077,7 @@ function NotificationSettingsSection({ fullProfile, userId, loading: profileLoad
 
   // fullProfile 로딩 후 값 동기화 — 유효한 채널만 필터링 (레거시 kakao/sms/email 제거)
   useEffect(() => {
-    const validKeys = NOTIFICATION_CHANNELS.map(c => c.key);
+    const validKeys: string[] = NOTIFICATION_CHANNELS.map(c => c.key);
     const raw = fullProfile?.marketing_channel || [];
     const filtered = raw.filter((c: string) => validKeys.includes(c));
     setChannels(filtered);

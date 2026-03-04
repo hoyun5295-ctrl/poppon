@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const supabase = createClient();
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -13,6 +15,36 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // 세션 상태
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+
+  // 페이지 로드 시 세션 확인
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // getSession → getUser 순서로 체크
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setHasSession(true);
+          setUserEmail(session.user.email || '');
+        } else {
+          // getSession이 null이면 getUser도 시도
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            setHasSession(true);
+            setUserEmail(user.email || '');
+          }
+        }
+      } catch {
+        // 세션 없음
+      }
+      setSessionChecked(true);
+    };
+    checkSession();
+  }, []);
 
   const isValid = password.length >= 6 && password === confirmPassword;
 
@@ -32,7 +64,6 @@ export default function ResetPasswordPage() {
     setError('');
 
     try {
-      const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({
         password,
       });
@@ -40,6 +71,12 @@ export default function ResetPasswordPage() {
       if (updateError) {
         if (updateError.message.includes('same_password')) {
           setError('현재 비밀번호와 동일합니다. 다른 비밀번호를 입력해 주세요.');
+        } else if (
+          updateError.message.includes('session_not_found') ||
+          updateError.message.includes('not authenticated') ||
+          updateError.message.includes('Auth session missing')
+        ) {
+          setError('세션이 만료되었습니다. 마이페이지에서 비밀번호 재설정을 다시 요청해 주세요.');
         } else {
           setError(updateError.message || '비밀번호 변경에 실패했습니다.');
         }
@@ -49,7 +86,6 @@ export default function ResetPasswordPage() {
       // 성공
       setSuccess(true);
 
-      // 토스트 세팅 후 홈으로 이동
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('poppon_pending_toast', JSON.stringify({
           type: 'success',
@@ -60,12 +96,53 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push('/');
       }, 1500);
-    } catch {
-      setError('오류가 발생했습니다. 다시 시도해 주세요.');
+    } catch (err: any) {
+      // 실제 에러 메시지 표시 (디버깅용)
+      const msg = err?.message || '알 수 없는 오류';
+      setError(`오류: ${msg}`);
     } finally {
       setLoading(false);
     }
   };
+
+  // 로딩 중
+  if (!sessionChecked) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // 세션 없음 — 링크 만료 또는 이미 사용됨
+  if (!hasSession) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+            <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-5">
+              <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">링크가 만료되었습니다</h2>
+            <p className="text-gray-500 text-sm leading-relaxed">
+              비밀번호 재설정 링크가 만료되었거나<br />이미 사용되었습니다.
+            </p>
+            <p className="text-gray-400 text-xs mt-3">
+              마이페이지 → 설정에서 다시 요청해 주세요.
+            </p>
+            <a
+              href="/"
+              className="mt-6 inline-flex items-center gap-1 px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors text-sm"
+            >
+              홈으로 이동
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // 성공 화면
   if (success) {
@@ -98,7 +175,10 @@ export default function ResetPasswordPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-gray-900">새 비밀번호 설정</h1>
-            <p className="text-gray-500 text-sm mt-2">안전한 비밀번호로 변경해 주세요.</p>
+            <p className="text-gray-500 text-sm mt-2">
+              {userEmail && <><span className="font-medium text-gray-700">{userEmail}</span> 계정의<br /></>}
+              안전한 비밀번호로 변경해 주세요.
+            </p>
           </div>
 
           {/* 입력 폼 */}
@@ -138,7 +218,6 @@ export default function ResetPasswordPage() {
                   )}
                 </button>
               </div>
-              {/* 비밀번호 강도 표시 */}
               {password.length > 0 && (
                 <div className="mt-2 flex items-center gap-2">
                   <div className="flex-1 flex gap-1">
@@ -187,7 +266,6 @@ export default function ResetPasswordPage() {
                   )}
                 </button>
               </div>
-              {/* 일치 여부 표시 */}
               {confirmPassword.length > 0 && (
                 <p className={`mt-1.5 text-xs flex items-center gap-1 ${password === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
                   {password === confirmPassword ? (

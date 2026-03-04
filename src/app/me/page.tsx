@@ -434,8 +434,10 @@ function SettingsTab({ profile, user }: {
     if (!user?.email) return;
     setPasswordResetLoading(true);
     try {
+      // 서버 callback에서 비밀번호 재설정 분기를 위한 쿠키 세팅 (1시간 유효)
+      document.cookie = 'password_reset_pending=true;path=/;max-age=3600;SameSite=Lax';
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       });
       if (!error) {
         setPasswordResetSent(true);

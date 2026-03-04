@@ -7,7 +7,10 @@ import { cookies } from 'next/headers';
  * /auth/callback
  * 
  * SNS OAuth 로그인 후 Supabase가 리다이렉트하는 콜백 엔드포인트 (카카오 등)
+ * + 비밀번호 재설정 콜백 (password_reset_pending 쿠키로 분기)
+ * 
  * code → session 교환 후:
+ *   - password_reset_pending 쿠키 있음 → /auth/reset-password (비밀번호 재설정)
  *   - ✅ profiles 테이블에 프로필 정보 저장 (이름/성별/생일/전화번호/linked_providers)
  *   - 신규 유저 → /?onboarding=sns (카테고리+마케팅 동의 온보딩)
  *   - 기존 유저 → / (토스트만 표시)
@@ -43,6 +46,15 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
+      // ── 비밀번호 재설정 요청인지 확인 (쿠키 기반) ──
+      const isPasswordReset = cookieStore.get('password_reset_pending')?.value === 'true';
+      if (isPasswordReset) {
+        const response = NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin));
+        response.cookies.set('password_reset_pending', '', { path: '/', maxAge: 0 });
+        return response;
+      }
+
+      // ── 기존 OAuth 로직 ──
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {

@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+/**
+ * /auth/reset-password
+ * 
+ * 비밀번호 재설정 페이지
+ * 서버 callback에서 code 교환 + 세션 쿠키 설정 완료 후 여기로 리다이렉트됨
+ * URL에 ?code 파라미터 없음 → auth lock 발생 안 함
+ * 
+ * 세션 체크 없이 바로 폼 표시 → updateUser() 호출 시 세션 없으면 에러 처리
+ */
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,32 +23,6 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-
-  // 페이지 상태
-  const [pageState, setPageState] = useState<'loading' | 'ready' | 'expired'>('loading');
-  const [userEmail, setUserEmail] = useState('');
-
-  useEffect(() => {
-    // Supabase PKCE: 이메일 링크 클릭 시 Supabase Auth 서버가 code를 교환하고
-    // 세션 쿠키를 설정한 뒤 redirectTo로 보냄.
-    // 따라서 이 페이지에 도착했을 때 이미 세션이 있어야 정상.
-    //
-    // getSession()은 로컬 세션만 확인 (네트워크 호출 없음, auth lock 영향 없음)
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        setUserEmail(session.user.email || '');
-        // URL에서 code 파라미터 제거
-        window.history.replaceState({}, '', '/auth/reset-password');
-        setPageState('ready');
-      } else {
-        setPageState('expired');
-      }
-    };
-
-    checkSession();
-  }, []);
 
   const isValid = password.length >= 6 && password === confirmPassword;
 
@@ -51,19 +33,20 @@ export default function ResetPasswordPage() {
     setError('');
 
     try {
+      const supabase = createClient();
       const { error: updateError } = await supabase.auth.updateUser({
         password,
       });
 
       if (updateError) {
-        if (updateError.message.includes('same_password')) {
+        if (updateError.message.includes('same_password') || updateError.message.includes('different_password')) {
           setError('현재 비밀번호와 동일합니다. 다른 비밀번호를 입력해 주세요.');
         } else if (
           updateError.message.includes('session_not_found') ||
           updateError.message.includes('not authenticated') ||
           updateError.message.includes('Auth session missing')
         ) {
-          setError('세션이 만료되었습니다. 마이페이지에서 비밀번호 재설정을 다시 요청해 주세요.');
+          setError('인증이 만료되었습니다. 마이페이지에서 비밀번호 재설정을 다시 요청해 주세요.');
         } else {
           setError(updateError.message || '비밀번호 변경에 실패했습니다.');
         }
@@ -89,49 +72,7 @@ export default function ResetPasswordPage() {
     }
   };
 
-  // ── 로딩 ──
-  if (pageState === 'loading') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-400">인증 확인 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ── 만료 ──
-  if (pageState === 'expired') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-md text-center">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-5">
-              <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">링크가 만료되었습니다</h2>
-            <p className="text-gray-500 text-sm leading-relaxed">
-              비밀번호 재설정 링크가 만료되었거나<br />이미 사용되었습니다.
-            </p>
-            <p className="text-gray-400 text-xs mt-3">
-              마이페이지 → 설정에서 다시 요청해 주세요.
-            </p>
-            <a
-              href="/"
-              className="mt-6 inline-flex items-center gap-1 px-6 py-3 bg-red-500 text-white font-semibold rounded-xl hover:bg-red-600 transition-colors text-sm"
-            >
-              홈으로 이동
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── 성공 ──
+  // ── 성공 화면 ──
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -155,6 +96,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
+          {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="mx-auto w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-4">
               <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -162,12 +104,10 @@ export default function ResetPasswordPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-gray-900">새 비밀번호 설정</h1>
-            <p className="text-gray-500 text-sm mt-2">
-              {userEmail && <><span className="font-medium text-gray-700">{userEmail}</span> 계정의<br /></>}
-              안전한 비밀번호로 변경해 주세요.
-            </p>
+            <p className="text-gray-500 text-sm mt-2">안전한 비밀번호로 변경해 주세요.</p>
           </div>
 
+          {/* 입력 */}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호</label>
@@ -262,12 +202,14 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
+          {/* 에러 */}
           {error && (
             <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-100">
               <p className="text-sm text-red-600 text-center">{error}</p>
             </div>
           )}
 
+          {/* 버튼 */}
           <button
             onClick={handleSubmit}
             disabled={!isValid || loading}

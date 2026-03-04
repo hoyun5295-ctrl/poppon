@@ -435,7 +435,7 @@ function SettingsTab({ profile, user }: {
     setPasswordResetLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/auth/callback/reset`,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
       });
       if (!error) {
         setPasswordResetSent(true);

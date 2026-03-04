@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [password, setPassword] = useState('');
@@ -17,48 +19,55 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
 
   // 세션 상태
-  const [sessionChecked, setSessionChecked] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
+  const [pageState, setPageState] = useState<'loading' | 'ready' | 'expired'>('loading');
   const [userEmail, setUserEmail] = useState('');
 
-  // 페이지 로드 시 세션 확인
+  // 페이지 로드 시: URL에 code가 있으면 교환, 없으면 기존 세션 체크
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        // getSession → getUser 순서로 체크
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setHasSession(true);
-          setUserEmail(session.user.email || '');
-        } else {
-          // getSession이 null이면 getUser도 시도
+    const init = async () => {
+      const code = searchParams.get('code');
+
+      if (code) {
+        // ── code가 있으면 클라이언트에서 직접 세션 교환 ──
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+        if (!exchangeError) {
+          // URL에서 code 제거 (뒤로가기 시 재사용 방지)
+          window.history.replaceState({}, '', '/auth/reset-password');
+
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
-            setHasSession(true);
             setUserEmail(user.email || '');
+            setPageState('ready');
+            return;
           }
         }
-      } catch {
-        // 세션 없음
+        // code 교환 실패
+        setPageState('expired');
+        return;
       }
-      setSessionChecked(true);
+
+      // ── code 없으면 기존 세션 확인 ──
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserEmail(user.email || '');
+          setPageState('ready');
+          return;
+        }
+      } catch {
+        // 무시
+      }
+      setPageState('expired');
     };
-    checkSession();
+
+    init();
   }, []);
 
   const isValid = password.length >= 6 && password === confirmPassword;
 
   const handleSubmit = async () => {
     if (!isValid || loading) return;
-
-    if (password.length < 6) {
-      setError('비밀번호는 6자 이상이어야 합니다.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.');
-      return;
-    }
 
     setLoading(true);
     setError('');
@@ -83,7 +92,6 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      // 성공
       setSuccess(true);
 
       if (typeof window !== 'undefined') {
@@ -97,25 +105,26 @@ export default function ResetPasswordPage() {
         router.push('/');
       }, 1500);
     } catch (err: any) {
-      // 실제 에러 메시지 표시 (디버깅용)
-      const msg = err?.message || '알 수 없는 오류';
-      setError(`오류: ${msg}`);
+      setError(err?.message || '오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 로딩 중
-  if (!sessionChecked) {
+  // ── 로딩 ──
+  if (pageState === 'loading') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-400">인증 확인 중...</p>
+        </div>
       </div>
     );
   }
 
-  // 세션 없음 — 링크 만료 또는 이미 사용됨
-  if (!hasSession) {
+  // ── 세션 없음 / 링크 만료 ──
+  if (pageState === 'expired') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
@@ -144,7 +153,7 @@ export default function ResetPasswordPage() {
     );
   }
 
-  // 성공 화면
+  // ── 성공 ──
   if (success) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -163,6 +172,7 @@ export default function ResetPasswordPage() {
     );
   }
 
+  // ── 비밀번호 입력 폼 ──
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -181,21 +191,15 @@ export default function ResetPasswordPage() {
             </p>
           </div>
 
-          {/* 입력 폼 */}
+          {/* 입력 */}
           <div className="space-y-4">
-            {/* 새 비밀번호 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                새 비밀번호
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError('');
-                  }}
+                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="6자 이상 입력"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-all text-base"
                   autoFocus
@@ -232,19 +236,13 @@ export default function ResetPasswordPage() {
               )}
             </div>
 
-            {/* 비밀번호 확인 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                비밀번호 확인
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">비밀번호 확인</label>
               <div className="relative">
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-                    setError('');
-                  }}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
                   placeholder="비밀번호를 다시 입력"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-all text-base"
                 />
@@ -288,24 +286,20 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          {/* 에러 메시지 */}
           {error && (
             <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-100">
               <p className="text-sm text-red-600 text-center">{error}</p>
             </div>
           )}
 
-          {/* 변경 버튼 */}
           <button
             onClick={handleSubmit}
             disabled={!isValid || loading}
-            className={`
-              w-full mt-6 py-3.5 rounded-xl text-base font-semibold transition-all
-              ${isValid && !loading
+            className={`w-full mt-6 py-3.5 rounded-xl text-base font-semibold transition-all ${
+              isValid && !loading
                 ? 'bg-red-500 hover:bg-red-600 text-white shadow-sm active:scale-[0.98]'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }
-            `}
+            }`}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -315,12 +309,9 @@ export default function ResetPasswordPage() {
                 </svg>
                 변경 중...
               </span>
-            ) : (
-              '비밀번호 변경'
-            )}
+            ) : '비밀번호 변경'}
           </button>
 
-          {/* 홈으로 돌아가기 */}
           <div className="mt-4 text-center">
             <a href="/" className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
               홈으로 돌아가기
@@ -329,5 +320,18 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Next.js 15: useSearchParams는 Suspense 필수
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

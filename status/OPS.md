@@ -29,6 +29,16 @@
 - **주의**: Legacy FCM API Key가 아닌 **FCM V1 Service Account Key** 사용해야 함
 - **google-services.json**: `C:\projects\poppon-app\google-services.json` (EAS 빌드 시 번들에 포함)
 
+### 이메일 발송 (Resend SMTP) ✅ 3/4 연동
+- **서비스**: Resend (무료 100통/일)
+- **도메인**: `poppon.kr` (Verified, Tokyo ap-northeast-1)
+- **발신**: `POPPON <poppon@poppon.kr>`
+- **Supabase SMTP 설정**: Host `smtp.resend.com` / Port `465` / Username `resend` / Password: Resend API Key
+- **DNS 레코드** (가비아): DKIM TXT(`resend._domainkey`), SPF TXT(`send`), MX(`send` → `feedback-smtp.ap-northeast-1.amazonses.com.`)
+- **이메일 템플릿**: Supabase Authentication → Email Templates → Reset Password 한국어화 완료
+- **⚠️ 가비아 하이웍스 SMTP 외부 연동 불가**: `smtps.hiworks.com:465` 인증 실패 → Resend로 전환
+- **가비아 메일 계정**: `poppon@poppon.kr` (하이웍스, 수신 전용으로 유지)
+
 ### ⚠️ 앱 스킴(Scheme) 관리 주의사항
 - **프로덕션 스킴**: `poppon` (app.json `"scheme": "poppon"`)
 - **딥링크 URL**: `poppon://auth/callback`, `poppon://kmc/callback` 등
@@ -58,10 +68,10 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 ### 아키텍처
 ```
 커넥터 URL → Puppeteer (이미지 차단, 15s) → MD5 해시 비교
-  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.4
+  → 변경 없음 → 스킵 | 변경 있음 → Claude Haiku 파싱 → save-deals v2.6
   → 카테고리: merchants.category_ids 직접 조회
   → 딜 변동 시: 해당 머천트 active_deal_count 자동 재계산
-  → 신규 딜 시: 구독자에게 자동 푸시 알림 (v2.4)
+  → ✅ 즉시 푸시 제거 (v2.6) — 아침 9시 Cron(/api/cron/push-new-deals)에서 일괄 발송
 ```
 
 ### 커넥터 타입
@@ -74,6 +84,7 @@ poppon://auth/callback                         ← 프로덕션 빌드용
 ### 배치 스케줄 (어드민 Vercel Cron)
 - 23:00/23:20/23:40 KST: 3-batch 크롤 (커넥터 이름순 정렬 → 3등분, single 자동 제외)
 - 23:50 KST: 만료 딜 자동 처리
+- 09:00 KST: 신규 딜 구독자 일괄 푸시 (push-new-deals Cron) ✅ — 지난 24시간 신규 딜 → 머천트별 그룹핑 → 구독자(followed_merchants)에게만 발송
 - 10:00 KST: 만료 임박 딜 푸시 발송 (push-expiring Cron) ✅
 - 250초 타임아웃 (Vercel 300초 제한 전 중단)
 
@@ -195,8 +206,10 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 ### 어드민 발송 시스템 (✅ 구현 + e2e 검증 완료 2/27)
 - 수동 발송 UI + API (`/push` 페이지, `/api/push` POST/GET)
 - 대상 필터: 전체/마케팅동의/관심카테고리/구독브랜드/딜저장자/플랫폼(iOS·Android)/가입일
-- 자동 발송 Cron: 만료 임박 24h (`/api/cron/push-expiring`, 매일 10:00 KST)
-- 새 딜 자동 푸시: save-deals v2.4에서 구독자 자동 발송
+- 자동 발송 Cron:
+  - 만료 임박 24h (`/api/cron/push-expiring`, 매일 10:00 KST)
+  - ✅ 신규 딜 구독자 일괄 발송 (`/api/cron/push-new-deals`, 매일 09:00 KST) — 3/4 추가
+- ~~새 딜 즉시 푸시: save-deals v2.4에서 구독자 자동 발송~~ → **v2.6에서 제거, 아침 9시 Cron으로 이전**
 
 ### 푸시 타입 구분 (한국 정보통신망법)
 | 타입 | 설명 | 마케팅 동의 필요 | 예시 |
@@ -259,6 +272,7 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 - anon key는 프론트엔드 노출됨 → RLS가 실제 보안 방벽
 
 ### 인증 / 회원
+- **⚠️ createClient() auth lock**: 브라우저 Supabase 싱글톤이 토큰 갱신 중 lock 걸리면 `.update()` 프로미스 영원히 대기 → "저장 중..." 고착. **해결: 프로필 관련 DB 조작은 `/api/me/profile` 서버 API(PATCH)로 통일 (3/4)**. 마이페이지에서 `createClient()` 직접 DB 호출 금지 (비밀번호 재설정 auth API만 예외)
 - **웹 이메일 가입 (2/26 전환)**: main → kmc_verify → signup → categories → marketing → signUp → 자동 로그인
 - **signUp 후 session null 대응**: `signInWithPassword`로 자동 로그인 (Supabase email confirmation 상태 무관하게 동작)
 - **KMC postMessage**: 팝업에서 `window.opener.postMessage({ type: 'KMC_RESULT', payload })` → AuthSheet에서 `message` 이벤트 수신. **이름은 URL 인코딩 상태 → callback + AuthSheet 양쪽에서 `decodeURIComponent` 필수**
@@ -333,6 +347,15 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 - **⚠️ app.json scheme 변경 시 반드시 재빌드**: scheme은 네이티브에 박히므로 JS 수정만으로 반영 안 됨. scheme 변경 후 `eas build` 필수
 - **⚠️ OAuth 딥링크 3곳 일치 필수**: (1) app.json scheme (2) Supabase redirect URL (3) 웹 콜백 페이지(`/auth/callback/mobile`)의 딥링크 URL — 하나라도 불일치하면 OAuth 콜백 실패
 
+### 이메일 / SMTP
+- **가비아 하이웍스 SMTP 외부 연동 불가**: POP3/SMTP 사용함 설정 + 메일 전용 비밀번호 생성해도 `535 5.7.8 Error: authentication failed` 발생. → **Resend SMTP로 전환하여 해결**
+- **Supabase 비밀번호 재설정**: `resetPasswordForEmail()` → Supabase Auth 서버 직접 호출 (Vercel 로그에 안 찍힘) → Supabase Auth Logs에서 확인
+- **recovery 콜백 미처리**: 비밀번호 재설정 링크 클릭 시 `/auth/callback`으로 오지만 recovery 타입 처리 로직 없어서 홈으로 이동 → **비밀번호 재설정 페이지 구현 필요 (TODO)**
+
+### 프로필 저장 (RLS)
+- **anon key로 profiles update 시 RLS silent fail**: 에러 없이 200 반환하지만 실제 0 rows 업데이트됨. → **service_role 클라이언트로 변경 필수** (`/api/me/profile` route.ts)
+- **AuthProvider profile vs fullProfile**: AuthProvider의 profile은 세션 변경 시에만 갱신됨. 마이페이지 설정 저장 후 다시 읽으면 옛날 값. → **서버 API(/api/me/profile GET)로 가져온 fullProfile 사용**
+
 ### 어드민
 - 회원 목록 `auth.admin.listUsers()` 배치 필수
 - 머천트 PUT: event_page_url/connector_type 필드 분리 (merchants 컬럼 오염 방지)
@@ -341,4 +364,4 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 
 ---
 
-*마지막 업데이트: 2026-02-27 (Firebase FCM V1 연동 + 푸시 e2e 완료 + 스킴 관리 주의사항 추가)*
+*마지막 업데이트: 2026-03-04 (Resend SMTP 연동 + 프로필 RLS silent fail 트러블슈팅 + recovery 콜백 TODO)*

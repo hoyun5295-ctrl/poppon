@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-function ResetPasswordContent() {
+export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [password, setPassword] = useState('');
@@ -18,50 +16,30 @@ function ResetPasswordContent() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // 세션 상태
+  // 페이지 상태
   const [pageState, setPageState] = useState<'loading' | 'ready' | 'expired'>('loading');
   const [userEmail, setUserEmail] = useState('');
 
-  // 페이지 로드 시: URL에 code가 있으면 교환, 없으면 기존 세션 체크
   useEffect(() => {
-    const init = async () => {
-      const code = searchParams.get('code');
+    // Supabase PKCE: 이메일 링크 클릭 시 Supabase Auth 서버가 code를 교환하고
+    // 세션 쿠키를 설정한 뒤 redirectTo로 보냄.
+    // 따라서 이 페이지에 도착했을 때 이미 세션이 있어야 정상.
+    //
+    // getSession()은 로컬 세션만 확인 (네트워크 호출 없음, auth lock 영향 없음)
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (code) {
-        // ── code가 있으면 클라이언트에서 직접 세션 교환 ──
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (!exchangeError) {
-          // URL에서 code 제거 (뒤로가기 시 재사용 방지)
-          window.history.replaceState({}, '', '/auth/reset-password');
-
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            setUserEmail(user.email || '');
-            setPageState('ready');
-            return;
-          }
-        }
-        // code 교환 실패
+      if (session?.user) {
+        setUserEmail(session.user.email || '');
+        // URL에서 code 파라미터 제거
+        window.history.replaceState({}, '', '/auth/reset-password');
+        setPageState('ready');
+      } else {
         setPageState('expired');
-        return;
       }
-
-      // ── code 없으면 기존 세션 확인 ──
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUserEmail(user.email || '');
-          setPageState('ready');
-          return;
-        }
-      } catch {
-        // 무시
-      }
-      setPageState('expired');
     };
 
-    init();
+    checkSession();
   }, []);
 
   const isValid = password.length >= 6 && password === confirmPassword;
@@ -123,7 +101,7 @@ function ResetPasswordContent() {
     );
   }
 
-  // ── 세션 없음 / 링크 만료 ──
+  // ── 만료 ──
   if (pageState === 'expired') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -177,7 +155,6 @@ function ResetPasswordContent() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="mx-auto w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-4">
               <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -191,7 +168,6 @@ function ResetPasswordContent() {
             </p>
           </div>
 
-          {/* 입력 */}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호</label>
@@ -320,18 +296,5 @@ function ResetPasswordContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-// Next.js 15: useSearchParams는 Suspense 필수
-export default function ResetPasswordPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
-      <ResetPasswordContent />
-    </Suspense>
   );
 }

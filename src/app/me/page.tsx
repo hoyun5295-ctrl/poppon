@@ -761,7 +761,6 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
         body: JSON.stringify({ interest_categories: selected }),
       });
       if (res.ok) {
-        await onRefresh();
         showToast('관심 카테고리가 저장되었습니다', 'success');
         setHasChanges(false);
       } else {

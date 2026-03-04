@@ -2,16 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 /**
  * /auth/reset-password
  * 
- * 비밀번호 재설정 페이지
- * 서버 callback에서 code 교환 + 세션 쿠키 설정 완료 후 여기로 리다이렉트됨
- * URL에 ?code 파라미터 없음 → auth lock 발생 안 함
- * 
- * 세션 체크 없이 바로 폼 표시 → updateUser() 호출 시 세션 없으면 에러 처리
+ * 서버 callback에서 code 교환 + 세션 쿠키 설정 완료 후 도착하는 페이지
+ * 클라이언트에서 Supabase auth API를 일절 호출하지 않음 (auth lock 회피)
+ * 비밀번호 변경은 서버 API (/api/auth/reset-password)로 처리
  */
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -33,23 +30,16 @@ export default function ResetPasswordPage() {
     setError('');
 
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
       });
 
-      if (updateError) {
-        if (updateError.message.includes('same_password') || updateError.message.includes('different_password')) {
-          setError('현재 비밀번호와 동일합니다. 다른 비밀번호를 입력해 주세요.');
-        } else if (
-          updateError.message.includes('session_not_found') ||
-          updateError.message.includes('not authenticated') ||
-          updateError.message.includes('Auth session missing')
-        ) {
-          setError('인증이 만료되었습니다. 마이페이지에서 비밀번호 재설정을 다시 요청해 주세요.');
-        } else {
-          setError(updateError.message || '비밀번호 변경에 실패했습니다.');
-        }
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || '비밀번호 변경에 실패했습니다.');
         return;
       }
 
@@ -65,8 +55,8 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push('/');
       }, 1500);
-    } catch (err: any) {
-      setError(err?.message || '오류가 발생했습니다. 다시 시도해 주세요.');
+    } catch {
+      setError('오류가 발생했습니다. 다시 시도해 주세요.');
     } finally {
       setLoading(false);
     }
@@ -96,7 +86,6 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
-          {/* 헤더 */}
           <div className="text-center mb-8">
             <div className="mx-auto w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mb-4">
               <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -107,7 +96,6 @@ export default function ResetPasswordPage() {
             <p className="text-gray-500 text-sm mt-2">안전한 비밀번호로 변경해 주세요.</p>
           </div>
 
-          {/* 입력 */}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">새 비밀번호</label>
@@ -202,14 +190,12 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          {/* 에러 */}
           {error && (
             <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-100">
               <p className="text-sm text-red-600 text-center">{error}</p>
             </div>
           )}
 
-          {/* 버튼 */}
           <button
             onClick={handleSubmit}
             disabled={!isValid || loading}

@@ -752,17 +752,24 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
   };
 
   const handleSave = async () => {
+    if (!userId) return;
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        await supabase.from('profiles').update({ interest_categories: selected }).eq('id', session.user.id);
+      const res = await fetch('/api/me/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interest_categories: selected }),
+      });
+      if (res.ok) {
         await onRefresh();
         showToast('관심 카테고리가 저장되었습니다', 'success');
         setHasChanges(false);
+      } else {
+        showToast('저장에 실패했습니다', 'error');
       }
-    } catch { /* ignore */ }
+    } catch {
+      showToast('저장에 실패했습니다', 'error');
+    }
     setSaving(false);
   };
 
@@ -948,36 +955,27 @@ function MarketingConsentSection({ defaultOn, userId }: { defaultOn: boolean; us
   useEffect(() => { setOn(defaultOn); }, [defaultOn]);
 
   const handleToggle = async () => {
-    if (!userId) return;
+    if (!userId || saving) return;
     const newValue = !on;
     setOn(newValue); // 즉시 UI 반영
     setSaving(true);
 
     try {
-      const supabase = createClient();
-      const updateData: any = {
-        marketing_agreed: newValue,
-      };
-      // 동의 시 동의 시각 기록, 철회 시 null
-      if (newValue) {
-        updateData.marketing_agreed_at = new Date().toISOString();
+      const res = await fetch('/api/me/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketing_agreed: newValue }),
+      });
+
+      if (res.ok) {
+        showToast(newValue ? '마케팅 수신에 동의했습니다' : '마케팅 수신을 철회했습니다', 'success');
       } else {
-        updateData.marketing_agreed_at = null;
-      }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', userId);
-
-      if (error) {
         setOn(!newValue); // 실패 시 롤백
         showToast('저장 실패', 'error');
-      } else {
-        showToast(newValue ? '마케팅 수신에 동의했습니다' : '마케팅 수신을 철회했습니다', 'success');
       }
     } catch {
       setOn(!newValue); // 실패 시 롤백
+      showToast('저장 실패', 'error');
     }
     setSaving(false);
   };
@@ -1097,17 +1095,16 @@ function NotificationSettingsSection({ fullProfile, userId, loading: profileLoad
     if (!userId) return;
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('profiles')
-        .update({ marketing_channel: channels })
-        .eq('id', userId);
-
-      if (error) {
-        showToast('저장에 실패했습니다', 'error');
-      } else {
+      const res = await fetch('/api/me/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ marketing_channel: channels }),
+      });
+      if (res.ok) {
         setOriginalChannels([...channels]);
         showToast('알림 설정이 저장되었습니다', 'success');
+      } else {
+        showToast('저장에 실패했습니다', 'error');
       }
     } catch {
       showToast('저장에 실패했습니다', 'error');

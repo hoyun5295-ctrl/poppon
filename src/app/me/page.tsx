@@ -761,6 +761,7 @@ function InterestCategoriesSection({ profile, onRefresh, userId }: { profile: an
         body: JSON.stringify({ interest_categories: selected }),
       });
       if (res.ok) {
+        await onRefresh();
         showToast('관심 카테고리가 저장되었습니다', 'success');
         setHasChanges(false);
       } else {
@@ -1060,10 +1061,7 @@ function SNSLinkItem({ name, color, textColor, linked }: {
 
 // --- ✅ 알림 설정 (실제 DB 저장 — marketing_channel) ---
 const NOTIFICATION_CHANNELS = [
-  { key: 'kakao', label: '카카오 알림톡', desc: '새 딜/마감 임박 알림' },
-  { key: 'sms', label: 'SMS 알림', desc: '중요 딜 알림' },
-  { key: 'email', label: '이메일 알림', desc: '주간 다이제스트' },
-  { key: 'push', label: '푸시 알림', desc: '실시간 알림 (앱 설치 시)' },
+  { key: 'push', label: '푸시 알림', desc: '구독 브랜드 새 딜 · 저장 딜 마감 임박 알림 (앱 설치 시)' },
 ] as const;
 
 function NotificationSettingsSection({ fullProfile, userId, loading: profileLoading }: {

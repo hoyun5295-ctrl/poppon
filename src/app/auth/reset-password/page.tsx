@@ -19,7 +19,6 @@ export default function ResetPasswordPage() {
   const handleSubmit = async () => {
     if (!isValid || loading) return;
 
-    // 추가 유효성 검사
     if (password.length < 6) {
       setError('비밀번호는 6자 이상이어야 합니다.');
       return;
@@ -74,7 +73,6 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-            {/* 체크 아이콘 */}
             <div className="mx-auto w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-5">
               <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -91,7 +89,6 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* 카드 */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8">
           {/* 헤더 */}
           <div className="text-center mb-8">

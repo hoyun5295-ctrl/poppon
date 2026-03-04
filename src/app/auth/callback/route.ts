@@ -6,15 +6,15 @@ import { cookies } from 'next/headers';
 /**
  * /auth/callback
  * 
- * Supabase 인증 콜백 엔드포인트
- * 
- * 1) SNS OAuth 로그인: code → session 교환 → 프로필 저장 → 온보딩/홈
- * 2) 비밀번호 재설정: code + type=recovery → session 교환 → /auth/reset-password
+ * SNS OAuth 로그인 후 Supabase가 리다이렉트하는 콜백 엔드포인트 (카카오 등)
+ * code → session 교환 후:
+ *   - ✅ profiles 테이블에 프로필 정보 저장 (이름/성별/생일/전화번호/linked_providers)
+ *   - 신규 유저 → /?onboarding=sns (카테고리+마케팅 동의 온보딩)
+ *   - 기존 유저 → / (토스트만 표시)
  */
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const type = requestUrl.searchParams.get('type');
   const next = requestUrl.searchParams.get('next') || '/';
 
   if (code) {
@@ -43,11 +43,6 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // ── ✅ 비밀번호 재설정 (recovery) 처리 ──
-      if (type === 'recovery') {
-        return NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin));
-      }
-
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -87,6 +82,8 @@ export async function GET(request: NextRequest) {
  * 카카오/구글 등 Supabase 빌트인 provider 공통 처리
  * 
  * ✅ v2: app_metadata.providers (복수형 배열)로 linked_providers 동기화
+ *   - 기존: app_metadata.provider (단수) → 최초 가입 provider만 저장됨
+ *   - 수정: app_metadata.providers (복수) → 모든 연동 provider 반영
  */
 async function saveProviderProfile(user: any) {
   try {
@@ -120,6 +117,7 @@ async function saveProviderProfile(user: any) {
     const birthday = metadata.birthday || identityData.birthday || '';
     let birthDate = '';
     if (birthyear && birthday) {
+      // MMDD → MM-DD 변환
       const formattedBday = birthday.includes('-') ? birthday : `${birthday.slice(0, 2)}-${birthday.slice(2)}`;
       birthDate = `${birthyear}-${formattedBday}`;
     } else if (birthday) {
@@ -149,8 +147,10 @@ async function saveProviderProfile(user: any) {
 
     const currentProviders: string[] = existingProfile?.linked_providers || [];
 
+    // DB 기존값 + Supabase providers 배열 합쳐서 중복 제거
     const mergedProviders = [...new Set([...currentProviders, ...supabaseProviders])];
 
+    // 현재 로그인한 provider도 확실히 포함
     if (!mergedProviders.includes(provider)) {
       mergedProviders.push(provider);
     }
@@ -164,6 +164,7 @@ async function saveProviderProfile(user: any) {
       .eq('id', user.id);
 
   } catch (profileError) {
+    // 프로필 업데이트 실패해도 로그인은 성공시킴
     console.error('Provider profile save error:', profileError);
   }
 }

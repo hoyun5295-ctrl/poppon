@@ -144,7 +144,9 @@
 - ✅ 마이페이지 프로필 저장 근본 수정 (3/4) — service_role + fullProfile 전환
 - ✅ Resend SMTP 연동 + 이메일 템플릿 한국어화 (3/4)
 - ❌ **비밀번호 재설정 구현 실패 (3/4)** — 5회 시도 전부 실패. 근본 원인 파악 완료. 아래 상세 기록
-- 🚧 Apple Developer 서명 권한 확인 대기 중 (등록 ID: 2XY5J82A36)
+- ✅ Apple Developer Program 등록 + $99 결제 완료 (3/10) — Team ID: `4TY64Q29NV`
+- ✅ Apple App ID + Services ID + Key 생성 완료 (3/10) — Key ID: `X95W588D63`
+- ✅ Supabase Apple Provider 설정 완료 (3/10) — Client IDs + Secret Key(JWT) 등록
 
 ---
 
@@ -164,64 +166,55 @@
 | 4 | 서버 callback + 쿠키 분기 → 클라이언트 `updateUser()` | 서버 세션 ≠ 클라이언트 세션. 클라이언트에서 `updateUser()` 실패 |
 | 5 | 서버 callback + 쿠키 분기 → 서버 API(service_role) | 페이지 도착은 성공하나 **recovery 세션이 기존 세션 덮어씌움** → 로그인 풀림 → 변경 후에도 카카오 로그인 불가 |
 
-#### 현재 배포된 코드 상태 (❌ 문제 있음, 롤백 필요)
+#### 현재 배포된 코드 상태 (✅ 정리 완료 3/11)
 | 파일 | 경로 | 상태 |
 |------|------|------|
-| callback/route.ts | `src/app/auth/callback/route.ts` | ⚠️ `password_reset_pending` 쿠키 체크 추가됨 (OAuth는 영향 없으나 불필요) |
-| reset-password/page.tsx | `src/app/auth/reset-password/page.tsx` | ⚠️ 서버 API fetch 방식 (동작하나 recovery 세션 문제 미해결) |
-| API route | `src/app/api/auth/reset-password/route.ts` | 🆕 신규 생성됨 (service_role 비밀번호 변경) |
-| me/page.tsx | `src/app/me/page.tsx` | ⚠️ `password_reset_pending` 쿠키 세팅 + `redirectTo: /auth/callback` |
+| callback/route.ts | `src/app/auth/callback/route.ts` | ✅ 원본 상태 (password_reset_pending 쿠키 로직 없음, saveProviderProfile v2) |
+| reset-password/page.tsx | `src/app/auth/reset-password/page.tsx` | ✅ token_hash 기반 비밀번호 재설정 (recovery 세션 미생성) |
+| API reset-password | `src/app/api/auth/reset-password/route.ts` | ✅ POST(로그인 직접변경) + PATCH(토큰 기반 변경) |
+| API forgot-password | `src/app/api/auth/forgot-password/route.ts` | ✅ admin.generateLink + Resend 커스텀 이메일 |
+| me/page.tsx | `src/app/me/page.tsx` | ✅ 원본 상태 (인라인 비밀번호 변경 폼 포함) |
 
 ---
 
-### 다음 세션 시작 시 (순서대로):
+### ✅ 비밀번호 재설정 근본 재설계 — 완료 (3/11 확인)
 
-#### 0단계: 주인님 쿠키 삭제 확인
-- 크롬 주소창 자물쇠 → 쿠키 → `poppon.vercel.app` 전부 삭제 → 카카오 로그인 정상 복구 확인
-- **이미 하셨으면 스킵**
+**Option A (마이페이지 직접 변경) ✅ 구현 완료**
+- 마이페이지 설정에 비밀번호 변경 폼 포함
+- `POST /api/auth/reset-password` → `admin.updateUserById`
+- recovery 세션 문제 완전 회피
 
-#### 1단계: 롤백 (기존 코드 원복)
-- `callback/route.ts` → 원본으로 복원 (`password_reset_pending` 쿠키 체크 제거)
-- `me/page.tsx` → 원본으로 복원 (쿠키 세팅 + redirectTo 원복)
-- 원본 callback/route.ts는 업로드된 파일에 있음 (saveProviderProfile v2 포함, 170줄)
-- 원본 me/page.tsx는 `redirectTo: /auth/callback?next=/me` 상태
+**Option B (비로그인 비밀번호 찾기) ✅ 구현 완료**
+- AuthSheet forgot_password 스텝 → `/api/auth/forgot-password` → `admin.generateLink` + Resend 커스텀 이메일
+- 이메일 링크: `/auth/reset-password?token_hash=XXX&type=recovery`
+- 페이지에서 `PATCH /api/auth/reset-password` → 서버에서 `verifyOtp` + `updateUserById`
+- /auth/callback 경유 안 함 → recovery 세션 생성 안 함 → 기존 세션 영향 0
 
-#### 2단계: 비밀번호 재설정 근본 재설계
-**핵심 원칙: recovery 세션을 만들지 않는다**
+**정리 완료 (3/11)**
+- `src/app/auth/forgot-password/route.ts` 중복 파일 삭제 (API 라우트만 유지)
 
-**Option A: 마이페이지 직접 변경 (이메일 링크 불필요) ← 권장**
-- 마이페이지 설정에 "새 비밀번호" 입력 필드 직접 추가
-- "변경" 버튼 → `POST /api/auth/reset-password` (이미 생성됨) → `admin.updateUserById(userId, { password })`
-- 이미 로그인 상태이므로 이메일 인증 불필요
-- 장점: 가장 간단, recovery 세션 문제 완전 회피, 기존 세션 영향 0
-- 단점: 비밀번호를 잊은 비로그인 유저는 이 방법 사용 불가 (별도 "비밀번호 찾기" 필요)
-
-**Option B: admin.generateLink + Resend 커스텀 이메일 (비로그인 비밀번호 찾기용)**
-- 서버 API: `admin.generateLink({ type: 'recovery', email })` → 토큰 포함 링크 반환
-- Resend API로 커스텀 이메일 발송 (Supabase 이메일 템플릿 미사용)
-- 링크: `/auth/reset-password?token=xxx` (callback 경유 안 함)
-- 페이지: 토큰 + 새 비밀번호 → 서버 API → `admin.verifyOtp()` + `admin.updateUserById()`
-- 장점: recovery 세션 생성 안 함, 기존 세션 영향 0
-- 단점: 구현 복잡도 높음, Supabase 이메일 템플릿 사용 불가
-
-**주인님 결정 필요**: A만? A+B 둘 다?
-
-#### 3단계: profile API 디버깅 로그 제거
-#### 4단계: Apple Developer 승인 확인 → $99 결제 → 애플 로그인 연동
-#### 5단계: 앱스토어 심사 제출 준비
+### 다음 단계 (순서대로):
+#### 1단계: 앱 애플 로그인 iOS EAS 빌드 + 테스트
+- ✅ app.json iOS bundleIdentifier + usesAppleSignIn + expo-apple-authentication 플러그인 추가 (3/11)
+- 주인님 로컬에서 `eas build --profile development --platform ios` 실행 필요
+#### 2단계: 앱스토어 심사 제출 준비 (OPS.md 체크리스트)
 
 **DoD (완료 기준):**
-- [ ] **callback/route.ts + me/page.tsx 원본 롤백** (recovery 세션 문제 코드 제거)
-- [ ] **비밀번호 재설정 재구현** (recovery 세션 미생성 방식)
-- [ ] 카카오/네이버 로그인 정상 동작 회귀 테스트
+- [x] **callback/route.ts + me/page.tsx 원본 롤백** ✅ (이미 원본 상태 확인 3/11)
+- [x] **비밀번호 재설정 재구현** ✅ Option A(마이페이지)+B(이메일) 모두 구현 완료
+- [x] **forgot-password 중복 route 정리** ✅ (auth/ 삭제, api/auth/ 유지)
+- [ ] 카카오/네이버 로그인 정상 동작 회귀 테스트 (주인님 브라우저에서 확인 필요)
 - [ ] profile API 디버깅 로그 제거
-- [ ] Apple Developer Program 결제 + 승인 (서명 권한 확인 대기 중)
-- [ ] Supabase Apple Provider 설정
-- [ ] 앱 애플 로그인 동작 확인
+- [x] Apple Developer Program 결제 + 승인 ✅ (3/10)
+- [x] Supabase Apple Provider 설정 ✅ (3/10)
+- [x] **app.json iOS bundleIdentifier + usesAppleSignIn + 플러그인 추가** ✅ (3/11)
+- [ ] 앱 애플 로그인 iOS EAS 빌드 + 동작 확인 (주인님 로컬에서 빌드 필요)
 - [ ] 앱스토어 심사 제출 준비 (OPS.md 체크리스트 참조)
 
 **참조:**
 - DUNS: `694835804` / Apple 등록 ID: `2XY5J82A36` / 법인명: INVITO corp.
+- **Apple Team ID: `4TY64Q29NV`** / Key ID: `X95W588D63` / Services ID: `kr.poppon.app.service`
+- **Apple Secret Key 만료: 2026년 9월경** (6개월마다 재생성 필요)
 - 앱 번들 ID: `kr.poppon.app` (Android application id 동일)
 - EAS 프로젝트: `@yuhoyun/poppon-app` (ID: `3f3caa91-8f76-44c6-bc7a-d5aaff7eadde`)
 - Firebase 프로젝트: `poppon-845f8` (Spark 무료, FCM V1 전용)
@@ -244,11 +237,12 @@
 ### 6-2. 프로젝트 구조 (3개 분리)
 | 프로젝트 | 경로 | 용도 | 배포 |
 |---------|------|------|------|
-| **poppon** (메인) | `C:\projects\poppon` | 사용자 웹 (딜 탐색/저장/인증) | `https://poppon.vercel.app` ✅ |
-| **poppon-admin** (어드민) | `C:\projects\poppon-admin` | 관리자 (딜CRUD/크롤러/Cron/푸시) | `https://poppon-admin.vercel.app` ✅ |
-| **poppon-app** (모바일) | `C:\projects\poppon-app` | 모바일 네이티브 앱 (iOS/Android) | EAS Build → App Store / Play Store 🚧 |
+| **poppon** (메인) | `C:\Users\ceo\projects\poppon-workspace\poppon` | 사용자 웹 (딜 탐색/저장/인증) | `https://poppon.vercel.app` ✅ |
+| **poppon-admin** (어드민) | `C:\Users\ceo\projects\poppon-workspace\poppon-admin` | 관리자 (딜CRUD/크롤러/Cron/푸시) | `https://poppon-admin.vercel.app` ✅ |
+| **poppon-app** (모바일) | `C:\Users\ceo\projects\poppon-workspace\poppon-app` | 모바일 네이티브 앱 (iOS/Android) | EAS Build → App Store / Play Store 🚧 |
 
-- **도메인**: `poppon.kr` (가비아, DNS에 Resend DKIM/SPF/MX 레코드 추가됨)
+- **도메인**: `poppon.kr` + `poppon.co.kr` (가비아, DNS에 Resend DKIM/SPF/MX 레코드 추가됨)
+- **도메인 연결 계획**: `www.poppon.co.kr` → poppon 메인 / `admin.poppon.co.kr` → poppon-admin
 - **GitHub**: `hoyun5295-ctrl/poppon` + `hoyun5295-ctrl/poppon-admin` (private)
 
 ### 6-3. 기술 스택
@@ -288,7 +282,7 @@
 
 #### 🔄 진행 중
 - **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + **EAS Android 개발 빌드 성공** + **Firebase FCM V1 + 푸시 e2e 완료** 🔔 + Apple Developer 승인 대기 + 심사 준비 + **마이페이지 프로필 저장 서버 API 통일** ✅ + **알림 설정 푸시만 남기기** ✅ + **새 딜 푸시 아침 9시 Cron 일괄 발송(save-deals v2.6)** ✅
-- **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 신청 ✅** + **마이페이지 프로필 저장 근본 수정(service_role+fullProfile) ✅** + **Resend SMTP + 이메일 템플릿 한국어화 ✅** + ❌ 비밀번호 재설정 5회 실패 → 롤백+재설계 필요
+- **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 완료 ✅** + **마이페이지 프로필 저장 근본 수정(service_role+fullProfile) ✅** + **Resend SMTP + 이메일 템플릿 한국어화 ✅** + ❌ 비밀번호 재설정 5회 실패 → 롤백+재설계 필요 + **Apple Developer 등록+결제 + Supabase Apple Provider 설정 완료 ✅ (3/10)**
 
 #### ⬜ 미착수
 - **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
@@ -298,9 +292,12 @@
 ### 6-5. 미해결 / 진행 예정
 
 #### 즉시 (Phase M4+ 작업)
-- ❌ **비밀번호 재설정 재설계** → recovery 세션 미생성 방식으로 전환 (상세: CURRENT_TASK)
-- ⚠️ **callback/route.ts + me/page.tsx 롤백 필요** → 현재 password_reset_pending 쿠키 로직이 삽입된 상태
-- 🍎 Apple Developer 서명 권한 확인 대기 → 승인 후 $99 결제 → Supabase Apple Provider 설정 → 앱 애플 로그인 연동
+- ✅ ~~비밀번호 재설정 재설계~~ → Option A(마이페이지)+B(이메일) 구현 완료 (3/11 확인)
+- ✅ ~~callback/route.ts + me/page.tsx 롤백~~ → 이미 원본 상태 확인 (3/11)
+- ✅ ~~forgot-password 중복 route 정리~~ → `src/app/auth/forgot-password/` 삭제, API 라우트만 유지 (3/11)
+- ✅ ~~app.json iOS bundleIdentifier + usesAppleSignIn + 플러그인~~ → 추가 완료 (3/11)
+- 🍎 ~~Apple Developer 서명 권한 확인 대기~~ → ✅ 등록 완료 + Supabase Provider 설정 완료 (3/10)
+- 🍎 **앱 애플 로그인 iOS EAS 빌드 + 테스트 필요** (코드+설정 준비 완료, 주인님 로컬에서 빌드 필요)
 
 #### 단기 (Phase 2 + Phase M5)
 - **웹**: 도메인 연결, 링크프라이스 제휴 API, 카카오 알림톡
@@ -537,7 +534,7 @@
 | 푸시 알림 | `src/lib/push/notifications.ts` | 토큰등록/삭제/딥링크/핸들러 설정 |
 | 카카오 OAuth | `src/lib/auth/kakao.ts` | 웹 콜백 중간 페이지 경유 + Linking.addEventListener |
 | 네이버 OAuth | `src/lib/auth/naver.ts` | v2 웹 중간 페이지 경유 (카카오 동일 패턴) |
-| 애플 로그인 | `src/lib/auth/apple.ts` | expo-apple-authentication 코드 준비 |
+| 애플 로그인 | `src/lib/auth/apple.ts` | expo-apple-authentication 코드 준비 + **Supabase Provider 설정 완료 (3/10)** |
 | 프로필 헬퍼 | `src/lib/auth/profile.ts` | **v3**: saveOnboarding/toggleSave/toggleFollow/saveProviderProfile + **SNS 메타데이터 자동 추출(phone/gender/birth_date)** ✅ |
 
 ---
@@ -564,6 +561,7 @@ AI는 매 응답을 아래 순서로 작성한다.
 - ADR-20260304-03: **프로필 API service_role + fullProfile 전환** — 원인: anon key로 update 시 RLS silent fail (에러 없이 0 rows). 카테고리 섹션은 AuthProvider profile(갱신 안 됨) 사용. 해결: API를 service_role 클라이언트로 변경 + 카테고리/알림 섹션을 fullProfile(서버 API 최신값) 기반으로 전환 + 알림 채널 초기화 시 NOTIFICATION_CHANNELS 키만 필터링(레거시 kakao/sms/email 제거).
 - ADR-20260304-04: **Resend SMTP + 이메일 템플릿 한국어화** — 가비아 하이웍스 SMTP 인증 실패(외부 연동 불가). Resend(무료 100통/일) 전환. poppon.kr 도메인 DKIM/SPF/MX DNS 레코드 추가 → Verified. 비밀번호 재설정 이메일 템플릿 한국어 + POPPON 브랜딩. 발신: `POPPON <poppon@poppon.kr>`.
 - ADR-20260304-05: **비밀번호 재설정 5회 실패 — recovery 세션 근본 문제** — `resetPasswordForEmail()` → PKCE callback → `exchangeCodeForSession()` → recovery 세션이 기존 세션 쿠키를 덮어씌움 → 로그인 풀림 + 이후 로그인 불가. 클라이언트 auth 호출(exchangeCodeForSession/getUser/getSession/updateUser) 전부 auth lock 또는 세션 미인식. **해결 방향: recovery 세션을 만들지 않는 방식으로 전환 (마이페이지 직접 변경 or admin.generateLink 커스텀 이메일)**
+- ADR-20260310-01: **Apple Developer + Sign in with Apple 인프라 설정** — Apple Developer Program 등록($99) + App ID(`kr.poppon.app`, Sign in with Apple + Push Notifications) + Services ID(`kr.poppon.app.service`, Web Auth) + Key(`X95W588D63`, APNs + SIWA, Sandbox & Production) + Supabase Apple Provider 설정(Client IDs + JWT Secret). Secret Key 6개월 만료(2026년 9월 재생성).
 
 ---
 
@@ -572,19 +570,19 @@ AI는 매 응답을 아래 순서로 작성한다.
 - ~~A2: KMC API 업체코드 + 암호화 키 발급 완료 상태인지 미확인~~ → **확인됨 (2/26). CP ID: IVTT1001, URL CODE: 003001, 바이너리 정상 작동**
 - ~~A3: Ubuntu 24 glibc 2.39의 EUC-KR.so가 Vercel Lambda(Amazon Linux 2, glibc 2.26~2.34)에서 호환되는지 미확인~~ → **우회됨 (2/26). LD_PRELOAD iconv_shim.so 방식으로 gconv 의존성 자체를 제거. enc 성공 확인.**
 - ~~A4: KMC verify route의 tr_cert plainText 포맷이 KMC 규격과 일치하는지 미확인~~ → **해결 (2/27). 13필드 포맷(certMet~plusInfo 사이 슬래시 7개)으로 복원하여 정상 작동 확인. KMC 개발자와 통화로 IndexOutOfRange 원인 확인.**
-- A5: `admin.generateLink({ type: 'recovery' })`로 토큰 추출 후 커스텀 이메일 발송이 Supabase에서 지원되는지 미확인 → **다음 세션에서 확인 필요 (Option B 선택 시)**
+- ~~A5: `admin.generateLink({ type: 'recovery' })`로 토큰 추출 후 커스텀 이메일 발송이 Supabase에서 지원되는지 미확인~~ → **확인됨 (3/11). Option B 구현 완료 — `admin.generateLink` + `hashed_token` 추출 + Resend 커스텀 이메일 + `verifyOtp` + `updateUserById` 전체 동작**
 
 ---
 
 ## 11) RISK REGISTER (리스크 목록)
 | ID | 리스크 | 확률 | 영향 | 점수 | 대응 |
 |----|--------|------|------|------|------|
-| R1 | Apple Developer 서명 권한 확인 지연으로 애플 로그인/앱스토어 일정 지연 | 2 | 4 | 8 | DUNS 승인 완료. 웹+Android 우선 출시 |
+| ~~R1~~ | ~~Apple Developer 서명 권한 확인 지연으로 애플 로그인/앱스토어 일정 지연~~ | - | - | - | **해결: Apple Developer 등록 + 결제 완료 + Supabase Provider 설정 완료 (3/10)** |
 | R2 | ~~EAS 빌드 후 푸시 알림 미작동~~ | - | - | - | **해결: Firebase FCM V1 + Expo credentials 등록 + e2e 성공 (2/27)** |
 | R3 | KMC 연동 시 팝업 차단/웹뷰 호환 이슈 | 2 | 3 | 6 | 웹+앱 별도 플로우 설계 |
 | ~~R4~~ | ~~gconv EUC-KR.so glibc 버전 불일치~~ | - | - | - | **해결: LD_PRELOAD iconv_shim.so로 대체** |
 | ~~R5~~ | ~~KMC 에러 코드 5/99 — tr_cert 규격 불일치~~ | - | - | - | **해결: plainText 13필드 복원 (2/27)** |
-| R6 | 비밀번호 재설정 — recovery 세션이 기존 세션 덮어씌움 | 5 | 5 | 25 | **근본 재설계: recovery 세션 미생성 방식 전환. 현재 코드 롤백 필요** |
+| ~~R6~~ | ~~비밀번호 재설정 — recovery 세션이 기존 세션 덮어씌움~~ | - | - | - | **해결: Option A(마이페이지 직접변경) + Option B(admin.generateLink+Resend) 구현 완료. recovery 세션 미생성 방식으로 전환 (3/11)** |
 
 ---
 
@@ -603,7 +601,8 @@ AI는 매 응답을 아래 순서로 작성한다.
 | 3/4 | **마이페이지 버그 수정 + 푸시 개선** | 웹+어드민 | 프로필 저장 서버 API 통일(PATCH) + 알림 설정 푸시만 남기기 + 새 딜 푸시 아침 9시 Cron 일괄 발송(save-deals v2.6) | **클라이언트 createClient() auth lock 문제 → 서버 API 통일이 정석. 미구현 기능(카카오/SMS/이메일 알림)은 UI에서 미리 제거** |
 | 3/4 | **마이페이지 저장 근본 수정 + SMTP** | 웹+인프라 | profile API service_role 전환(RLS silent fail 해결) + fullProfile 기반 카테고리/알림 UI 전환 + 레거시 채널 필터링 + Resend SMTP 연동 + 이메일 템플릿 한국어화 | **anon key update는 RLS silent fail(에러 없이 0 rows) → service_role 필수. 가비아 하이웍스 SMTP 외부 연동 불가 → Resend 전환** |
 | 3/4 | ❌ **비밀번호 재설정 5회 실패** | 웹 | 5가지 방식 시도 전부 실패. 근본 원인: recovery 세션이 기존 세션 쿠키 덮어씌움 + 클라이언트 auth lock. recovery 세션 찌꺼기로 카카오 로그인까지 불가. **현재 코드 롤백 + 근본 재설계 필요** | **⚠️ Supabase `resetPasswordForEmail()` + PKCE callback은 recovery 세션을 생성하며, 이 세션이 기존 세션을 덮어씌운다. recovery 세션을 만들지 않는 방식(직접 변경 or admin.generateLink)으로 전환 필수. 클라이언트에서 Supabase auth API 호출은 auth lock 위험 — 항상 서버 API 경유** |
+| 3/10 | **Apple Developer 등록 + Sign in with Apple 설정** 🍎 | 인프라 | Apple Developer Program $99 결제 + 멤버십 활성화. App ID(`kr.poppon.app`) + Services ID(`kr.poppon.app.service`) + Key(`X95W588D63`) 생성. Supabase Apple Provider 설정 완료(Client IDs + JWT Secret Key). | **Apple 행정처리 매우 느림(DUNS~등록 약 1개월). Secret Key 6개월 만료 주의. Services ID의 Web Auth 도메인/Return URL은 Supabase 콜백 URL과 정확히 일치해야 함** |
 
 ---
 
-*마지막 업데이트: 2026-03-04 (비밀번호 재설정 5회 실패 기록 + 롤백 + 재설계 방향 + ADR-05 + R6)*
+*마지막 업데이트: 2026-03-11 (비밀번호 재설정 Option A/B 완료 확인 + callback/me 롤백 확인 + forgot-password 중복 정리 + app.json iOS bundleIdentifier/usesAppleSignIn/플러그인 추가 + R6 해결 + DoD 업데이트)*

@@ -48,7 +48,7 @@ function NaverMobileCallbackContent() {
     // 서버 API로 code → Supabase 세션 토큰 교환
     (async () => {
       try {
-        const redirectUri = 'https://poppon.vercel.app/auth/callback/naver/mobile';
+        const redirectUri = 'https://www.poppon.co.kr/auth/callback/naver/mobile';
 
         const response = await fetch('/api/auth/naver/mobile', {
           method: 'POST',

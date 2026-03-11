@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_BASE_URL ||
-      'https://poppon.vercel.app';
+      'https://www.poppon.co.kr';
 
     const trUrl = `${baseUrl}/api/kmc/callback`;
 

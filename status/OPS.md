@@ -27,7 +27,7 @@
 - **용도**: Android 푸시 알림(FCM V1)만 사용. 다른 Firebase 서비스 미사용
 - **FCM V1 서비스 계정 키**: Expo credentials에 등록 완료 (`eas credentials -p android` → Google Service Account → FCM V1)
 - **주의**: Legacy FCM API Key가 아닌 **FCM V1 Service Account Key** 사용해야 함
-- **google-services.json**: `C:\projects\poppon-app\google-services.json` (EAS 빌드 시 번들에 포함)
+- **google-services.json**: `C:\Users\ceo\projects\poppon-workspace\poppon-app\google-services.json` (EAS 빌드 시 번들에 포함)
 
 ### 이메일 발송 (Resend SMTP) ✅ 3/4 연동
 - **서비스**: Resend (무료 100통/일)
@@ -38,6 +38,29 @@
 - **이메일 템플릿**: Supabase Authentication → Email Templates → Reset Password 한국어화 완료
 - **⚠️ 가비아 하이웍스 SMTP 외부 연동 불가**: `smtps.hiworks.com:465` 인증 실패 → Resend로 전환
 - **가비아 메일 계정**: `poppon@poppon.kr` (하이웍스, 수신 전용으로 유지)
+
+### Apple Developer Program ✅ 3/10 등록 완료
+- **Apple ID**: `gyunoo83@naver.com`
+- **Team ID**: `4TY64Q29NV`
+- **Provider ID**: `128638058`
+- **등록 법인**: INVITO corp. (Hoyun Yu)
+- **연회비**: $99/년 (2026-03-10 결제)
+- **App ID**: `kr.poppon.app` (Capabilities: Sign in with Apple + Push Notifications)
+- **Services ID**: `kr.poppon.app.service` (Web Authentication용, Supabase 콜백 연결)
+- **Key ID**: `X95W588D63` (Sign in with Apple + APNs, Sandbox & Production)
+- **.p8 키 파일**: `AuthKey_X95W588D63.p8` (한 번만 다운로드 가능, 안전하게 보관 필수)
+- **Supabase Apple Provider**: 설정 완료 (Client IDs: `kr.poppon.app,kr.poppon.app.service`)
+- **⚠️ Apple OAuth Secret Key는 6개월마다 재생성 필요** (다음 갱신: 2026년 9월경)
+- **Web Authentication 도메인**: `beniaypzlnygtoqmbvnx.supabase.co`
+- **Return URL**: `https://beniaypzlnygtoqmbvnx.supabase.co/auth/v1/callback`
+- **DUNS**: `694835804` / 등록 ID: `2XY5J82A36`
+
+### iOS EAS 빌드 인증서 (✅ 3/11 자동 생성)
+- **Distribution Certificate**: Serial `291533B9EEC83B0BB319A2C73F54C806` (만료: 2027-03-11)
+- **Ad Hoc Provisioning Profile**: `5ASWDJYDJ8` (active, 만료: 2027-03-11)
+- **등록 디바이스**: iPhone UDID `00008140-001154603A30401C`
+- **Apple Push Key**: EAS에 자동 등록 완료
+- **ITSAppUsesNonExemptEncryption**: `false` (표준 암호화만 사용)
 
 ### ⚠️ 앱 스킴(Scheme) 관리 주의사항
 - **프로덕션 스킴**: `poppon` (app.json `"scheme": "poppon"`)
@@ -293,6 +316,8 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 - 회원탈퇴: pending_withdrawal → 어드민 승인(withdrawn) / 거부(active)
 - FollowButton: 클라이언트 컴포넌트 분리 필수
 - 카카오 OAuth 검수 승인 완료
+- **Apple Sign-In**: Supabase Apple Provider + expo-apple-authentication. 앱은 네이티브 로그인, 웹은 Services ID(`kr.poppon.app.service`) 경유. **Secret Key 6개월마다 재생성 필수 (2026년 9월 만료)**
+- **Apple Developer Team ID**: `4TY64Q29NV` / Key ID: `X95W588D63`
 
 ### KMC 본인인증
 - **KmcCrypto 바이너리**: 39080 bytes, iconv_open("EUC-KR") 내부 호출. 바이너리 내 `KMC000002-...` 태그는 서비스ID가 아닌 모듈 태그 (CP ID와 무관)
@@ -372,4 +397,4 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 
 ---
 
-*마지막 업데이트: 2026-03-04 (비밀번호 재설정 recovery 세션 근본 문제 기록 + 롤백 필요 + resetPasswordForEmail 방식 폐기)*
+*마지막 업데이트: 2026-03-10 (Apple Developer Program 등록 완료 + Supabase Apple Provider 설정 + Key/Services ID 정보 추가)*

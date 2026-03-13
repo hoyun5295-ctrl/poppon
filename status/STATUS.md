@@ -194,9 +194,18 @@
 - `src/app/auth/forgot-password/route.ts` 중복 파일 삭제 (API 라우트만 유지)
 
 ### 다음 단계 (순서대로):
-#### 1단계: 앱 애플 로그인 iOS EAS 빌드 + 테스트
+#### 1단계: 앱 빌드 + 테스트 (3/11 진행중)
 - ✅ app.json iOS bundleIdentifier + usesAppleSignIn + expo-apple-authentication 플러그인 추가 (3/11)
-- 주인님 로컬에서 `eas build --profile development --platform ios` 실행 필요
+- ✅ 커스텀 도메인 연결 완료: `www.poppon.co.kr` (메인) + `admin.poppon.co.kr` (어드민) (3/11)
+- ✅ 코드베이스 전체 `poppon.vercel.app` → `www.poppon.co.kr` URL 마이그레이션 (15+ 파일) (3/11)
+- ✅ Supabase Site URL + Redirect URLs 업데이트 (3/11)
+- ✅ iOS EAS Development 빌드 제출 (3/11)
+- ✅ iOS/Android EAS Preview 빌드 제출 (서버 없이 독립 실행) (3/11)
+- ✅ 딜 상세 크래시 수정: profile.ts에 `isDealSaved`/`isMerchantFollowed` 누락 함수 추가 + SaveButton/FollowButton 인자 순서/반환값 수정 (3/11)
+- ✅ DealDetailView conditions 안전 처리 + ErrorBoundary 추가 (3/11)
+- ✅ 카테고리 페이지 DealListCard → DealCard 2열 그리드로 변경 (홈과 동일) (3/11)
+- ✅ 브랜드관 종료딜 탭: active+expired 모두 표시 → expired만 표시 수정 (3/11)
+- 🔄 Preview 빌드 테스트 중 (주인님)
 #### 2단계: 앱스토어 심사 제출 준비 (OPS.md 체크리스트)
 
 **DoD (완료 기준):**
@@ -208,7 +217,13 @@
 - [x] Apple Developer Program 결제 + 승인 ✅ (3/10)
 - [x] Supabase Apple Provider 설정 ✅ (3/10)
 - [x] **app.json iOS bundleIdentifier + usesAppleSignIn + 플러그인 추가** ✅ (3/11)
-- [ ] 앱 애플 로그인 iOS EAS 빌드 + 동작 확인 (주인님 로컬에서 빌드 필요)
+- [x] **iOS EAS Development 빌드 제출** ✅ (3/11)
+- [x] **커스텀 도메인 연결** ✅ www.poppon.co.kr + admin.poppon.co.kr (3/11)
+- [x] **코드베이스 URL 마이그레이션** ✅ poppon.vercel.app → www.poppon.co.kr (3/11)
+- [x] **앱 딜 상세 크래시 수정** ✅ isDealSaved/isMerchantFollowed 누락 + 인자 순서/반환값 수정 (3/11)
+- [x] **앱 카테고리 페이지 카드형 변경 + 브랜드관 종료딜 탭 수정** ✅ (3/11)
+- [ ] Preview 빌드 테스트 통과 (딜 클릭 / 저장 / 구독 / 카테고리 / 브랜드관)
+- [ ] 앱 애플 로그인 테스트
 - [ ] 앱스토어 심사 제출 준비 (OPS.md 체크리스트 참조)
 
 **참조:**
@@ -237,12 +252,12 @@
 ### 6-2. 프로젝트 구조 (3개 분리)
 | 프로젝트 | 경로 | 용도 | 배포 |
 |---------|------|------|------|
-| **poppon** (메인) | `C:\Users\ceo\projects\poppon-workspace\poppon` | 사용자 웹 (딜 탐색/저장/인증) | `https://poppon.vercel.app` ✅ |
-| **poppon-admin** (어드민) | `C:\Users\ceo\projects\poppon-workspace\poppon-admin` | 관리자 (딜CRUD/크롤러/Cron/푸시) | `https://poppon-admin.vercel.app` ✅ |
+| **poppon** (메인) | `C:\Users\ceo\projects\poppon-workspace\poppon` | 사용자 웹 (딜 탐색/저장/인증) | `https://www.poppon.co.kr` ✅ |
+| **poppon-admin** (어드민) | `C:\Users\ceo\projects\poppon-workspace\poppon-admin` | 관리자 (딜CRUD/크롤러/Cron/푸시) | `https://admin.poppon.co.kr` ✅ |
 | **poppon-app** (모바일) | `C:\Users\ceo\projects\poppon-workspace\poppon-app` | 모바일 네이티브 앱 (iOS/Android) | EAS Build → App Store / Play Store 🚧 |
 
 - **도메인**: `poppon.kr` + `poppon.co.kr` (가비아, DNS에 Resend DKIM/SPF/MX 레코드 추가됨)
-- **도메인 연결 계획**: `www.poppon.co.kr` → poppon 메인 / `admin.poppon.co.kr` → poppon-admin
+- **도메인 연결 완료 (3/11)**: `www.poppon.co.kr` → poppon 메인 ✅ / `admin.poppon.co.kr` → poppon-admin ✅ (Vercel + 가비아 DNS + SSL)
 - **GitHub**: `hoyun5295-ctrl/poppon` + `hoyun5295-ctrl/poppon-admin` (private)
 
 ### 6-3. 기술 스택
@@ -282,10 +297,10 @@
 
 #### 🔄 진행 중
 - **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + **EAS Android 개발 빌드 성공** + **Firebase FCM V1 + 푸시 e2e 완료** 🔔 + Apple Developer 승인 대기 + 심사 준비 + **마이페이지 프로필 저장 서버 API 통일** ✅ + **알림 설정 푸시만 남기기** ✅ + **새 딜 푸시 아침 9시 Cron 일괄 발송(save-deals v2.6)** ✅
-- **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 완료 ✅** + **마이페이지 프로필 저장 근본 수정(service_role+fullProfile) ✅** + **Resend SMTP + 이메일 템플릿 한국어화 ✅** + ❌ 비밀번호 재설정 5회 실패 → 롤백+재설계 필요 + **Apple Developer 등록+결제 + Supabase Apple Provider 설정 완료 ✅ (3/10)**
+- **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 완료 ✅** + **마이페이지 프로필 저장 근본 수정(service_role+fullProfile) ✅** + **Resend SMTP + 이메일 템플릿 한국어화 ✅** + ❌ 비밀번호 재설정 5회 실패 → 롤백+재설계 필요 + **Apple Developer 등록+결제 + Supabase Apple Provider 설정 완료 ✅ (3/10)** + **커스텀 도메인 www.poppon.co.kr + admin.poppon.co.kr 연결 완료 ✅ (3/11)** + **앱 버그 수정 3건(딜 상세 크래시+카테고리 레이아웃+브랜드관 종료딜) ✅ (3/11)**
 
 #### ⬜ 미착수
-- **Phase 2**: 도메인 연결 / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
+- **Phase 2**: ~~도메인 연결~~ ✅ / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
 - **Phase M5**: App Store / Play Store 심사 대응
 - **Phase 3+**: TargetUP-AI CRM 연동, Docker Compose
 
@@ -300,7 +315,7 @@
 - 🍎 **앱 애플 로그인 iOS EAS 빌드 + 테스트 필요** (코드+설정 준비 완료, 주인님 로컬에서 빌드 필요)
 
 #### 단기 (Phase 2 + Phase M5)
-- **웹**: 도메인 연결, 링크프라이스 제휴 API, 카카오 알림톡
+- **웹**: ~~도메인 연결~~ ✅, 링크프라이스 제휴 API, 카카오 알림톡
 - **웹**: 탈퇴 승인 후 30일 자동삭제 Cron
 - **앱**: 카카오 개발자 포털에 iOS/Android 네이티브 플랫폼 등록 (프로덕션 빌드 시)
 - **앱**: 앱스토어 심사 준비 (OPS.md 체크리스트 참조)
@@ -535,7 +550,7 @@
 | 카카오 OAuth | `src/lib/auth/kakao.ts` | 웹 콜백 중간 페이지 경유 + Linking.addEventListener |
 | 네이버 OAuth | `src/lib/auth/naver.ts` | v2 웹 중간 페이지 경유 (카카오 동일 패턴) |
 | 애플 로그인 | `src/lib/auth/apple.ts` | expo-apple-authentication 코드 준비 + **Supabase Provider 설정 완료 (3/10)** |
-| 프로필 헬퍼 | `src/lib/auth/profile.ts` | **v3**: saveOnboarding/toggleSave/toggleFollow/saveProviderProfile + **SNS 메타데이터 자동 추출(phone/gender/birth_date)** ✅ |
+| 프로필 헬퍼 | `src/lib/auth/profile.ts` | **v4**: saveOnboarding/toggleSave/toggleFollow/saveProviderProfile + **isDealSaved/isMerchantFollowed** 추가 + **SNS 메타데이터 자동 추출(phone/gender/birth_date)** ✅ |
 
 ---
 
@@ -605,4 +620,8 @@ AI는 매 응답을 아래 순서로 작성한다.
 
 ---
 
-*마지막 업데이트: 2026-03-11 (비밀번호 재설정 Option A/B 완료 확인 + callback/me 롤백 확인 + forgot-password 중복 정리 + app.json iOS bundleIdentifier/usesAppleSignIn/플러그인 추가 + R6 해결 + DoD 업데이트)*
+| 3/11 | **도메인 연결 + URL 마이그레이션 + 앱 버그 수정** | 웹+앱+인프라 | 커스텀 도메인 연결(www.poppon.co.kr+admin.poppon.co.kr, Vercel+가비아DNS+SSL) + 코드베이스 전체 poppon.vercel.app→www.poppon.co.kr 마이그레이션(15+파일) + Supabase URL 설정 업데이트 + iOS EAS Development/Preview 빌드 + **앱 딜 상세 크래시 수정**(profile.ts isDealSaved/isMerchantFollowed 함수 누락+SaveButton/FollowButton 인자순서/반환값 수정) + DealDetailView ErrorBoundary+conditions 안전처리 + 카테고리 페이지 DealCard 2열 그리드 변경 + 브랜드관 종료딜 탭 onlyExpired 필터 수정 | **함수 import 시 해당 모듈에서 실제 export 여부 반드시 확인. 인자 순서(userId/dealId) 혼동 주의. Preview 빌드는 Dev Server 불필요(개발 빌드와 달리 독립 실행)** |
+
+---
+
+*마지막 업데이트: 2026-03-11 (도메인 연결 + URL 마이그레이션 + 앱 버그 수정 3건 + 카테고리 레이아웃 변경 + Preview 빌드 테스트 중)*

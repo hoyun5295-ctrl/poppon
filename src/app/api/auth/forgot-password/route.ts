@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     // ── 커스텀 리셋 링크 생성 ──
     // /auth/callback 경유 안 함 → recovery 세션 생성 안 함
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.poppon.co.kr';
+    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://poppon.co.kr';
     const resetUrl = `${origin}/auth/reset-password?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
 
     // ── Resend API로 커스텀 이메일 발송 ──

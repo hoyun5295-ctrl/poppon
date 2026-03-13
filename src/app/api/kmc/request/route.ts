@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { encryptTrCert, generateCertNum } from '@/lib/kmc/crypto';
 
 const KMC_CP_ID = 'IVTT1001';
-const KMC_URL_CODE = '003002';
+const KMC_URL_CODE = '002005';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_BASE_URL ||
-      'https://www.poppon.co.kr';
+      'https://poppon.co.kr';
 
     const trUrl = `${baseUrl}/api/kmc/callback`;
 

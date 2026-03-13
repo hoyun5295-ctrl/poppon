@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { encryptTrCert, generateCertNum } from '@/lib/kmc/crypto';
 
 const KMC_CP_ID = 'IVTT1001';
-const KMC_URL_CODE = '003003';
+const KMC_URL_CODE = '002006';
 const KMC_FORM_URL = 'https://www.kmcert.com/kmcis/web/kmcisReq.jsp';
 
 export async function GET(req: NextRequest) {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     const baseUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       process.env.NEXT_PUBLIC_BASE_URL ||
-      'https://www.poppon.co.kr';
+      'https://poppon.co.kr';
 
     const trUrl = `${baseUrl}/api/kmc/callback`;
 

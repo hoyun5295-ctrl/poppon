@@ -62,6 +62,14 @@
 - **Apple Push Key**: EAS에 자동 등록 완료
 - **ITSAppUsesNonExemptEncryption**: `false` (표준 암호화만 사용)
 
+### 커스텀 도메인 (✅ 3/11 연결 완료)
+- **메인**: `www.poppon.co.kr` → Vercel poppon 프로젝트
+- **어드민**: `admin.poppon.co.kr` → Vercel poppon-admin 프로젝트
+- **DNS (가비아)**: A레코드 `216.150.1.1` + CNAME `12a1927535fa4753.vercel-dns-017.com`
+- **SSL**: Vercel 자동 발급
+- **레거시**: `poppon.vercel.app` / `poppon-admin.vercel.app` 도 여전히 작동 (Vercel 기본 도메인)
+- **Vercel 환경변수**: `NEXT_PUBLIC_MAIN_URL` = `https://www.poppon.co.kr` (poppon-admin에서 사용)
+
 ### ⚠️ 앱 스킴(Scheme) 관리 주의사항
 - **프로덕션 스킴**: `poppon` (app.json `"scheme": "poppon"`)
 - **딥링크 URL**: `poppon://auth/callback`, `poppon://kmc/callback` 등
@@ -78,11 +86,15 @@
 
 ### Supabase Redirect URLs
 ```
-exp://192.168.219.116:8081/--/auth/callback   ← Expo Go 개발용
-https://poppon.vercel.app/auth/callback/mobile ← 앱 OAuth 웹 콜백 중간 페이지
-poppon://auth/callback                         ← 프로덕션 빌드용
+exp://192.168.219.116:8081/--/auth/callback     ← Expo Go 개발용
+https://www.poppon.co.kr/auth/callback/mobile   ← 앱 OAuth 웹 콜백 중간 페이지
+https://www.poppon.co.kr/auth/callback           ← 웹 OAuth 콜백
+https://www.poppon.co.kr/auth/callback/naver     ← 웹 네이버 콜백
+https://www.poppon.co.kr/auth/reset-password     ← 비밀번호 재설정
+https://poppon.vercel.app/**                      ← 레거시 (하위 호환)
+poppon://auth/callback                            ← 프로덕션 빌드용
 ```
-- Site URL: `https://poppon.vercel.app` (localhost 아님)
+- Site URL: `https://www.poppon.co.kr` (3/11 변경)
 
 ---
 

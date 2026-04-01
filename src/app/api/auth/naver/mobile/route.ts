@@ -3,46 +3,56 @@ import { createClient } from '@supabase/supabase-js';
 
 /**
  * POST /api/auth/naver/mobile
- * 
+ *
  * 모바일 앱 전용 네이버 OAuth 엔드포인트
- * 앱에서 네이버 인앱 브라우저로 code를 받아온 후,
- * 서버에서 토큰 교환 + Supabase 세션 생성하여 앱에 반환
- * 
- * Body: { code: string, redirect_uri: string }
- * Response: { access_token, refresh_token } 또는 { error }
+ *
+ * 방식 1 (네이티브 SDK): { naver_access_token: string }
+ *   → 앱에서 네이버 네이티브 SDK로 access_token 직접 획득 → 서버에서 검증
+ *
+ * 방식 2 (레거시 웹): { code: string, redirect_uri: string }
+ *   → 앱에서 인앱 브라우저로 code를 받아온 후 서버에서 토큰 교환
+ *
+ * Response: { access_token, refresh_token, is_new_user } 또는 { error }
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, redirect_uri } = body;
+    const { code, redirect_uri, naver_access_token } = body;
 
-    if (!code) {
-      return NextResponse.json({ error: 'code is required' }, { status: 400 });
-    }
+    let naverAccessToken: string;
 
-    // ── 1. 네이버 access_token 교환 ──
-    const tokenRes = await fetch('https://nid.naver.com/oauth2.0/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: process.env.NAVER_CLIENT_ID!,
-        client_secret: process.env.NAVER_CLIENT_SECRET!,
-        code,
-        state: 'mobile', // 앱에서는 state 검증을 앱 사이드에서 처리
-      }),
-    });
+    if (naver_access_token) {
+      // ── 방식 1: 네이티브 SDK에서 직접 받은 access_token ──
+      naverAccessToken = naver_access_token;
+    } else if (code) {
+      // ── 방식 2: 레거시 — code → access_token 교환 ──
+      const tokenRes = await fetch('https://nid.naver.com/oauth2.0/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          client_id: process.env.NAVER_CLIENT_ID!,
+          client_secret: process.env.NAVER_CLIENT_SECRET!,
+          code,
+          state: 'mobile',
+        }),
+      });
 
-    const tokenData = await tokenRes.json();
+      const tokenData = await tokenRes.json();
 
-    if (tokenData.error || !tokenData.access_token) {
-      console.error('[Naver Mobile] Token error:', tokenData);
-      return NextResponse.json({ error: 'token_exchange_failed' }, { status: 400 });
+      if (tokenData.error || !tokenData.access_token) {
+        console.error('[Naver Mobile] Token error:', tokenData);
+        return NextResponse.json({ error: 'token_exchange_failed' }, { status: 400 });
+      }
+
+      naverAccessToken = tokenData.access_token;
+    } else {
+      return NextResponse.json({ error: 'naver_access_token or code is required' }, { status: 400 });
     }
 
     // ── 2. 네이버 유저 정보 조회 ──
     const profileRes = await fetch('https://openapi.naver.com/v1/nid/me', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      headers: { Authorization: `Bearer ${naverAccessToken}` },
     });
 
     const profileData = await profileRes.json();

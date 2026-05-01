@@ -12,28 +12,52 @@ import { createClient } from '@supabase/supabase-js';
  * → 모든 deep link redirect를 HTML + JS window.location 으로 통일 (양쪽 모두 정상 작동).
  */
 
-// HTML page를 응답해서 JS로 deep link 트리거 (Android Custom Tabs 호환)
+// HTML page를 응답해서 deep link 트리거 (Android Custom Tabs 호환)
+// 여러 메커니즘 동시 시도: meta refresh + window.location + a-tag click + noscript fallback
 function deepLinkRedirect(url: string): NextResponse {
+  const escapedUrl = url.replace(/"/g, '&quot;');
   const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="0;url=${escapedUrl}">
   <title>로그인 처리 중</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fff; color: #333; }
     .box { text-align: center; }
     .spinner { width: 32px; height: 32px; border: 3px solid #eee; border-top-color: #03C75A; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .fallback { margin-top: 20px; }
+    .fallback a { color: #03C75A; text-decoration: underline; font-size: 14px; }
   </style>
 </head>
 <body>
   <div class="box">
     <div class="spinner"></div>
     <p>로그인 처리 중...</p>
+    <p class="fallback"><a id="manual-link" href="${escapedUrl}">앱으로 자동 이동되지 않으면 여기를 눌러주세요</a></p>
   </div>
   <script>
-    window.location.href = ${JSON.stringify(url)};
+    (function() {
+      var url = ${JSON.stringify(url)};
+      // 시도 1: window.location.replace (history 안 쌓임)
+      try { window.location.replace(url); } catch (e) { console.log('replace failed', e); }
+      // 시도 2: window.location.href (즉시 백업)
+      try { window.location.href = url; } catch (e) { console.log('href failed', e); }
+      // 시도 3: 50ms 후 a-tag programmatic click (intent 발사 강제)
+      setTimeout(function() {
+        try {
+          var a = document.getElementById('manual-link') || document.createElement('a');
+          a.href = url;
+          a.click();
+        } catch (e) { console.log('click failed', e); }
+      }, 50);
+      // 시도 4: 500ms 후 한 번 더 (느린 webview 대비)
+      setTimeout(function() {
+        try { window.location.href = url; } catch (e) {}
+      }, 500);
+    })();
   </script>
 </body>
 </html>`;

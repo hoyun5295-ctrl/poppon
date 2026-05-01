@@ -7,19 +7,51 @@ import { createClient } from '@supabase/supabase-js';
  * 모바일 앱 전용 네이버 OAuth 콜백 엔드포인트
  * 네이버 → 이 엔드포인트 → poppon://auth/callback (앱으로 리다이렉트)
  *
- * 흐름:
- * 1. 앱에서 openAuthSessionAsync로 네이버 OAuth 시작
- * 2. 네이버 로그인 후 이 엔드포인트로 code 전달
- * 3. code → access_token 교환 → 유저 생성/매칭 → 세션 생성
- * 4. poppon://auth/callback?access_token=xxx&refresh_token=xxx 로 리다이렉트
+ * ⚠️ Android Chrome Custom Tabs는 HTTP 307 redirect → custom scheme(poppon://)을 자동 follow하지 않음.
+ * iOS ASWebAuthenticationSession은 자동 follow됨.
+ * → 모든 deep link redirect를 HTML + JS window.location 으로 통일 (양쪽 모두 정상 작동).
  */
+
+// HTML page를 응답해서 JS로 deep link 트리거 (Android Custom Tabs 호환)
+function deepLinkRedirect(url: string): NextResponse {
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>로그인 처리 중</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #fff; color: #333; }
+    .box { text-align: center; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #eee; border-top-color: #03C75A; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="spinner"></div>
+    <p>로그인 처리 중...</p>
+  </div>
+  <script>
+    window.location.href = ${JSON.stringify(url)};
+  </script>
+</body>
+</html>`;
+  return new NextResponse(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
 
     if (!code) {
-      return NextResponse.redirect('poppon://auth/error?message=no_code');
+      return deepLinkRedirect('poppon://auth/error?message=no_code');
     }
 
     // ── 1. code → access_token 교환 ──
@@ -39,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     if (tokenData.error || !tokenData.access_token) {
       console.error('[Naver AppCallback] Token error:', tokenData);
-      return NextResponse.redirect('poppon://auth/error?message=token_failed');
+      return deepLinkRedirect('poppon://auth/error?message=token_failed');
     }
 
     // ── 2. 네이버 유저 정보 조회 ──
@@ -51,14 +83,14 @@ export async function GET(request: NextRequest) {
 
     if (profileData.resultcode !== '00' || !profileData.response) {
       console.error('[Naver AppCallback] Profile error:', profileData);
-      return NextResponse.redirect('poppon://auth/error?message=profile_failed');
+      return deepLinkRedirect('poppon://auth/error?message=profile_failed');
     }
 
     const naverUser = profileData.response;
     const email = naverUser.email;
 
     if (!email) {
-      return NextResponse.redirect('poppon://auth/error?message=no_email');
+      return deepLinkRedirect('poppon://auth/error?message=no_email');
     }
 
     // ── 3. Supabase Admin Client ──
@@ -94,7 +126,7 @@ export async function GET(request: NextRequest) {
 
     if (linkError || !linkData?.properties?.hashed_token) {
       console.error('[Naver AppCallback] Generate link error:', linkError);
-      return NextResponse.redirect('poppon://auth/error?message=link_failed');
+      return deepLinkRedirect('poppon://auth/error?message=link_failed');
     }
 
     // 기존 유저 metadata 업데이트
@@ -124,7 +156,7 @@ export async function GET(request: NextRequest) {
 
     if (verifyError || !verifyData.session) {
       console.error('[Naver AppCallback] Verify error:', verifyError);
-      return NextResponse.redirect('poppon://auth/error?message=session_failed');
+      return deepLinkRedirect('poppon://auth/error?message=session_failed');
     }
 
     // ── 7. profiles 업데이트 ──
@@ -160,13 +192,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 8. 앱으로 리다이렉트 (토큰 포함) ──
-    // Android Custom Tabs의 query string 인코딩 문제 대응 — token에 +, =, / 등 특수문자 포함 시 깨질 수 있어 encodeURIComponent 적용
+    // ── 8. 앱으로 deep link (HTML + JS) ──
     const appRedirect = `poppon://auth/callback?access_token=${encodeURIComponent(verifyData.session.access_token)}&refresh_token=${encodeURIComponent(verifyData.session.refresh_token)}&is_new_user=${isNewUser}`;
-    return NextResponse.redirect(appRedirect);
+    return deepLinkRedirect(appRedirect);
 
   } catch (error) {
     console.error('[Naver AppCallback] Unexpected error:', error);
-    return NextResponse.redirect('poppon://auth/error?message=internal_error');
+    return deepLinkRedirect('poppon://auth/error?message=internal_error');
   }
 }

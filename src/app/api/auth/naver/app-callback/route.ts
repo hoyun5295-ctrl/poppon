@@ -7,14 +7,16 @@ import { createClient } from '@supabase/supabase-js';
  * 모바일 앱 전용 네이버 OAuth 콜백 엔드포인트
  * 네이버 → 이 엔드포인트 → poppon://auth/callback (앱으로 리다이렉트)
  *
- * ⚠️ Android Chrome Custom Tabs는 HTTP 307 redirect → custom scheme(poppon://)을 자동 follow하지 않음.
- * iOS ASWebAuthenticationSession은 자동 follow됨.
- * → 모든 deep link redirect를 HTML + JS window.location 으로 통일 (양쪽 모두 정상 작동).
+ * 플랫폼별 응답 (User-Agent 기반):
+ *   - iOS Safari ViewController (ASWebAuthenticationSession): HTTP 307 redirect 자동 follow → 기존 동작 유지
+ *   - Android Chrome / 기타: HTML + JS window.location 다중 트리거 (Custom Tabs deep link 우회)
+ *
+ * iOS는 외부 브라우저 패턴이 App Store 거절 사유라 in-app sheet + 307 redirect를 유지.
+ * Android는 in-app Custom Tabs가 deep link 발사 불안정해서 외부 브라우저 + HTML 우회 필요.
  */
 
-// HTML page를 응답해서 deep link 트리거 (Android Custom Tabs 호환)
-// 여러 메커니즘 동시 시도: meta refresh + window.location + a-tag click + noscript fallback
-function deepLinkRedirect(url: string): NextResponse {
+// Android/기타: HTML page + JS deep link 트리거 (다중 메커니즘)
+function htmlDeepLinkResponse(url: string): NextResponse {
   const escapedUrl = url.replace(/"/g, '&quot;');
   const html = `<!DOCTYPE html>
 <html lang="ko">
@@ -41,11 +43,8 @@ function deepLinkRedirect(url: string): NextResponse {
   <script>
     (function() {
       var url = ${JSON.stringify(url)};
-      // 시도 1: window.location.replace (history 안 쌓임)
       try { window.location.replace(url); } catch (e) { console.log('replace failed', e); }
-      // 시도 2: window.location.href (즉시 백업)
       try { window.location.href = url; } catch (e) { console.log('href failed', e); }
-      // 시도 3: 50ms 후 a-tag programmatic click (intent 발사 강제)
       setTimeout(function() {
         try {
           var a = document.getElementById('manual-link') || document.createElement('a');
@@ -53,7 +52,6 @@ function deepLinkRedirect(url: string): NextResponse {
           a.click();
         } catch (e) { console.log('click failed', e); }
       }, 50);
-      // 시도 4: 500ms 후 한 번 더 (느린 webview 대비)
       setTimeout(function() {
         try { window.location.href = url; } catch (e) {}
       }, 500);
@@ -70,12 +68,18 @@ function deepLinkRedirect(url: string): NextResponse {
 }
 
 export async function GET(request: NextRequest) {
+  // ⭐ 플랫폼 분기: iOS는 기존 307 redirect (검증됨), Android/기타는 HTML 우회
+  const userAgent = request.headers.get('user-agent') || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+  const respond = (url: string): NextResponse =>
+    isIOS ? NextResponse.redirect(url) : htmlDeepLinkResponse(url);
+
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
 
     if (!code) {
-      return deepLinkRedirect('poppon://auth/error?message=no_code');
+      return respond('poppon://auth/error?message=no_code');
     }
 
     // ── 1. code → access_token 교환 ──
@@ -95,7 +99,7 @@ export async function GET(request: NextRequest) {
 
     if (tokenData.error || !tokenData.access_token) {
       console.error('[Naver AppCallback] Token error:', tokenData);
-      return deepLinkRedirect('poppon://auth/error?message=token_failed');
+      return respond('poppon://auth/error?message=token_failed');
     }
 
     // ── 2. 네이버 유저 정보 조회 ──
@@ -107,14 +111,14 @@ export async function GET(request: NextRequest) {
 
     if (profileData.resultcode !== '00' || !profileData.response) {
       console.error('[Naver AppCallback] Profile error:', profileData);
-      return deepLinkRedirect('poppon://auth/error?message=profile_failed');
+      return respond('poppon://auth/error?message=profile_failed');
     }
 
     const naverUser = profileData.response;
     const email = naverUser.email;
 
     if (!email) {
-      return deepLinkRedirect('poppon://auth/error?message=no_email');
+      return respond('poppon://auth/error?message=no_email');
     }
 
     // ── 3. Supabase Admin Client ──
@@ -150,7 +154,7 @@ export async function GET(request: NextRequest) {
 
     if (linkError || !linkData?.properties?.hashed_token) {
       console.error('[Naver AppCallback] Generate link error:', linkError);
-      return deepLinkRedirect('poppon://auth/error?message=link_failed');
+      return respond('poppon://auth/error?message=link_failed');
     }
 
     // 기존 유저 metadata 업데이트
@@ -180,7 +184,7 @@ export async function GET(request: NextRequest) {
 
     if (verifyError || !verifyData.session) {
       console.error('[Naver AppCallback] Verify error:', verifyError);
-      return deepLinkRedirect('poppon://auth/error?message=session_failed');
+      return respond('poppon://auth/error?message=session_failed');
     }
 
     // ── 7. profiles 업데이트 ──
@@ -216,12 +220,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 8. 앱으로 deep link (HTML + JS) ──
+    // ── 8. 앱으로 deep link ──
     const appRedirect = `poppon://auth/callback?access_token=${encodeURIComponent(verifyData.session.access_token)}&refresh_token=${encodeURIComponent(verifyData.session.refresh_token)}&is_new_user=${isNewUser}`;
-    return deepLinkRedirect(appRedirect);
+    return respond(appRedirect);
 
   } catch (error) {
     console.error('[Naver AppCallback] Unexpected error:', error);
-    return deepLinkRedirect('poppon://auth/error?message=internal_error');
+    return respond('poppon://auth/error?message=internal_error');
   }
 }

@@ -140,21 +140,32 @@ poppon://auth/callback                            ← 프로덕션 빌드용
 ```
 - ⚠️ 이전 플로우(identity 직접입력 + email_sent 인증메일)는 제거됨
 
-### 앱 인증 플로우 ✅ (2/26 업데이트)
+### 앱 인증 플로우 ✅ (4/2 업데이트 — openAuthSessionAsync 전환)
 ```
-[카카오] ✅ 동작 확인
-  앱 → Linking.openURL(Supabase OAuth URL) → 카카오 로그인 → 웹 콜백 페이지(/auth/callback/mobile)
-  → "앱으로 돌아가기" 버튼 → 딥링크 → Linking.addEventListener로 토큰 수신 → setSession
-  → saveProviderProfile v3 (phone/gender/birth_date 자동 추출) → 신규? → 온보딩
-[네이버] ✅ 동작 확인
-  앱 → Linking.openURL(네이버 로그인) → 웹 콜백 페이지(/auth/callback/naver/mobile)
-  → /api/auth/naver/mobile 호출(토큰 교환) → 앱으로 딥링크 → setSession
-  → saveProviderProfile v3 → 신규? → 온보딩
-[이메일] 🆕 웹으로 이동
-  앱 → WebBrowser.openBrowserAsync('https://poppon.vercel.app/auth?mode=signup')
-  → 웹에서 KMC 본인인증 + 이메일/비번 가입 완료
-[애플] 코드 준비 완료 (Apple Developer DUNS 대기 중)
+[카카오] ✅ v7 — Supabase OAuth + openAuthSessionAsync (ASWebAuthenticationSession)
+  앱 → supabase.auth.signInWithOAuth({ provider: 'kakao', skipBrowserRedirect: true })
+  → openAuthSessionAsync(url, 'poppon') → 인앱 시트(Safari 아님) → 카카오 로그인
+  → Supabase 콜백 → poppon://auth/callback#access_token=xxx → setSession
+  ⚠️ Supabase Redirect URLs에 poppon://auth/callback 필수
+
+[네이버] ✅ v9 (5/1 업데이트) — 플랫폼 분기 + User-Agent 응답 분기 + callback 라우트
+  iOS: openAuthSessionAsync('poppon') → 인앱 시트(ASWebAuthenticationSession) → 네이버 로그인
+    → 서버 User-Agent 검사: iPhone/iPad/iPod → 307 redirect → ASWebAuthenticationSession 자동 follow
+    → poppon://auth/callback?access_token=xxx → openAuthSessionAsync resolve → setSession
+  Android: Linking.openURL → 외부 브라우저(Chrome) → 네이버 로그인
+    → 서버 User-Agent 검사: Android → HTML+JS 다중 deep link 트리거(meta refresh+window.location+a-click+백업)
+    → 외부 브라우저가 deep link intent 발사 → 앱 cold start → app/auth/callback.tsx 라우트가 토큰 처리
+  ⚠️ 네이버 개발자 포털에 https://www.poppon.co.kr/api/auth/naver/app-callback 콜백 등록 필수
+  ⚠️ app/auth/callback.tsx 라우트 필수 — Android cold-start deep link 처리 (없으면 토큰 버려짐)
+  ⚠️ iOS는 외부 브라우저(`Linking.openURL`) 절대 사용 금지 — App Store 거절 사유
+
+[애플] ✅ expo-apple-authentication → signInWithIdToken → Supabase 세션
+[이메일] 웹으로 이동 — WebBrowser.openBrowserAsync('https://www.poppon.co.kr/auth?mode=signup')
 [로그아웃] supabase.auth.signOut() → clearPushToken() → router.replace('/(tabs)')
+
+⚠️ 중요: @react-native-seoul/kakao-login, naver-login 네이티브 SDK는 New Architecture 미호환
+   → Expo SDK 54 + reanimated 4.x (newArchEnabled: true 필수) 환경에서 사용 불가
+   → openAuthSessionAsync 방식으로 전환 완료 (4/2)
 ```
 
 ### 앱 온보딩 플로우 (2/26 업데이트)
@@ -365,6 +376,7 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 - **intercepting route 모달 Link**: 반드시 `scroll={false}` 추가. 없으면 Next.js가 라우팅 시 `scrollTo(0,0)` 실행 → 모달 열릴 때 스크롤 점프 발생
 - 모달 내부 링크 → `<a>` hard navigation
 - Vercel 빌드: `.rpc()` → `.then(() => {}, () => {})`
+- **⚠️ Vercel 엣지 401 장애 패턴 (5/1 경험)**: 외부 사이트(poppon.co.kr 등) + vercel.com 대시보드 동시 401 응답 + `Content-Length: 13` "Unauthorized" 본문 + `X-Vercel-Cache: PRERENDER`인데 status 401 → **Vercel 엣지 인프라 측 일시 장애**. 결제/계정/코드/Deployment Protection 문제 아님. **대응: https://www.vercel-status.com 확인 후 30분 대기 (보통 자동 복구). 코드 변경/롤백 금지.** 만약 vercel.com도 안 들어가지면 더 확실한 인프라 장애 신호.
 
 ### 모바일 앱 (Expo)
 - `detectSessionInUrl: false` 반드시 설정
@@ -391,6 +403,10 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 - **FCM 푸시 실패 "Unable to retrieve FCM server key"**: `eas credentials -p android` → Google Service Account → **FCM V1** (Legacy 아님) → 서비스 계정 키 JSON 업로드. 재빌드 불필요
 - **⚠️ app.json scheme 변경 시 반드시 재빌드**: scheme은 네이티브에 박히므로 JS 수정만으로 반영 안 됨. scheme 변경 후 `eas build` 필수
 - **⚠️ OAuth 딥링크 3곳 일치 필수**: (1) app.json scheme (2) Supabase redirect URL (3) 웹 콜백 페이지(`/auth/callback/mobile`)의 딥링크 URL — 하나라도 불일치하면 OAuth 콜백 실패
+- **⚠️ Android Chrome Custom Tabs는 OAuth deep link 발사 불안정 (5/1 발견)**: `openAuthSessionAsync`로 OAuth 진행 시 https → custom scheme(`poppon://`) 자동 follow 안 함 → `result.type='dismiss'`. Custom Tabs는 JS-driven `window.location.href = "poppon://"`도 외부 intent로 발사 못 함. **해결: Android에서만 `Linking.openURL`로 외부 브라우저(Chrome) 사용 + `app/auth/callback.tsx` 라우트로 deep link 처리**. iOS는 ASWebAuthenticationSession이 잘 작동하므로 `openAuthSessionAsync` 유지.
+- **⚠️ iOS 외부 브라우저 OAuth는 App Store 거절 사유**: Apple은 in-app sheet (ASWebAuthenticationSession 또는 SFSafariViewController) 강제. `Linking.openURL`로 외부 Safari 던지는 패턴은 Guideline 4 위반(과거 거절 경험). iOS는 반드시 `WebBrowser.openAuthSessionAsync` 유지.
+- **⚠️ Deep link cold-start 처리 — `app/auth/callback.tsx` 라우트 필수**: Android에서 OAuth 후 deep link로 앱이 cold start되면 `openAuthSessionAsync`의 promise 인스턴스 죽음 → 토큰 처리 못 함. callback 라우트가 진입점이 되어 `useLocalSearchParams`로 token 추출 + `setSession` + `handleLoginComplete`. 라우트 없으면 deep link URL 무시되고 토큰 버려짐.
+- **⚠️ 서버 콜백 응답을 User-Agent로 분기**: 같은 endpoint에서 iOS는 307 redirect (`NextResponse.redirect`), Android/기타는 HTML+JS 다중 deep link 트리거(meta refresh + window.location.replace + a-tag programmatic click + 500ms 백업) 응답. iOS Safari ViewController는 307 자동 follow, Android Custom Tabs는 HTML 우회 필요. `/iPhone|iPad|iPod/i.test(userAgent)`로 분기.
 
 ### 이메일 / SMTP
 - **가비아 하이웍스 SMTP 외부 연동 불가**: POP3/SMTP 사용함 설정 + 메일 전용 비밀번호 생성해도 `535 5.7.8 Error: authentication failed` 발생. → **Resend SMTP로 전환하여 해결**
@@ -409,4 +425,4 @@ cpId/urlCode/certNum/date/certMet///////plusInfo/extendVar
 
 ---
 
-*마지막 업데이트: 2026-03-10 (Apple Developer Program 등록 완료 + Supabase Apple Provider 설정 + Key/Services ID 정보 추가)*
+*마지막 업데이트: 2026-05-01 (Android 네이버 로그인 deep link fix + Custom Tabs 한계 대응 패턴 + iOS 외부 URL App Store 거절 사유 + Vercel 엣지 401 장애 패턴 추가)*

@@ -133,7 +133,106 @@
 
 > **규칙:** AI는 아래 목표에만 100% 리소스를 집중한다.
 
-### 🔥 비밀번호 재설정 근본 재설계 + 롤백 + 애플 로그인 + 앱스토어 심사
+### 🔥 (5/1) Android 네이버 로그인 deep link fix + Vercel 엣지 401 장애 대응
+
+**배경:**
+- Android 출시 앱(versionCode 6)에서 네이버 로그인 시 "로그인 성공" 메시지 후에도 isLoggedIn=false (홈 이동되지만 비로그인 상태)
+- iOS는 정상 작동 중 — Android만 문제
+- 같은 시간대에 Vercel 엣지 일시적 401 장애 발생 (poppon.co.kr + admin 동시 영향, 30분 내 자동 복구)
+
+**진단 (dev build + metro 콘솔 로그):**
+- Custom Tabs `result.type='dismiss'`로 처리, deep link URL이 result에 안 담김
+- → **Android Chrome Custom Tabs는 OAuth https → custom scheme(`poppon://`) 자동 follow 불안정**
+- iOS ASWebAuthenticationSession은 자동 follow함 (그래서 iOS는 정상)
+- deep link 발사되어도 앱이 cold start되면 `openAuthSessionAsync` 인스턴스 죽음 → 토큰 처리 못 함
+
+**해결:**
+- ✅ **서버** (`poppon/src/app/api/auth/naver/app-callback/route.ts`): User-Agent 기반 응답 분기
+  - iOS Safari ViewController → 기존 307 redirect 유지 (검증된 동작, App Store 거절 회피)
+  - Android Chrome 외 → HTML + JS 다중 트리거 (meta refresh + window.location + a-tag click + 백업)
+- ✅ **클라이언트** (`poppon-app/src/lib/auth/naver.ts` v9): 플랫폼 분기
+  - iOS → `openAuthSessionAsync` 그대로 (Apple 권장 in-app sheet)
+  - Android → `Linking.openURL` 외부 브라우저 (Custom Tabs 우회)
+- ✅ **신규 라우트** (`poppon-app/app/auth/callback.tsx`): deep link 도착 시 토큰 추출 + setSession + handleLoginComplete (cold-start 안전)
+- ✅ AuthProvider 디버그 로그 강화
+
+**완료 작업 (5/1):**
+- ✅ 서버 변경 push (poppon repo, commits `5e65c10` → `0970554` → `98bd03f`)
+- ✅ poppon-app local commit (`b2523ce`) — remote origin 없음, GitHub 미연결 상태
+- ✅ Android dev build (`6d953ca0...`) 검증 완료 — 로그에 `getSession: found` + `INITIAL_SESSION hasSession: true` 확인
+- ✅ iOS 출시 앱 회귀 검증 완료 (서버 User-Agent 분기로 영향 0%)
+- ✅ Android EAS production AAB 빌드 trigger (`2fe5c62e...`, versionCode 6 → 7 자동 증가)
+
+**다음 단계:**
+- ⏳ EAS Android 빌드 완료 (~30~60분)
+- ⏳ Google Play Console 업로드 (Internal testing 권장 → production promote)
+- ⏳ iOS는 다음 출시 사이클에 동일 코드 포함 (선택, 회귀 risk 거의 0)
+- 별개 정리: `EXPO_PUBLIC_NAVER_CLIENT_SECRET` 클라이언트 노출(보안 issue), `@react-native-seoul/naver-login`/`kakao-login` 미사용 의존성 제거
+
+**핵심 교훈 (향후 참조):**
+- Android Chrome Custom Tabs는 OAuth https → custom scheme deep link 발사 **근본적으로 불안정**. JS-driven `window.location.href`도 외부 intent 발사 안 함. → **`Linking.openURL` 외부 브라우저 우회 필수**
+- iOS는 외부 URL OAuth가 App Store 거절 사유 → ASWebAuthenticationSession 유지 (이전 거절 경험 있음)
+- 서버 응답을 **User-Agent로 분기**하면 한 endpoint에서 양쪽 안전 처리 가능
+- deep link로 앱 cold start 시 `openAuthSessionAsync`는 죽음 → **expo-router callback 라우트** 필수
+- **Vercel 엣지 401 장애 패턴**: 외부 사이트 + vercel.com 동시 영향 + `Content-Length: 13` "Unauthorized" + `X-Vercel-Cache: PRERENDER` 등 → Vercel 인프라 측 문제. https://www.vercel-status.com 확인 후 30분 대기 (보통 자동 복구). 코드/결제/계정 문제 아님.
+
+---
+
+### [이전 4/2] POPPON Ver.2 — Apple 심사 2차 반려 대응 + 로그인 크래시 해결
+
+**배경:** Apple App Store 심사 2차 반려 (2026-04-01)
+- 반려 사유 1: Guideline 4 — 카카오 OAuth가 iPad에서 외부 Safari로 이동
+- 반려 사유 2: Guideline 4.2.2 — 네이티브 기능 부족 판정
+
+**시도 → 실패 → 최종 해결 과정 (4/2):**
+- ❌ `@react-native-seoul/kakao-login` + `@react-native-seoul/naver-login` 네이티브 SDK 도입 시도
+  → New Architecture(`newArchEnabled: true`, reanimated 4.x 필수)와 호환 불가 → 로그인 화면 진입 시 앱 크래시
+- ❌ `newArchEnabled: false` 시도 → `react-native-reanimated` 4.x가 New Architecture 필수 → Pod Install 실패
+- ❌ `reactCompiler: true` 제거 + 네이티브 SDK 유지 → 여전히 크래시
+- ✅ **최종 해결: 네이티브 SDK 완전 제거 → `openAuthSessionAsync` (ASWebAuthenticationSession) 전환**
+  - 카카오: Supabase OAuth + `openAuthSessionAsync` (`kakao.ts` v7)
+  - 네이버: 커스텀 서버 콜백 + `openAuthSessionAsync` (`naver.ts` v7 + `naver/app-callback/route.ts` 신규)
+  - 애플: `expo-apple-authentication` (기존 유지)
+  - ASWebAuthenticationSession = Apple 공식 인앱 인증 API, Safari 아님
+
+**완료 작업 (4/2):**
+- ✅ 카카오 로그인 — Supabase OAuth + openAuthSessionAsync (`kakao.ts` v7)
+- ✅ 네이버 로그인 — 서버 app-callback + openAuthSessionAsync (`naver.ts` v7)
+- ✅ 네이버 서버 콜백 엔드포인트 신규 (`poppon/api/auth/naver/app-callback/route.ts`)
+- ✅ auth/index.tsx 동적 import 전환 (네이티브 모듈 크래시 방지)
+- ✅ app.json에서 kakao-login, naver-login 플러그인 제거
+- ✅ app.json `reactCompiler: true` 제거 (네이티브 모듈 호환성)
+- ✅ Haptics 5곳 `.catch(() => {})` 추가 (iPad 크래시 방지)
+- ✅ _layout.tsx NaverLogin 모듈 레벨 초기화 제거
+- ✅ Supabase Redirect URLs에 `poppon://auth/callback` 추가
+- ✅ 네이버 개발자 포털에 app-callback URL 추가
+- ✅ 딜 핫/콜드 투표 기능 추가 (VoteButton + deal_votes 테이블 + vote_deal RPC)
+- ✅ 딜 알림 토글 기능 추가 (DealAlertToggle + saved_deals.alert_enabled)
+- ✅ 딜 업데이트 푸시 크론 추가 (push-deal-updates cron)
+- ✅ poppon 서버 배포 완료 (Vercel)
+- ✅ iOS 프로덕션 빌드 14 + App Store Connect 업로드
+- ✅ Apple 심사 3차 제출 완료 (4/2)
+
+**완료 작업 (3/28, 1차 재제출):**
+- ✅ 네이티브 Share Sheet 추가
+- ✅ 계정 삭제 기능 강화
+- ✅ AI 추천딜 (경량 버전)
+- ✅ 앱 아이콘 흰색 테두리 제거
+- ✅ iPad 지원 비활성화 — `supportsTablet: false`
+- ✅ Google Play Console 개발자 인증 완료
+
+**현재 대기 중:**
+- 🍎 Apple 심사 결과 대기 (24~48시간)
+- 🤖 Google Play 앱 제출 준비 (Apple 결과 후 진행)
+
+**핵심 교훈 (향후 참조):**
+- `@react-native-seoul/kakao-login`, `@react-native-seoul/naver-login`은 React Native New Architecture 미지원 (2026-04 기준)
+- Expo SDK 54 + `react-native-reanimated` 4.x → `newArchEnabled: true` 필수 → 위 네이티브 SDK 사용 불가
+- 모바일 OAuth는 `openAuthSessionAsync` (ASWebAuthenticationSession)가 가장 안전 (Apple 공식 API, 크로스 플랫폼)
+
+---
+
+### [이전] 비밀번호 재설정 근본 재설계 + 롤백 + 애플 로그인 + 앱스토어 심사
 
 **배경:**
 - ✅ KMC 본인인증 연동 완료 (2/27)
@@ -296,12 +395,15 @@
 - **Phase M3**: 카카오/네이버 OAuth 성공 + AuthProvider + 온보딩 + 마이페이지 + SaveButton/FollowButton + 웹 콜백 중간 페이지
 
 #### 🔄 진행 중
+- **Phase M5**: Apple 심사 반려 대응 — OAuth 인앱 전환 + Share Sheet + 계정 삭제 강화 + AI 추천딜 + 아이콘 수정 + iPad 비활성화 ✅ 구현 완료 → 심사 재제출 완료 (3/28) → 결과 대기 중
 - **Phase M4**: 앱 디자인 통일 + 법적 페이지 + 카테고리 이모지 통일 + 홈 히어로 제거 + 푸시 알림 전체 완료(앱+어드민) + platform 컬럼 + SaveButton/FollowButton 연결 완료 + 제보화면 완료 + naver_brand 크롤링 v5.1 품질 강화 + **로고 확정+적용 완료(웹+앱+어드민)** + **UX 수정 3건(SafeArea+검색바+브랜드검색)** + **로그인 게이트(LoginPromptModal)** + **커스텀 스플래시(팝콘 파티클)** + **앱 아이콘+파비콘+PWA 아이콘 적용** + **EAS Android 개발 빌드 성공** + **Firebase FCM V1 + 푸시 e2e 완료** 🔔 + Apple Developer 승인 대기 + 심사 준비 + **마이페이지 프로필 저장 서버 API 통일** ✅ + **알림 설정 푸시만 남기기** ✅ + **새 딜 푸시 아침 9시 Cron 일괄 발송(save-deals v2.6)** ✅
 - **Phase M4+**: KMC 휴대폰 본인인증 연동 ✅ + 가입 플로우 전환 ✅ + form submit 방식 변경 + plainText 13필드 복원 + 이름 URL 디코딩 + **카카오/네이버 동의항목 설정 ✅** + **DUNS 승인 + Apple Developer 등록 완료 ✅** + **마이페이지 프로필 저장 근본 수정(service_role+fullProfile) ✅** + **Resend SMTP + 이메일 템플릿 한국어화 ✅** + ❌ 비밀번호 재설정 5회 실패 → 롤백+재설계 필요 + **Apple Developer 등록+결제 + Supabase Apple Provider 설정 완료 ✅ (3/10)** + **커스텀 도메인 www.poppon.co.kr + admin.poppon.co.kr 연결 완료 ✅ (3/11)** + **앱 버그 수정 3건(딜 상세 크래시+카테고리 레이아웃+브랜드관 종료딜) ✅ (3/11)**
 
 #### ⬜ 미착수
 - **Phase 2**: ~~도메인 연결~~ ✅ / 링크프라이스 제휴 / 브랜드 포털 / 스폰서 슬롯
-- **Phase M5**: App Store / Play Store 심사 대응
+- **Phase M6**: Google Play Store 제출 (Apple 결과 후 진행)
+- **Ver 1.2 킬러 업데이트**: 딜 투표(핫/콜드) / 만료 임박 로컬 알림 / 딜 제보 강화 / "할인되면 알려줘" 키워드 알림 / 역대 최저가 / 딜 캘린더 / 친구 추천
+- **Ver 1.3 고도화**: 토큰 암호화(SecureStore) / 오프라인 캐시 / iOS 위젯 / AI 추천 고도화
 - **Phase 3+**: TargetUP-AI CRM 연동, Docker Compose
 
 ### 6-5. 미해결 / 진행 예정
@@ -577,6 +679,7 @@ AI는 매 응답을 아래 순서로 작성한다.
 - ADR-20260304-04: **Resend SMTP + 이메일 템플릿 한국어화** — 가비아 하이웍스 SMTP 인증 실패(외부 연동 불가). Resend(무료 100통/일) 전환. poppon.kr 도메인 DKIM/SPF/MX DNS 레코드 추가 → Verified. 비밀번호 재설정 이메일 템플릿 한국어 + POPPON 브랜딩. 발신: `POPPON <poppon@poppon.kr>`.
 - ADR-20260304-05: **비밀번호 재설정 5회 실패 — recovery 세션 근본 문제** — `resetPasswordForEmail()` → PKCE callback → `exchangeCodeForSession()` → recovery 세션이 기존 세션 쿠키를 덮어씌움 → 로그인 풀림 + 이후 로그인 불가. 클라이언트 auth 호출(exchangeCodeForSession/getUser/getSession/updateUser) 전부 auth lock 또는 세션 미인식. **해결 방향: recovery 세션을 만들지 않는 방식으로 전환 (마이페이지 직접 변경 or admin.generateLink 커스텀 이메일)**
 - ADR-20260310-01: **Apple Developer + Sign in with Apple 인프라 설정** — Apple Developer Program 등록($99) + App ID(`kr.poppon.app`, Sign in with Apple + Push Notifications) + Services ID(`kr.poppon.app.service`, Web Auth) + Key(`X95W588D63`, APNs + SIWA, Sandbox & Production) + Supabase Apple Provider 설정(Client IDs + JWT Secret). Secret Key 6개월 만료(2026년 9월 재생성).
+- ADR-20260501-01: **Android 네이버 OAuth — Custom Tabs deep link 한계 우회** — Android Chrome Custom Tabs는 OAuth `https://` redirect → custom scheme(`poppon://`) 자동 follow 불안정 (`result.type:'dismiss'`). 해결 3겹: (1) 클라이언트 `naver.ts` v9 — Android만 `Linking.openURL` 외부 브라우저 분기, iOS는 `openAuthSessionAsync` 유지(App Store 거절 회피). (2) 서버 `route.ts` — User-Agent 기반 응답 분기 (iOS=307 redirect, Android/기타=HTML+JS 다중 트리거: meta refresh+window.location+a-tag click). (3) `app/auth/callback.tsx` 신규 — deep link cold-start 처리(setSession+handleLoginComplete). dev build 검증 완료 후 versionCode 7 production 빌드.
 
 ---
 
@@ -598,6 +701,7 @@ AI는 매 응답을 아래 순서로 작성한다.
 | ~~R4~~ | ~~gconv EUC-KR.so glibc 버전 불일치~~ | - | - | - | **해결: LD_PRELOAD iconv_shim.so로 대체** |
 | ~~R5~~ | ~~KMC 에러 코드 5/99 — tr_cert 규격 불일치~~ | - | - | - | **해결: plainText 13필드 복원 (2/27)** |
 | ~~R6~~ | ~~비밀번호 재설정 — recovery 세션이 기존 세션 덮어씌움~~ | - | - | - | **해결: Option A(마이페이지 직접변경) + Option B(admin.generateLink+Resend) 구현 완료. recovery 세션 미생성 방식으로 전환 (3/11)** |
+| ~~R7~~ | ~~Android 네이버 로그인 — Custom Tabs deep link 발사 불안정~~ | - | - | - | **해결: 서버 User-Agent 분기 + 클라이언트 Android `Linking.openURL` + `app/auth/callback.tsx` 신규 라우트로 우회. dev build 검증 완료, versionCode 7 빌드 진행 (5/1)** |
 
 ---
 
@@ -621,7 +725,8 @@ AI는 매 응답을 아래 순서로 작성한다.
 ---
 
 | 3/11 | **도메인 연결 + URL 마이그레이션 + 앱 버그 수정** | 웹+앱+인프라 | 커스텀 도메인 연결(www.poppon.co.kr+admin.poppon.co.kr, Vercel+가비아DNS+SSL) + 코드베이스 전체 poppon.vercel.app→www.poppon.co.kr 마이그레이션(15+파일) + Supabase URL 설정 업데이트 + iOS EAS Development/Preview 빌드 + **앱 딜 상세 크래시 수정**(profile.ts isDealSaved/isMerchantFollowed 함수 누락+SaveButton/FollowButton 인자순서/반환값 수정) + DealDetailView ErrorBoundary+conditions 안전처리 + 카테고리 페이지 DealCard 2열 그리드 변경 + 브랜드관 종료딜 탭 onlyExpired 필터 수정 | **함수 import 시 해당 모듈에서 실제 export 여부 반드시 확인. 인자 순서(userId/dealId) 혼동 주의. Preview 빌드는 Dev Server 불필요(개발 빌드와 달리 독립 실행)** |
+| 5/1 | **Android 네이버 로그인 deep link fix + Vercel 엣지 401 장애 대응** | 웹+앱+인프라 | (1) Vercel 엣지 일시적 401 장애 진단(외부 사이트+vercel.com 동시 영향, `X-Vercel-Cache: PRERENDER`인데 401, 30분 내 자동 복구). (2) Android 네이버 로그인 `result.type='dismiss'` 문제 — Custom Tabs는 OAuth https→custom scheme deep link 발사 불안정. **해결 3겹**: 서버 User-Agent 분기(iOS=307 redirect 유지/Android=HTML+JS 다중 트리거) + 클라이언트 `naver.ts` v9 Android만 `Linking.openURL` 외부 브라우저 + `app/auth/callback.tsx` 신규 cold-start 라우트. dev build로 `getSession: found` + `INITIAL_SESSION hasSession: true` 검증 완료. iOS 출시 앱 회귀 검증 OK. EAS production AAB 빌드 trigger(versionCode 7). | **Android Custom Tabs는 OAuth https→custom scheme 자동 follow 불안정 → 외부 브라우저 우회 필수. iOS는 외부 URL OAuth가 App Store 거절 사유 → ASWebAuthenticationSession 유지(이전 거절 경험). 서버 User-Agent 분기로 한 endpoint에서 양쪽 처리 가능. deep link cold-start은 `openAuthSessionAsync` 인스턴스 죽으므로 `app/auth/callback.tsx` 라우트 필수. Vercel 엣지 401 장애는 30분 내 자동 복구 패턴 — vercel-status.com 확인 후 대기.** |
 
 ---
 
-*마지막 업데이트: 2026-03-11 (도메인 연결 + URL 마이그레이션 + 앱 버그 수정 3건 + 카테고리 레이아웃 변경 + Preview 빌드 테스트 중)*
+*마지막 업데이트: 2026-05-01 (Vercel 엣지 401 장애 대응 + Android 네이버 로그인 deep link fix + versionCode 7 production AAB 빌드 trigger)*

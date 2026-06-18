@@ -117,26 +117,58 @@ export function trackSearch(query: string, categorySlug?: string, resultCount?: 
   });
 
   sendPayload('/api/actions/search', payload);
+  hanjulTrack('search', { search_term: query });
 }
 
-// --- 편의 함수 ---
+// --- 한줄로 SDK 브리지 (window.hjl.track 위임 — 미로드/실패 시 무해, 호스트 동작 무방해) ---
 
-export function trackDealView(dealId: string): void {
+/** 한줄로 SDK로 이벤트 전송. 표준명/custom_ 검증은 SDK가 담당. */
+function hanjulTrack(event: string, properties?: Record<string, unknown>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    (window as unknown as { hjl?: { track?: (e: string, p?: Record<string, unknown>) => void } }).hjl?.track?.(event, properties || {});
+  } catch {
+    /* 무해 */
+  }
+}
+
+// --- 편의 함수 (팝폰 자체 추적 + 한줄로 SDK 병행) ---
+
+export function trackDealView(dealId: string, meta?: { name?: string; category?: string }): void {
   trackAction({ dealId, actionType: 'view' });
+  hanjulTrack('product_view', {
+    product_id: dealId,
+    ...(meta?.name ? { product_name: meta.name } : {}),
+    ...(meta?.category ? { category: meta.category } : {}),
+  });
 }
 
 export function trackCopyCode(dealId: string, code: string): void {
   trackAction({ dealId, actionType: 'copy_code' });
+  hanjulTrack('custom_copy_code', { product_id: dealId });
 }
 
 export function trackClickOut(dealId: string): void {
   trackAction({ dealId, actionType: 'click_out' });
+  hanjulTrack('custom_click_out', { product_id: dealId });
 }
 
 export function trackDealSave(dealId: string): void {
   trackAction({ dealId, actionType: 'save' });
+  hanjulTrack('wishlist_add', { product_id: dealId });
 }
 
 export function trackDealShare(dealId: string): void {
   trackAction({ dealId, actionType: 'share' });
+  hanjulTrack('custom_share', { product_id: dealId });
+}
+
+/** 찜 추가/해제 — DealActionBar(트래킹 함수 미경유)용 한줄로 SDK 직접 배선 */
+export function trackWishlist(dealId: string, added: boolean): void {
+  hanjulTrack(added ? 'wishlist_add' : 'wishlist_remove', { product_id: dealId });
+}
+
+/** 브랜드 구독/해제 — DealActionBar용 */
+export function trackFollowMerchant(merchantId: string, followed: boolean): void {
+  hanjulTrack('custom_follow_merchant', { merchant_id: merchantId, followed });
 }

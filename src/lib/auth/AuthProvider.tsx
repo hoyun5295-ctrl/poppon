@@ -180,6 +180,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase, fetchProfile]);
 
+  // 한줄로 SDK identify — body data-hjl-* 속성. SDK가 MutationObserver로 감지한다.
+  // email → name → user-id 순으로 세팅(user-id 변화 시 SDK가 셋 다 읽도록). 로그아웃 시 3개 제거.
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.body) return;
+    if (user) {
+      const email = user.email || '';
+      const name = profile?.name || profile?.nickname || '';
+      if (email) document.body.setAttribute('data-hjl-email', email);
+      if (name) document.body.setAttribute('data-hjl-name', name);
+      document.body.setAttribute('data-hjl-user-id', user.id);
+    } else {
+      document.body.removeAttribute('data-hjl-email');
+      document.body.removeAttribute('data-hjl-name');
+      document.body.removeAttribute('data-hjl-user-id');
+    }
+  }, [user, profile]);
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();

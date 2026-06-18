@@ -7,7 +7,7 @@ import type { Deal, Merchant, Category } from '@/types';
 import { formatTimeRemaining, formatDateRange } from '@/lib/utils/format';
 import { CopyCodeButton } from './CopyCodeButton';
 import { DealActionBar } from './DealActionBar';
-import { trackDealView } from '@/lib/tracking';
+import { trackDealView, trackClickOut } from '@/lib/tracking';
 
 // 카테고리별 액센트 색상
 const CATEGORY_ACCENT: Record<string, string> = {
@@ -36,7 +36,7 @@ export function DealDetail({ deal, isModal = false }: DealDetailProps) {
 
   // ✅ 딜 조회 로깅
   useEffect(() => {
-    trackDealView(deal.id);
+    trackDealView(deal.id, { name: deal.title, category: deal.categories?.name });
   }, [deal.id]);
 
   return (
@@ -137,6 +137,7 @@ export function DealDetail({ deal, isModal = false }: DealDetailProps) {
           href={outboundUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => trackClickOut(deal.id)}
           className="flex items-center justify-center gap-2 w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-xl transition-colors"
         >
           <ExternalLink className="w-4 h-4" />

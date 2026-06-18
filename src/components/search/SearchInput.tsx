@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { trackSearch } from '@/lib/tracking';
 
 interface SearchInputProps {
   defaultValue?: string;
@@ -23,6 +24,7 @@ export function SearchInput({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const q = value.trim();
+    if (q) trackSearch(q);
     if (navigateToSearch) {
       router.push(q ? `/search?q=${encodeURIComponent(q)}` : '/search');
     } else {

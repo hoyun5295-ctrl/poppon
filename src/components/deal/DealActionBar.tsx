@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Heart, Store, Bell, BellOff } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { trackWishlist, trackFollowMerchant } from '@/lib/tracking';
 
 interface DealActionBarProps {
   dealId: string;
@@ -87,6 +88,7 @@ export function DealActionBar({
         const res = await fetch(`/api/me/saved-deals?deal_id=${dealId}`, { method: 'DELETE' });
         if (res.ok) {
           setIsSaved(false);
+          trackWishlist(dealId, false);
           showToast('저장이 해제되었습니다', 'info');
         }
       } else {
@@ -97,6 +99,7 @@ export function DealActionBar({
         });
         if (res.ok) {
           setIsSaved(true);
+          trackWishlist(dealId, true);
           showToast('딜이 저장되었습니다 ❤️', 'success');
         } else if (res.status === 409) {
           setIsSaved(true);
@@ -115,6 +118,7 @@ export function DealActionBar({
         const res = await fetch(`/api/me/follows/merchants?merchant_id=${merchantId}`, { method: 'DELETE' });
         if (res.ok) {
           setIsFollowed(false);
+          trackFollowMerchant(merchantId, false);
           showToast(`${merchantName} 구독 해제`, 'info');
         }
       } else {
@@ -125,6 +129,7 @@ export function DealActionBar({
         });
         if (res.ok) {
           setIsFollowed(true);
+          trackFollowMerchant(merchantId, true);
           showToast(`${merchantName} 구독 완료!`, 'success');
         } else if (res.status === 409) {
           setIsFollowed(true);

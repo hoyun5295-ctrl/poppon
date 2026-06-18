@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { SEO_DEFAULTS, APP_NAME } from '@/lib/constants';
 import { TopNav } from '@/components/layout/TopNav';
 import { Footer } from '@/components/layout/Footer';
@@ -42,6 +43,14 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className="font-sans antialiased min-h-screen flex flex-col">
+        {/* 한줄로 SDK (CDP) — data-hjl-key 한 줄로 auto-init. 키 미설정 시 Script 미삽입(무해) */}
+        {process.env.NEXT_PUBLIC_HANJUL_KEY && (
+          <Script
+            src="https://app.hanjul.ai/sdk/v0.3.6/hanjul.min.js"
+            data-hjl-key={process.env.NEXT_PUBLIC_HANJUL_KEY}
+            strategy="afterInteractive"
+          />
+        )}
         <AuthProvider>
           <TopProgressBar />
           <SourceProtection />

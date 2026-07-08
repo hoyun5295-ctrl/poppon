@@ -44,9 +44,10 @@ export default function RootLayout({
     <html lang="ko">
       <body className="font-sans antialiased min-h-screen flex flex-col">
         {/* 한줄로 SDK (CDP) — data-hjl-key 한 줄로 auto-init. 키 미설정 시 Script 미삽입(무해) */}
+        {/* ★ 2026-07-08 v0.3.6→v0.3.9: 구버전 SDK가 상품 체크리스트·티켓 신블록을 못 그려 인앱에 안 뜨던 문제 해결(최신 SDK로) */}
         {process.env.NEXT_PUBLIC_HANJUL_KEY && (
           <Script
-            src="https://app.hanjul.ai/sdk/v0.3.6/hanjul.min.js"
+            src="https://app.hanjul.ai/sdk/v0.3.9/hanjul.min.js"
             data-hjl-key={process.env.NEXT_PUBLIC_HANJUL_KEY}
             strategy="afterInteractive"
           />
